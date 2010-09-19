@@ -4,16 +4,17 @@
 ;BEGIN CUSTOMIZATION
 #define EEPROM_SIZE 0x40
 #define NUM_INSTRUCTIONS 0x1
+#define ERROR_INVALID_INSTRUCTION 0x1
 
 ;Runs the command corresponding to the value of "instruction".
 ;The return value is place at the top of the stack (i.e. stack)
 RUN_COMMAND movlw NUM_INSTRUCTIONS
 	subwf instruction,W
-	btfsc
+	btfsc STATUS,DC
+	retlw ERROR_INVALID_INSTRUCTION
 	addwf PCL,F
-;TODO CHECK TO SEE IF THE REQUESTED INSTRUCTION IS BEYOND THE NUMBER
-;OF INSTRUCTIONS. THEN FILL IN TABLE.
-
+	goto SET_TIME
+	return
 ;END CUSTOMIZATION
 
 ;Reads data from EEPROM.
