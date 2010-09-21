@@ -3,8 +3,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
-#include "AlPars.h"
 #include "StringTokenizer.h"
 #include "CommandWords.h"
 #include "Help.h"
@@ -16,40 +16,30 @@
 #endif
 
 
-namespace linal{
-
 	class Command
 	{
 		public:
-			Command(const DString&);
+			Command(const arg_t&);
 
-			static DString getVersion(){return (DString) "2.0";}
+			static arg_t getVersion(){return "2.0";}
 
-			DString getCommandWord();
-			DString getSecondWord();
+			const arg_t& getCommandWord(){return commandWord;}
+			const arg_t& getSecondWord(){return secondWord;}
 			bool isUnknown();
 			bool hasSecondWord();
-			utils::DArray<DString>& getWords() const ;
-			DString getWholeCommandString() const{return *words;}
+			const args_t& getWords() const{return args;}
+			const arg_t& getWholeCommandString() const{return words;}
 
 			//Calculation methods
-			static DString list(LinAl& la);
-			static LinAl& define(const Command& command,LinAl& la);
-			static LinAl& remove(const Command& command,LinAl& la);
-			static DString print(const Command& command,LinAl& la);
-	  static DString set(const linal::Command& command,LinAl& la);
-	  static LinAl& save(const Command& command, DString& fileName, utils::DArray<DString> * output,LinAl& la);
-	  static utils::DArray<DString> * load(DString fileName);
-
-	  //Helpers
-	  static utils::DArray<utils::DArray<linal::LTree> > prepareForFunctions(utils::DArray<utils::DArray<DString> > junks, DString * functionName, LinAl& la);
+			static arg_t print(const Command& command);
+                        static arg_t set(const Command& command);
+                        static args_t load(const arg_t& fileName);
 
 		private:
-			DString * words;
-			DString * commandWord;
-			DString * secondWord;
-	        DArray<DString> * args;
+			arg_t words;
+			arg_t commandWord;
+			arg_t secondWord;
+                        args_t args;
 	};
-}
 
 #endif

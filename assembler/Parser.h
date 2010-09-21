@@ -38,7 +38,7 @@
      */
     void start();
 
-    void main(DArray<DString> *);
+    void main(arg_t& arguments);
     void main(int argc, char **args);
 
     /**
@@ -46,20 +46,20 @@
      */
     void main();
 
-    bool processCommand(linal::Command * command, DString * whatIsSaid);
-    DString getHistoryValue(Command * command) const;
+    bool processCommand(Command& command, std::string& whatIsSaid);
+    arg_t getHistoryValue(Command& command) const;
 
   private:
     CommandWords * commands;  // holds all valid command words
-    Help * h;
-    DString * inputBuffer;
-    utils::DArray<DString> * history;
+    Help*  h;
+    arg_t* inputBuffer;
+    args_t* history;
 
 
     Command * getCommand();
-    bool processCommand(linal::Command * command);
-    void printHelp(DString * whatIsSaid);
-    bool openFile(DString fileName);
+    bool processCommand(Command * command);
+    void printHelp(std::string& whatIsSaid);
+    bool openFile(const std::string& fileName);
 
 
   };

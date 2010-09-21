@@ -1,22 +1,15 @@
 #ifndef COMMANDWORDS_CPP
 #define COMMANDWORDS_CPP
 
-#include "DArray.h"
-#include "DString.h"
+typedef std::string arg_t;
+typedef std::vector<arg_t> args_t;
 
-
-namespace linal{
-	class CommandWords
-	{
-		public:
-			CommandWords();
-			bool isCommand(DString&);
-			DString showAll();
-			//DArray getCommandWords();
-
-		private: 
-			utils::DArray<DString> * validCommands;
-     };
-}
+class CommandWords : public args_t
+{
+    public:
+            CommandWords();
+            bool isCommand(const arg_t&);
+            arg_t showAll();
+};
 
 #endif
