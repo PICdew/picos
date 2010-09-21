@@ -1,5 +1,5 @@
-;Requires eeprom1 and eeprom0 to be a real memory locations
-;which will be the EEADDR to read from or to write to.
+;Requires a stack, which stackPtr storing the address of the current
+;location of the stack.
 
 ;BEGIN CUSTOMIZATION
 #define EEPROM_SIZE 0x40
@@ -13,39 +13,59 @@ RUN_COMMAND movlw NUM_INSTRUCTIONS
 	btfsc STATUS,DC
 	retlw ERROR_INVALID_INSTRUCTION
 	addwf PCL,F
-	goto SET_TIME
+	---ADD GOTOS HERE---
 	return
 ;END CUSTOMIZATION
 
 ;Reads data from EEPROM.
-;Input: eeprom0 = eeprom data address
-;Output: eeprom0 = data stored at eeprom address. Bank 0
-;is used after return
-READ_EEPROM bsf STATUS,RP1;bank 2
+;Uses FSR
+;Input: Top of stack will contain address from which to read eeprom data
+;Output: Data from eeprom will be at the top of the stack.
+;bank 0 is used after return
+READ_EEPROM bcf STATUS,RP0;bank 0
+	bcf STATUS,RP1
+	movf stackPtr,W
+	movwf FSR
+	movf INDF,W
+	bsf STATUS,RP1;bank 2
 	bcf STATUS,RP0
-	movf eeprom0,W
 	movwf EEADR
 	bsf STATUS,RP0;bank 3
 	bcf EECON1,EEPGD
 	bsf EECON1,RD
 	bcf STATUS,RP0;bank 2
 	movf EEDATA,W
-	movwf eeprom0
 	bcf STATUS,RP1;bank 0
+	movwf INDF
 	return
 	
 ;Writes data to EEPROM
-;Input: eeprom0 = eeprom addres
-;		eeprom1 = data to be written
-;Output: W = data that was written
-WRITE_EEPROM bsf STATUS,RP1;bank 3
+;Uses FSR
+;Input: EEADR is on the top of the stack and EEDATA is below it.
+;Output: EEDATA is on the top of the stack.
+;bank 0 is used after return
+WRITE_EEPROM bcf STATUS,RP0;bank 0
+	bcf STATUS,RP1
+	movf stackPtr,W
+	movwf FSR
+	movf INDF,W
+	bsf STATUS,RP1;bank 3
 	bsf STATUS,RP0
 	btfsc EECON1,WR;wait for the last write to finish
 	goto $-1
-	bcf STATUS,RP0;bank 2
-	movf eeprom0,W
+	bcf STATUS,RP0;bank 0
+	bcf STATUS,RP1
+	movf stackPtr,W
+	movwf FSR
+	decf stackPtr,F
+	movf INDF,W
+	bsf STATUS,RP1;bank 2
 	movwf EEADR
-	movf eeprom1,W
+	bcf STATUS,RP1;bank 0
+	movf stackPtr,W
+	movwf FSR
+	movf INDF,W
+	bsf STATUS,RP1;bank 2
 	movwf EEDATA
 	bsf STATUS,RP0;bank 3
 	bcf EECON1,EEPGD;use eeprom, not program flash
@@ -60,6 +80,5 @@ WRITE_EEPROM bsf STATUS,RP1;bank 3
 	bcf EECON1,WREN;disable write.
 	bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
-	movf eeprom1,W
 	return
 	
