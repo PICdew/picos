@@ -8,6 +8,7 @@
 	
 	list p=16f870
 	include <p16f870.inc>
+	include "piclang.asm"
 	radix hex
 	
 #define outport PORTC
@@ -29,8 +30,8 @@
 #define DATE_ADDR 0x5f
 #define ACCUMULATOR_ADDR 0x61
 #define EXHANGE_ADDR 0X62
-#define STACK_HEAD_ADDR 0x63h
-#define STACK_TAIL_ADDR 0x6Bh
+#define STACK_HEAD_ADDR 0x62h
+#define STACK_TAIL_ADDR 0x6Ah
 #define STACK_LENGTH 8
 
 ;In the follwing bit definitions, the first word/phrase indicates
@@ -90,10 +91,10 @@ setTimeFSR EQU 5Dh
 eepromSize EQU 5Eh
 dateDay EQU 5Fh
 dateMonth EQU 60h
-accumulator EQU 61h
-exchange EQU 62h
-stackHead EQU 63h
-stackTail EQU 6Bh
+exchange EQU 61h
+stackHead EQU 62h
+stackTail EQU 6Ah
+stackPtr EQU 6Bh
 	org 0x00
 	goto INIT
 	;
@@ -116,8 +117,11 @@ stackTail EQU 6Bh
 END_OF_INTERRUPT movf saveW,W
 	bcf INTCON,2
 	retfie
-INIT movlw 0x60;last memoryspot
+INIT movlw 0x6B;last memoryspot
 	movwf endOfNamedSpots;So I can keep track of when my "name space" ends
+	;
+	movlw STACK_HEAD_ADDR;initialize stack
+	movwf stackPtr
 	;
 	movlw FIRST_DISPLAY_PTR
 	movwf firstDisplay;set display pointers
@@ -581,7 +585,21 @@ SHOW_DATE_LOOP call DISPLAY_ME
 	;
 	END
 
-	;1.0:	added defines
+	;1.0:	added defines. Added stack. stackPtr will always
+	;		contain the "top" of the stack. Therefore,
+	;		popping the stack means:
+	;			movf stackPtr,W
+	;			movwf FSR
+	;			decf stackPtr,F
+	;		INDF will then contain the data that has
+	;		been popped. Pushing into the stack is
+	;		done by:
+	;			incf stackPtr,F
+	;			movf stackPtr,W
+	;			movwf FSR
+	;			movf <data address>,W
+	;			movwf INDF
+	;			
 	;0.8:	Added Date!
 	;0.7:	Added alarm clock function. Also, I changed
 	;		the way time is set. Now, it uses FSR to
