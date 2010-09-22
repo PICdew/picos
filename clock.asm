@@ -44,13 +44,16 @@
 ;N stands for nibble
 #define LSN_MSG_7SEG_BIT 2
 #define ALARM_ON_OFF_BIT 3
+#define HEX_OCTAL_BIT 4
 #define ALARM_FLAG_TOGGLE 0x8
 	
 ;DIP input port bits
+#define DISPLAY_DATE_BIT 0
+#define DISPLAY_ALARM_BIT 1
 #define INPUT_BIT 7
 
 ;control port bits
-#define HEX_OCTAL_BIT 0
+#define PROGRAM_MODE_BIT 0
 #define ALARM_TRIGGER_BIT 1
 #define TIMER0_CLK 4
 		
@@ -70,7 +73,7 @@ totalMinutesHIGH EQU 2Ch;end of total minutes segment. increment LOW, if carryov
 setTimeTmp EQU 2Dh
 resetTMR0 EQU 2Eh;TMR0's initial value
 hexToOctal EQU 2Fh;memory spot for bit rotation
-lastCommand EQU 30h
+instruction EQU 30h
 lsdMinute EQU 31h
 msdMinute EQU 39h;7-seg packets for digits
 lsdHour EQU 3Ah
@@ -87,7 +90,7 @@ indicator EQU 59h;which decimal to light (tells a story)
 timePointer EQU 5Ah
 alarmPointer EQU 5Bh
 datePointer EQU 5Ch
-setTimeFSR EQU 5Dh
+stackTemp EQU 5Dh
 eepromSize EQU 5Eh
 dateDay EQU 5Fh
 dateMonth EQU 60h
@@ -147,8 +150,9 @@ INIT movlw 0x6B;last memoryspot
 	;
 	movlw INITIAL_TIMER_VALUE
 	movwf resetTMR0;
-	movlw b'0111'
-	movwf myStatus;bit 0 = output Hour/~output Minute. bit 1 = ~7-seg/binary display. bit 2 = right 7-seg/~left 7-seg. bit 3 = alarm on/~off
+	movlw b'10111'
+	movwf myStatus;default hour, 7-seg, right display, alarm off, use hex
+	;bit 0 = output Hour/~output Minute. bit 1 = ~7-seg/binary display. bit 2 = right 7-seg/~left 7-seg. bit 3 = alarm on/~off
 	;
 	bcf STATUS,RP0
 	bcf STATUS,RP1;
@@ -190,7 +194,7 @@ INIT movlw 0x6B;last memoryspot
 	movlw DEFAULT_DECIMAL_VALUE;by default light 2nd decimal (from left)
 	movwf indicator
 	movlw .29
-	movwf dateDay;hehe
+	movwf dateDay
 	movlw 0x6
 	movwf dateMonth
 	movlw 0x00;start at midnight
@@ -202,16 +206,18 @@ INIT movlw 0x6B;last memoryspot
 	movlw .0
 	movwf counter
 	;
-MAIN_LOOP movf minutes,W
-	movwf rightDisplay
-	movf hours,W
-	movwf leftDisplay
+MAIN_LOOP call SHOW_TIME
 	bcf myStatus,0
 	bcf myStatus,1
 	movlw DEFAULT_DECIMAL_VALUE;light appropriate indicator
 	btfsc myStatus,3
 	movlw LEFT_DECIMAL_VALUE;left most decimalpoint
 	movwf indicator
+	;check for display type
+	btfsc dipControl,DISPLAY_DATE_BIT
+	call SHOW_DATE
+	btfsc dipControl,DISPLAY_ALARM_BIT
+	nop;fill this in
 	call CREATE_DISPLAY
 	movlw 0xff
 	movwf counter
@@ -219,9 +225,17 @@ DISPLAY_LOOP call DISPLAY_ME
 	decfsz counter
 	goto DISPLAY_LOOP
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
-	btfsc dipControl,INPUT_BIT
-	call PARSE_COMMAND
+MAIN_PROGRAM_FORK btfsc controlPort,PROGRAM_MODE_BIT
+	goto PROGRAM_LOOP
 	goto MAIN_LOOP ; repeat....
+	;
+PROGRAM_LOOP btfss dipControl,INPUT_BIT
+	goto MAIN_PROGRAM_FORK
+	movf dipControl,W
+	movwf instruction
+	bcf instruction,INPUT_BIT
+	call RUN_COMMAND
+	goto MAIN_PROGRAM_FORK;decide whether to continue here or exit to MAIN_LOOP
 	;
 CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	bsf myStatus,BINARY_7SEG_BIT;binary first
@@ -241,7 +255,7 @@ CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	movf indicator,W;light decimal
 	movwf INDF
 	movlw 0xf0
-	btfss controlPort,HEX_OCTAL_BIT
+	btfss myStatus,HEX_OCTAL_BIT
 	movlw b'111000'
 	andwf rightDisplay,W
 	bcf STATUS,C
@@ -249,7 +263,7 @@ CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	rrf hexToOctal,F
 	rrf hexToOctal,F
 	rrf hexToOctal,F
-	btfsc controlPort,HEX_OCTAL_BIT
+	btfsc myStatus,HEX_OCTAL_BIT
 	rrf hexToOctal,F;swapf W,W
 	movf hexToOctal,W
 	call SEG_VALUES
@@ -269,7 +283,7 @@ CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	call MAKE_PACKET
 	movwf binaryHours
 	movlw 0xf
-	btfss controlPort,HEX_OCTAL_BIT
+	btfss myStatus,HEX_OCTAL_BIT
 	movlw b'0111'
 	andwf leftDisplay,W
 	bcf myStatus,1;hec/octal
@@ -288,7 +302,7 @@ CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	rrf hexToOctal,F
 	rrf hexToOctal,F
 	rrf hexToOctal,F
-	btfsc controlPort,HEX_OCTAL_BIT
+	btfsc myStatus,HEX_OCTAL_BIT
 	rrf hexToOctal,F;swapf W,W
 	movf hexToOctal,W
 	call SEG_VALUES
@@ -411,33 +425,8 @@ INC_MONTH movlw .1
 	movwf dateMonth
 	;
 PARSE_COMMAND movf dipControl,W	; !!! TO BE REPLACED BY ASSEMBLY BASED LANGUAGE
-	movwf lastCommand
-	bcf lastCommand,INPUT_BIT; input write flag is not needed.
-	movlw 0x0
-	subwf lastCommand,W
-	btfsc STATUS,Z
-	goto SET_CURRENT_TIME
-	movlw 0x1
-	subwf lastCommand,W
-	btfsc STATUS,Z 
-	goto SET_ALARM_TIME
-	movlw .42
-	subwf lastCommand,W
-	btfsc STATUS,Z
-	goto DO_COMMAND_0
-	movlw 0x2
-	subwf lastCommand,W
-	btfsc STATUS,Z
-	goto TOGGLE_ALARM
-	movlw 0x3
-	subwf lastCommand,W
-	btfsc STATUS,Z
-	goto SET_DATE
-	movlw 0x4
-	subwf lastCommand,W
-	btfsc STATUS,Z
-	goto SHOW_DATE
-	return
+	movwf instruction
+	goto RUN_COMMAND;requires piclang.asm
 	;
 DISPLAY_ME movf firstDisplay,W
 	movwf FSR
@@ -453,122 +442,34 @@ DISPLAY_ME_LOOP	movf binaryMinute,W
 	btfss STATUS,Z
 	goto DISPLAY_ME_LOOP
 	return
+	;
 TOGGLE_ALARM movlw ALARM_FLAG_TOGGLE
 	xorwf myStatus,F;toggle bit alarm flag
-	movf alarmMinutes,W
-	movwf rightDisplay
-	movf alarmHours,W
-	movwf leftDisplay
-	call CREATE_DISPLAY
-TOGGLE_ALARM_LOOP call DISPLAY_ME
-	btfsc dipControl,7
-	goto TOGGLE_ALARM_LOOP
-	return
-DO_COMMAND_0 movlw 0x10
-	movwf indicator
-	movlw 0x3
-	movwf leftDisplay
-	movlw 0x14
-	movwf rightDisplay
-	movlw 0x0
-	movwf setTimeFSR
-	movlw 0xff
-	movwf counter
-DO_COMMAND_0_LOOP call CREATE_DISPLAY
-DO_COMMAND_0_LOOP2 call DISPLAY_ME
-	decfsz counter
-	goto DO_COMMAND_0_LOOP2
-	movf setTimeFSR,W
-	bsf STATUS,RP1
-	bcf STATUS,RP0
-	movwf EEADR
-	bsf STATUS,RP0
-	bcf EECON1,EEPGD
-	bsf EECON1,RD
-	bcf STATUS,RP0
-	movf EEDATA,W
-	bcf STATUS,RP1
-	movwf leftDisplay
-	bsf STATUS,RP1
-	bcf STATUS,RP0
-	incf EEADR,F
-	bsf STATUS,RP0
-	bcf EECON1,EEPGD
-	bsf EECON1,RD
-	bcf STATUS,RP0
-	movf EEDATA,W
-	bcf STATUS,RP1
-	movwf rightDisplay
-	incf setTimeFSR,F
-	movlw 0x40
-	subwf setTimeFSR,W
-	btfss STATUS,Z
-	goto DO_COMMAND_0_LOOP
 	return
 	;
-SET_DATE movlw 0x88
-	movwf indicator
-	movf datePointer,W
-	goto SET_TIME
-	;
-SET_CURRENT_TIME movlw 0x10
-	movwf indicator
-	movf timePointer,W
-	movwf setTimeFSR
-	goto SET_TIME
-	;
-SET_ALARM_TIME movlw 0x18
-	movwf indicator
-	movf alarmPointer,W
-	movwf setTimeFSR
-	goto SET_TIME
-	;
-SET_TIME movwf setTimeFSR
-	incf setTimeFSR,F
-	movf setTimeFSR,W
+POP_STACK movf stackPtr,W
 	movwf FSR
-	movf INDF,W
-	movwf leftDisplay
-	decf FSR,F
-	movf INDF,W
-	movwf rightDisplay
-	call CREATE_DISPLAY
-	movf setTimeFSR,W
+	decf stackPtr,F
+	return
+PUSH_STACK movwf stackTemp 
+	incf stackPtr,F
+	movf stackPtr,W
 	movwf FSR
-SET_ALARM_LOOP1	call DISPLAY_ME
-	btfsc dipControl,7
-	goto SET_ALARM_LOOP1
-	movf setTimeFSR,W
-	movwf FSR
-	movf dipControl,W
-	movwf tmp
-	bcf tmp,7
-	movf tmp,W
+	movf stackTemp,W
 	movwf INDF
-	movwf leftDisplay
-	call CREATE_DISPLAY
-	decf setTimeFSR,F
-	movf setTimeFSR,W
-SET_ALARM_LOOP2 call DISPLAY_ME
-	btfss dipControl,7
-	goto SET_ALARM_LOOP2
-	movf setTimeFSR,W
+	return;
+	;
+;Generic set subroutine. Can set current time, alarm time or date.
+;Input: Stack values from top to bottom: time addres, most significant value, 
+;			least significant value.
+;Output: null
+SET_TIME call POP_STACK
 	movwf FSR
-	movf dipControl,W
-	movwf tmp
-	bcf tmp,7
-	movf tmp,W
+	call POP_STACK
 	movwf INDF
-	movwf rightDisplay
-	call CREATE_DISPLAY
-SET_ALARM_LOOP3 call DISPLAY_ME
-	btfsc dipControl,7
-	goto SET_ALARM_LOOP3
-	movf minutes,W
-	movwf rightDisplay
-	movf hours,W
-	movwf leftDisplay
-	call CREATE_DISPLAY
+	incf FSR,F
+	call POP_STACK
+	movwf INDF
 	return
 	;
 SHOW_DATE movlw 0x88
@@ -577,11 +478,24 @@ SHOW_DATE movlw 0x88
 	movwf rightDisplay
 	movf dateMonth,W
 	movwf leftDisplay
-	call CREATE_DISPLAY
-SHOW_DATE_LOOP call DISPLAY_ME
-	btfsc dipControl,7
-	goto SHOW_DATE_LOOP
-	return
+	goto CREATE_DISPLAY
+	;
+SHOW_ALARM movlw 0x88
+	movwf indicator
+	movf alarmMinutes,W
+	movwf rightDisplay
+	movf alarmHours,W
+	movwf leftDisplay
+	goto CREATE_DISPLAY
+	;
+SHOW_TIME movlw 0x88
+	movwf indicator
+	movf minutes,W
+	movwf rightDisplay
+	movf hours,W
+	movwf leftDisplay
+	goto CREATE_DISPLAY
+	
 	;
 	END
 
@@ -595,9 +509,6 @@ SHOW_DATE_LOOP call DISPLAY_ME
 	;		been popped. Pushing into the stack is
 	;		done by:
 	;			incf stackPtr,F
-	;			movf stackPtr,W
-	;			movwf FSR
-	;			movf <data address>,W
 	;			movwf INDF
 	;			
 	;0.8:	Added Date!
