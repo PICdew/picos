@@ -5,10 +5,15 @@
 #include "config.h"
 #endif
 
+#include <string>
+
 #include "Build.h"
 #include "Command.h"
 #include "CommandWords.h"
 #include "Help.h"
+
+#include "Double.h"
+#include "DavidException.h"
 
 #ifdef __USE_READLINE__
 #ifdef _READLINE_H_
@@ -57,7 +62,7 @@
 
 
     Command * getCommand();
-    bool processCommand(Command * command);
+    bool processCommand(Command& command);
     void printHelp(std::string& whatIsSaid);
     bool openFile(const std::string& fileName);
 

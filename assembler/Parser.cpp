@@ -104,171 +104,85 @@ void Parser::start() {
     while (!finished) {
         try {
             Command * command = getCommand();
-
-            if (command->getCommandWord().size() >= 2)
-                if (command->getCommandWord().charAt(0) == '!') {
-                    DString newCommand = getHistoryValue(command);
-                    std::cout << newCommand);
-                    *command = Command(newCommand);
-                } else if (command->getCommandWord().charAt(0) == '^') {
-                    DString newCommand = getSwapValue(command);
-                    std::cout << newCommand);
-                    *command = Command(newCommand);
-                }
-
             finished = processCommand(command);
             delete command;
             command = 0;
         } catch (DavidException e) {
-            std::cout << (DString) "Process Error: " + e.getMessage());
-        }/**/
+            std::cout << "Process Error: " << e.getMessage() << std::endl;
+        }
     }
     std::cout << "Thank you.  Good bye." << std::endl;
 }
 
-bool Parser::processCommand(linal::Command * command) {
-    DString * dummyString = new DString;
+bool Parser::processCommand(Command& command) {
+    std::string dummyString = "";
     bool returnMe = processCommand(command, dummyString);
     delete dummyString;
     dummyString = 0;
     return returnMe;
 }
 
-bool Parser::processCommand(linal::Command * command, DString * whatIsSaid) {
-    using linal::AlPars;
+bool Parser::processCommand(Command& command, std::string& whatIsSaid) {
     bool wantToQuit = false;
 
-    if (whatIsSaid == 0)
-        whatIsSaid = new DString("");
-
-    if (!command->getCommandWord().equals("save") && !command->getCommandWord().equals("exit") && !command->getCommandWord().equals("quit") && !command->getCommandWord().equals("history"))
-        history->put(command->getWholeCommandString());
+    if (!command.getCommandWord() == "save"  && command.getCommandWord() != "exit" && !command->getCommandWord().equals("quit") && command.getCommandWord() != "history")
+        history.push_back(command.getWholeCommandString());
 
 
-    if (command->isUnknown()) {
-        linal::Command newCommand(DString("print ") + command->getCommandWord());
-        DString printString = linal::Command::print(newCommand, *la);
-        std::cout << printString);
-        *whatIsSaid = printString;
+    if (command.isUnknown()) {
+        Command newCommand("print " + command.getCommandWord());
+        std::string printString = Command::print(newCommand);
+        std::cout << printString << std::endl;
+        whatIsSaid = printString;
 
         return false;
     }
 
-    DString commandWord = command->getCommandWord();
-    if (commandWord.equals("help") && command->getSecondWord() == "") {
+    std::string commandWord = command.getCommandWord();
+    if (commandWord== "help" && command.getSecondWord() == "") {
         printHelp(whatIsSaid);
-    } else if (commandWord.equals("help") && command->getSecondWord() != "") {
+    } else if (commandWord == "help" && command.getSecondWord() != "") {
 
-        if (command->getSecondWord() == "functions") {
-            DString extraPart = "list";
-            if (command->getWords().size() >= 3)
-                extraPart = command->getWords().get(2);
-            *whatIsSaid = utils::Functions::getHelp(extraPart);
-            std::cout << *whatIsSaid);
-        } else if (utils::Functions::isFunction(command->getSecondWord())) {
-            *whatIsSaid = utils::Functions::getHelp(command->getSecondWord());
-            std::cout << *whatIsSaid);
-        } else {
-            *whatIsSaid = h->getHelp(command->getSecondWord());
-            std::cout << *whatIsSaid);
-        }
-    } else if (commandWord.equals("list")) {
-        *whatIsSaid = command->list(*la);
-        std::cout << *whatIsSaid);
-    } else if (commandWord.equals("last")) {
-        *whatIsSaid = la->ans->toDString();
-        std::cout << *whatIsSaid);
-    } else if (commandWord.equals("about")) {
-        if (la->numberOfVariables() == 0) {
-            std::cout << "There are no varibles.");
-            return false;
-        }
-        DString lookMeUp = "all";
-        if (command->hasSecondWord() && command->getSecondWord() != "")
-            lookMeUp = command->getSecondWord();
-        std::cout << la->aboutVariable(lookMeUp));
-        return false;
-    } else if (commandWord.equals("define")) {
-        Command::define(*command);
-    } else if (commandWord.equals("load") || commandWord.equals("run") || commandWord.equals("open")) {
-        if (!command->hasSecondWord()) {
-            std::cout << "Uh, what do you want me to open?");
-            return false;
-        }
-        utils::DArray<DString> * toRun = 0;
-        Command * tmpguy = new Command("blah");
-        try {
-            toRun = Command::load(command->getSecondWord());
-            for (int i = 0; i < toRun->size(); i++) {
-                *tmpguy = Command(toRun->get(i));
-                processCommand(tmpguy);
-            }
-        } catch (DavidException de) {
-            std::cout << de.getMessage());
-        }
-        delete tmpguy;
-        delete toRun;
-        return false;
-    } else if (commandWord.equals("clean")) {
-        la->cleanMatrices();
-        std::cout << *whatIsSaid = "The unnecessary matrices have been removed.");
-    } else if (commandWord.equals("version")) {
-        std::cout << DString("Version: ") + Build::getVersion());
-    } else if (commandWord.equals("print")) {
-        using namespace std;
-        *whatIsSaid = linal::Command::print(*command, *la);
-        cout << *whatIsSaid << endl;
+        whatIsSaid = h->getHelp(command->getSecondWord());
+        std::cout << whatIsSaid << std::endl;
+    } else if (commandWord == "version") {
+        std::cout << "Version: " << Build::getVersion() << std::endl;
+    } else if (commandWord == "print") {
+        whatIsSaid = Command::print(*command);
+        std::cout << whatIsSaid << std::endl;
     }
-    else if (commandWord.equals("save")) {
-        if (!command->hasSecondWord()) {
+    else if (commandWord == "save") {
+        if (!command.hasSecondWord()) {
             std::cout << "file name needed with save." << std::endl;
         } else {
-            DString fileName = command->getSecondWord();
-            Command::save(*command, fileName, history, *la);
-            std::cout << "File saved as " << fileName << std::endl;
+            std::string fileName = command.getSecondWord();
+            std::cout << "add save routine." << std::endl;
+            //std::cout << "File saved as " << fileName << std::endl;
         }
-    } else if (commandWord.equals("history")) {
-        if (history->size() == 0) {
-            std::cout << "No commands have been entered yet.");
+    } else if (commandWord == "history") {
+        if (history.size() == 0) {
+            std::cout << "No commands have been entered yet." << std::endl;
             return false;
         }
         std::cout << "Previous Commands:");
-        for (int i = 0; i < history->size(); i++)
-            std::cout << Double(1.0 * i).toDString() + DString(": ") + history->get(i));
-    } else if (commandWord.equals("physics")) {
-        /*Object[] objects = Command.physics(command,la);
-        David.say((String) objects[0]);
-        la = (LinAl) objects[1];/**/
-    }
-    else if (commandWord.equals("remove")) {
-        *la = Command::remove(*command, *la); /**/
-    }
-    else if (commandWord.equals("edit")) {
-        //*la = Command.edit(*command,la);
-    }
-    else if (commandWord.equals("import")) {
-        //*la = Command.importVariables(command,la);
-    }
-    else if (commandWord.equals("dir")) {
-        //David.say(Command.dir(command,la));
-    } else if (commandWord.equals("set")) {
-        *whatIsSaid = Command::set(*command, *la);
-        std::cout << *whatIsSaid);
-    }
-    else if (commandWord.equals("quit") || commandWord.equals("exit")) {
+        int counter = 0;
+        for (args_t::iterator it = history.begin();
+                it != history.end(); it++)
+                {
+                std::cout << counter++ << ": " << *it << std::endl;
+                }
+    }else if (commandWord == "quit" || commandWord == "exit") {
         wantToQuit = true;
     }
 
     return wantToQuit; /**/
-
-
 }
 
-DString Parser::getHistoryValue(Command * command) const {
+arg_t Parser::getHistoryValue(Command& command) const {
 
-    int historyCount = history->size() - 1;
-    if (!command->getCommandWord().substring(0, 2).equals("!!"))
-        historyCount = (int) Double(command->getCommandWord().substring(1)).doubleValue();
+    size_t historyCount = history.size() - 1;
+    if (command.getCommandWord().substr(0, 2) != "!!")
+        historyCount = (int) Double(command->getCommandWord().substr(1)).doubleValue();
 
     if (historyCount < 0)
         throw DavidException("I need a positive number for the place in history");
