@@ -1,22 +1,6 @@
 ;Requires a stack, which stackPtr storing the address of the current
 ;location of the stack.
 
-;BEGIN CUSTOMIZATION
-#define EEPROM_SIZE 0x40
-#define NUM_INSTRUCTIONS 0x1
-#define ERROR_INVALID_INSTRUCTION 0x1
-
-;Runs the command corresponding to the value of "instruction".
-;The return value is place at the top of the stack (i.e. stack)
-RUN_COMMAND movlw NUM_INSTRUCTIONS
-	subwf instruction,W
-	btfsc STATUS,DC
-	retlw ERROR_INVALID_INSTRUCTION
-	addwf PCL,F
-	---ADD GOTOS HERE---
-	return
-;END CUSTOMIZATION
-
 ;Reads data from EEPROM.
 ;Uses FSR
 ;Input: Top of stack will contain address from which to read eeprom data
