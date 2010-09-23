@@ -28,11 +28,15 @@
 #define TIME_ADDR 0x26
 #define ALARM_ADDR 0x55
 #define DATE_ADDR 0x5f
-#define ACCUMULATOR_ADDR 0x61
-#define EXHANGE_ADDR 0X62
+#define EXHANGE_ADDR 0x62
+#define ACCUMULATOR_ADDR 0x5d
 #define STACK_HEAD_ADDR 0x62h
 #define STACK_TAIL_ADDR 0x6Ah
 #define STACK_LENGTH 8
+#define NUM_INSTRUCTIONS 0x1
+
+;Retvals
+#define ERROR_INVALID_INSTRUCTION 0x1
 
 ;In the follwing bit definitions, the first word/phrase indicates
 ;the meaning of Logic 1 and the second word/phrase indicates
@@ -90,7 +94,7 @@ indicator EQU 59h;which decimal to light (tells a story)
 timePointer EQU 5Ah
 alarmPointer EQU 5Bh
 datePointer EQU 5Ch
-stackTemp EQU 5Dh
+accumulator EQU 5Dh
 eepromSize EQU 5Eh
 dateDay EQU 5Fh
 dateMonth EQU 60h
@@ -225,17 +229,21 @@ DISPLAY_LOOP call DISPLAY_ME
 	decfsz counter
 	goto DISPLAY_LOOP
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
-MAIN_PROGRAM_FORK btfsc controlPort,PROGRAM_MODE_BIT
-	goto PROGRAM_LOOP
+	btfsc controlPort,PROGRAM_MODE_BIT
+	goto PROGRAM_MODE
 	goto MAIN_LOOP ; repeat....
 	;
-PROGRAM_LOOP btfss dipControl,INPUT_BIT
-	goto MAIN_PROGRAM_FORK
+PROGRAM_MODE movlw STACK_HEAD_ADDR
+	movwf stackPtr
 	movf dipControl,W
 	movwf instruction
 	bcf instruction,INPUT_BIT
-	call RUN_COMMAND
+	call PUSH_STACK
+	movlw 0xde
+	btfss controlPORT,PROGRAM_MODE_BIT
+	TODO FINISH PROGRAM MODE
 	goto MAIN_PROGRAM_FORK;decide whether to continue here or exit to MAIN_LOOP
+	goto PROGRAM_LOOP
 	;
 CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	bsf myStatus,BINARY_7SEG_BIT;binary first
@@ -451,11 +459,11 @@ POP_STACK movf stackPtr,W
 	movwf FSR
 	decf stackPtr,F
 	return
-PUSH_STACK movwf stackTemp 
+PUSH_STACK movwf accumulator 
 	incf stackPtr,F
 	movf stackPtr,W
 	movwf FSR
-	movf stackTemp,W
+	movf accumulator,W
 	movwf INDF
 	return;
 	;
@@ -495,8 +503,71 @@ SHOW_TIME movlw 0x88
 	movf hours,W
 	movwf leftDisplay
 	goto CREATE_DISPLAY
-	
+LDA call POP_STACK
+	movwf accumulator
+	return
+ADD_A	call POP_STACK
+	addwf accumulator,F
+	return
+SUBTRACT_A call POP_STACK
+	subwf accumulator,F
+	return
+SWAP_STACK_X call POP_STACK
+	movwf exchange
+	return
+MOV_AF	call SWAP_STACK_X
+	movf accumulator,W
+	call PUSH_STACK
+	movf exchange,W
+	call PUSH_STACK
+	goto WRITE_EEPROM
+AND_A	call POP_STACK
+	andwf accumulator,F
+	return
+OR_A	call POP_STACK
+	iorwf accumulator,F
+	return
+XOR_A	call POP_STACK
+	xorwf accumulator,F
+	return
+PUSH_A	movf accumulator,W
+	goto PUSH_STACK
+SLEEP_UNTIL call POP_STACK
+	movwf exchange		;hour
+	call POP_STACK
+	movwf accumulator	;minute
+	movf exchange,W
+	subwf hours,W
+	btfss STATUS,Z
+	goto $-3
+	movf accumulator,W
+	subwf minutes,W
+	btfss STATUS,Z
+	goto $-3
+	return
 	;
+;Runs the command corresponding to the value of "instruction".
+;The return value is place at the top of the stack (i.e. stack)
+;Requires piclang.asm
+RUN_COMMAND movlw NUM_INSTRUCTIONS
+	subwf instruction,W
+	btfsc STATUS,DC
+	retlw ERROR_INVALID_INSTRUCTION
+	addwf PCL,F
+	goto SET_TIME		;0x0
+	goto SET_DATE		;0x1
+	goto SET_ALARM		;0x2
+	goto LDA		;0x3
+	goto ADD_A		;0x4
+	goto SUBTRACT_A		;0x5
+	goto MOV_AF		;0x6
+	goto PUSH_A		;0x7
+	goto AND_A		;0x8
+	goto OR_A		;0x9
+	goto XOR_A		;0x10
+	goto SLEEP_UNTIL	;0x11
+	return
+
 	END
 
 	;1.0:	added defines. Added stack. stackPtr will always
