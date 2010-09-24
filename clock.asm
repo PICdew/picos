@@ -554,18 +554,18 @@ RUN_COMMAND movlw NUM_INSTRUCTIONS
 	btfsc STATUS,DC
 	retlw ERROR_INVALID_INSTRUCTION
 	addwf PCL,F
-	goto SET_TIME		;0x0
-	goto SET_DATE		;0x1
-	goto SET_ALARM		;0x2
-	goto LDA		;0x3
-	goto ADD_A		;0x4
-	goto SUBTRACT_A		;0x5
-	goto MOV_AF		;0x6
-	goto PUSH_A		;0x7
-	goto AND_A		;0x8
-	goto OR_A		;0x9
-	goto XOR_A		;0x10
-	goto SLEEP_UNTIL	;0x11
+	goto LDA		;0x0
+	goto ADD_A		;0x1
+	goto SUBTRACT_A
+	goto MOV_AF		
+	goto PUSH_A		
+	goto AND_A		
+	goto OR_A		
+	goto XOR_A		
+	goto SLEEP_UNTIL
+	goto SET_TIME	
+	goto SET_DATE	
+	goto SET_ALARM	
 	return
 
 	END
