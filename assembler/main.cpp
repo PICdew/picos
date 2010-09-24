@@ -25,31 +25,103 @@ using namespace std;
 map<arg_t,int> assemblerTable()
 {
     map<arg_t,int> returnMe;
-    returnMe["sett"] = 0x0;
-    returnMe["setd"] = 0x1;
-    returnMe["seta"] = 0x2;
-    returnMe["lda"] = 0x3;
-    returnMe["add"] = 0x4;
-    returnMe["suba"] = 0x5;
-    returnMe["movaf"] = 0x6;
-    returnMe["pusha"] = 0x7;
-    returnMe["anda"] = 0x8;
-    returnMe["ora"] = 0x9;
-    returnMe["xora"] = 0xa;
-    returnMe["sleep"] = 0xb;
+    int opcode = 0;
+    returnMe["lda"] = opcode++;
+    returnMe["adda"] = opcode++;
+    returnMe["suba"] = opcode++;
+    returnMe["movaf"] = opcode++;
+    returnMe["pusha"] = opcode++;
+    returnMe["anda"] = opcode++;
+    returnMe["ora"] = opcode++;
+    returnMe["xora"] = opcode++;
+    returnMe["sleep"] = opcode++;
+    returnMe["sett"] = opcode++;
+	returnMe["setd"] = opcode++;
+    returnMe["seta"] = opcode++;
     return returnMe;
 }
 
 const map<arg_t,int> lookupTable = assemblerTable();
+map<arg_t,int> equs;
+vector<string> precompiledCode;
+
+std::string checkAndInsert(const Command& command)
+{
+	const args_t& tokens = command.getWords();
+	const string& op = tokens.at(0);
+	string errorMessage = "Incorrect number of arguments: " + command.getWholeCommandString();
+	switch(tokens.size() - 1)//number of arguments
+	{
+	case 1:
+	{
+		if(op == "sett" || op == "setd" || op == "seta")
+			return errorMessage;
+	}
+	case 2:
+	{
+		if(op == "sett" || op == "setd" || op == "seta")
+			break;
+		return errorMessage;
+	}
+	}
+	for(args_t::const_iterator it = tokens.begin();it != tokens.end();it++)
+		precompiledCode.push_back(*it);
+	return "";
+}
+
+void compile(const args_t& precompiled, const string& filename)
+{
+	fstream file(filename.c_str(),std::ios::out);
+	if(!file.is_open())
+	{
+		std::cerr << "Could not open " << filename << " for writting" << std::endl;
+		return;
+	}
+	args_t compiled;
+	for(args_t::const_iterator it = precompiled.begin();it != precompiled.end();it++)
+	{
+		if(lookupTable.find(*it) != lookupTable.end())
+		{
+			file << lookupTable.at(*it) << endl;
+			continue;
+		}
+		if(equs.find(*it) != equs.end())
+		{
+			file << equs.at(*it) << endl;
+			continue;
+		}
+		file << *it << endl;
+	}
+	std::cerr << "Verify format." << endl;
+}
 
 std::string print_function(const Command& command)
 {
-    if(lookupTable.find(command.getCommandWord()) == lookupTable.end())
+	if(command.getSecondWord() == "equ")
+	{
+		if(command.getWords().size() < 3)
+			return "Usage: <variable> equ <literal>";
+		istringstream is(command.getWords().at(2));
+		int literalVal = -1;
+		is >> literalVal;
+		if(is.fail())
+			return "equ requires an integer";
+		equs[command.getCommandWord()] = literalVal;
+		return command.getCommandWord() + " = " + command.getWords().at(2); 
+	}
+	else if(command.getCommandWord() == "compile")
+	{
+		if(command.getWords().size() != 2)
+		{
+			return "Usage: compile <filename>";
+		}
+		compile(precompiledWords,command.getSecondWord());
+		return "Compiled. Saved as " + command.getSecondWord();
+	}
+	else if(lookupTable.find(command.getCommandWord()) == lookupTable.end())
         return "unknown command: " + command.getCommandWord();
-    ostringstream os;
-    os << "0x" << std::hex  << lookupTable.at(command.getCommandWord());
-    os << " " << command.getSecondWord();
-    return os.str();
+	
+    return checkAndInsert(command);
 }
 
 int main(int argc, char **argv)
