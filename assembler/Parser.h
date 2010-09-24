@@ -12,8 +12,8 @@
 #include "CommandWords.h"
 #include "Help.h"
 
-#include "Double.h"
-#include "DavidException.h"
+#include "libdnstd/Double.h"
+#include "libdnstd/DavidException.h"
 
 #ifdef __USE_READLINE__
 #ifdef _READLINE_H_
@@ -36,14 +36,14 @@
 
     Parser();
     ~Parser();
-    static DString getVersion(){return Build::getVersion();}
+    static std::string getVersion(){return Build::getVersion();}
     static int tab_complete(int a, int b);
     /**
      * Starts the parser.
      */
     void start();
 
-    void main(arg_t& arguments);
+    void main(args_t& arguments);
     void main(int argc, char **args);
 
     /**
@@ -63,7 +63,7 @@
 
     Command * getCommand();
     bool processCommand(Command& command);
-    void printHelp(std::string& whatIsSaid);
+    void printHelp(arg_t& whatIsSaid);
     bool openFile(const std::string& fileName);
 
 

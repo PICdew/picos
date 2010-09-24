@@ -601,7 +601,9 @@ LIBOBJS
 EGREP
 GREP
 CPP
-libdnstd_path
+LIBDNSTD_LDADD
+LIBDNSTD_LDFLAGS
+LIBDNSTD_CPPFLAGS
 am__fastdepCC_FALSE
 am__fastdepCC_TRUE
 CCDEPMODE
@@ -3890,10 +3892,11 @@ $as_echo "Assuming libdnstd is installed in the directory above this one (or in 
 fi
 
 if test x$with_dnstd != x; then
-   libdnstd_path=$with_dnstd
+   LIBDNSTD_CPPFLAGS="-I ${with_dnstd}/include/"
 
-else
-	libdnstd_path=../../libdnstd/
+   LIBDNSTD_LDFLAGS="-L ${with_dnstd}/lib"
+
+   LIBDNSTD_LDADD="-ldnstd"
 
 fi
 # Checks for header files.

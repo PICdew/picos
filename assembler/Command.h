@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 
-#include "StringTokenizer.h"
+#include "libdnstd/StringTokenizer.h"
 #include "CommandWords.h"
 #include "Help.h"
 
@@ -16,6 +16,7 @@
 #endif
 
 
+
 	class Command
 	{
 		public:
@@ -23,10 +24,10 @@
 
 			static arg_t getVersion(){return "2.0";}
 
-			const arg_t& getCommandWord(){return commandWord;}
-			const arg_t& getSecondWord(){return secondWord;}
-			bool isUnknown();
-			bool hasSecondWord();
+			const arg_t& getCommandWord()const{return commandWord;}
+			const arg_t& getSecondWord()const{return secondWord;}
+			bool isUnknown()const;
+			bool hasSecondWord()const;
 			const args_t& getWords() const{return args;}
 			const arg_t& getWholeCommandString() const{return words;}
 
@@ -36,10 +37,13 @@
                         static args_t load(const arg_t& fileName);
 
 		private:
+                    static arg_t print(const Command& command,std::string (*)(const Command&));
 			arg_t words;
 			arg_t commandWord;
 			arg_t secondWord;
                         args_t args;
 	};
+
+        extern std::string print_function(const Command& arg);
 
 #endif

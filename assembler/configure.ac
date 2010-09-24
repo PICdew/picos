@@ -13,9 +13,9 @@ AC_PROG_CC
 # Checks for libraries.
 AC_ARG_WITH([dnstd],AS_HELP_STRING([--with-dnstd],[Include DNStd library]),with_dnstd=${withval},AC_MSG_RESULT(Assuming libdnstd is installed in the directory above this one (or in system directories)))
 if test x$with_dnstd != x; then
-   AC_SUBST(libdnstd_path,$with_dnstd)
-else
-	AC_SUBST(libdnstd_path,../../libdnstd/)	
+   AC_SUBST(LIBDNSTD_CPPFLAGS,"-I ${with_dnstd}/include/")
+   AC_SUBST(LIBDNSTD_LDFLAGS,"-L ${with_dnstd}/lib")
+   AC_SUBST(LIBDNSTD_LDADD,"-ldnstd")
 fi
 # Checks for header files.
 
