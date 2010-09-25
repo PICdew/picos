@@ -17,6 +17,26 @@ if test x$with_dnstd != x; then
    AC_SUBST(LIBDNSTD_LDFLAGS,"-L ${with_dnstd}/lib")
    AC_SUBST(LIBDNSTD_LDADD,"-ldnstd")
 fi
+
+#For readline!
+AC_ARG_WITH([readline],
+            [AS_HELP_STRING([--without-readline],
+              [disable support for readline])],
+            [],
+            [with_readline=yes])
+          
+          LIBREADLINE=
+          AS_IF([test "x$with_readline" != xno],
+            [AC_CHECK_LIB([readline], [main],
+              [AC_SUBST([LIBREADLINE], ["-lreadline -lncurses"])
+               AC_DEFINE([__USE_READLINE__], [1],
+                         [Define if you have libreadline])
+              ],
+              [AC_MSG_FAILURE(
+                 [readline test failed (--without-readline to disable)])],
+              [-lncurses])])
+
+
 # Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
