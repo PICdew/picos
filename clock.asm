@@ -33,7 +33,7 @@
 #define STACK_HEAD_ADDR 0x62h
 #define STACK_TAIL_ADDR 0x6Ah
 #define STACK_LENGTH 8
-#define NUM_INSTRUCTIONS 0x1
+#define NUM_INSTRUCTIONS .14
 
 ;Retvals
 #define ERROR_INVALID_INSTRUCTION 0x1
@@ -545,6 +545,49 @@ SLEEP_UNTIL call POP_STACK
 	btfss STATUS,Z
 	goto $-3
 	return
+;Shifts accumulator to the right. Any amount carried over
+;goes into exchange, as if exchange is to the right of
+;accumulator
+; 
+;INPUT: The Amount of times shift is performed is on top
+;	of the stack
+RRA	call POP_STACK
+	movwf instruction
+	movlw 0xff
+	andwf instruction,F
+	btfsc STATUS,Z
+	return			;in case we are told to rotate zero times :-/
+	clrf exchange
+	rrf accumulator,F
+	btfss STATUS,C
+	goto $+3
+	rrf exchange,F
+	bsf exchange,7
+	decfsz instruction,F
+	goto $-6
+	return
+	;
+;Shifts accumulator to the left. Any amount carried over
+;goes into exchange, as if exchange is to the left of
+;accumulator
+; 
+;INPUT: The Amount of times shift is performed is on top
+;	of the stack
+RLA	call POP_STACK
+	movwf instruction
+	movlw 0xff
+	andwf instruction,F
+	btfsc STATUS,Z
+	return			;in case we are told to rotate zero times :-/
+	clrf exchange
+	rlf accumulator,F
+	btfss STATUS,C
+	goto $+3
+	rlf exchange,F
+	bsf exchange,0
+	decfsz instruction,F
+	goto $-6
+	return
 	;
 ;Runs the command corresponding to the value of "instruction".
 ;The return value is place at the top of the stack (i.e. stack)
@@ -561,7 +604,9 @@ RUN_COMMAND movlw NUM_INSTRUCTIONS
 	goto PUSH_A		
 	goto AND_A		
 	goto OR_A		
-	goto XOR_A		
+	goto XOR_A
+	goto RRA
+	goto RLA
 	goto SLEEP_UNTIL
 	goto SET_TIME	
 	goto SET_DATE	
