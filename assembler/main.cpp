@@ -37,6 +37,8 @@ map<arg_t,int> assemblerTable()
     returnMe["anda"] = opcode++;
     returnMe["ora"] = opcode++;
     returnMe["xora"] = opcode++;
+    returnMe["rra"] = opcode++;
+    returnMe["rla"] = opcode++;
     returnMe["sleep"] = opcode++;
     returnMe["sett"] = opcode++;
 	returnMe["setd"] = opcode++;
