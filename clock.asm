@@ -235,15 +235,65 @@ DISPLAY_LOOP call DISPLAY_ME
 	;
 PROGRAM_MODE movlw STACK_HEAD_ADDR
 	movwf stackPtr
+	movlw 0x0
+	call PUSH_STACK
+PROGRAM_LOOP btfss dipControl,INPUT_BIT
+	goto $-1
 	movf dipControl,W
 	movwf instruction
 	bcf instruction,INPUT_BIT
+	movlw 0x0		;0x0 = run program
+	addwf instruction,W
+	btfsc STATUS,Z
+	goto RUN_PROGRAM
+	btfss instruction,0	;xxxxxx1 = write A to x in EEPROM 
+	goto $+10		;x will also be placed at the top of the stack.
+	call POP_STACK
+	rrf instruction,F
 	call PUSH_STACK
-	movlw 0xde
-	btfss controlPORT,PROGRAM_MODE_BIT
-	TODO FINISH PROGRAM MODE
-	goto MAIN_PROGRAM_FORK;decide whether to continue here or exit to MAIN_LOOP
+	movf accumulator,W
+	call PUSH_STACK
+	call WRITE_EEPROM 	;end of write A to EEPORM
+	mvf accumulator,W
+	call PUSH_STACK
 	goto PROGRAM_LOOP
+	btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
+	goto $+17
+	btfsc instruction,1
+	movlw 0xf0
+	movlw 0xf
+	swapf accumulator,F
+	andwf accumulator,F
+	swapf accumulator,F
+	andwf instruction,W
+	movwf exchange
+	btfsc instruction,1
+	goto $+4
+	rrf exchange,F
+	rrf exchange,F
+	rrf exchange,F
+	movf exchange,W
+	addwf accumulator,F
+	goto PROGRAM_MAIN_FORK
+	call POP_STACK		;xxxx010 = end of program
+	movwf accumulator	;last written address should be in stack
+	movwf 0xad		;see 0x1 above.
+	call PUSH_STACK
+	incf accumulator,F
+	movf accumulator
+	call PUSH_STACK
+	call WRITE_EEPROM
+	movwf 0xed
+	call PUSH_STACK
+	incf accumulator,W
+	call PUSH_STACK
+	call WRITE_EEPROM
+	movf accumulator,W
+	call PUSH_STACK
+PROGRAM_MAIN_FORK btfsc controlPORT,PROGRAM_MODE_BIT
+	goto PROGRAM_LOOP
+	goto MAIN_LOOP
+	
 	;
 CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	bsf myStatus,BINARY_7SEG_BIT;binary first
@@ -432,9 +482,15 @@ INC_MONTH movlw .1
 	movlw .1
 	movwf dateMonth
 	;
-PARSE_COMMAND movf dipControl,W	; !!! TO BE REPLACED BY ASSEMBLY BASED LANGUAGE
-	movwf instruction
+RUN_PROGRAM movlw STACK_HEAD_ADDR
+	movwf stackPtr
+	movlw 0x0
+	call PUSH_STACK
+RUN_PROGRAM_LOOP call POP_STACK
+	FINISH RUN_PROGRAM CODE!!!!!
+	call READ_EEPROM
 	goto RUN_COMMAND;requires piclang.asm
+END_OF_PROGRAM return
 	;
 DISPLAY_ME movf firstDisplay,W
 	movwf FSR
