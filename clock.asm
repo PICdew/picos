@@ -8,7 +8,6 @@
 	
 	list p=16f870
 	include <p16f870.inc>
-	include "piclang.asm"
 	radix hex
 	
 #define outport PORTC
@@ -30,10 +29,13 @@
 #define DATE_ADDR 0x5f
 #define EXHANGE_ADDR 0x62
 #define ACCUMULATOR_ADDR 0x5d
-#define STACK_HEAD_ADDR 0x62h
-#define STACK_TAIL_ADDR 0x6Ah
+#define STACK_HEAD_ADDR 0x62
+#define STACK_TAIL_ADDR 0x6A
 #define STACK_LENGTH 8
 #define NUM_INSTRUCTIONS .14
+
+#define LEOP 0xde;EOP bytes
+#define REOP 0xad;see piclang.asm
 
 ;Retvals
 #define ERROR_INVALID_INSTRUCTION 0x1
@@ -91,9 +93,9 @@ alarmHours EQU 56h;Alarm Clock! cf myStatus
 leftDisplay EQU 57h
 rightDisplay EQU 58h;Display place holders to make create display more generic. to show time, load minutes/hours into it.
 indicator EQU 59h;which decimal to light (tells a story)
-timePointer EQU 5Ah
-alarmPointer EQU 5Bh
-datePointer EQU 5Ch
+programCounter EQU 5Ah
+;USE THIS NEXT!!!  was alarmPointer EQU 5Bh
+;USE THIS NEXT!!!  was datePointer EQU 5Ch
 accumulator EQU 5Dh
 eepromSize EQU 5Eh
 dateDay EQU 5Fh
@@ -189,12 +191,6 @@ INIT movlw 0x6B;last memoryspot
 	movwf eepromSize
 	movlw .0
 	movwf output
-	movlw TIME_ADDR
-	movwf timePointer
-	movlw ALARM_ADDR
-	movwf alarmPointer
-	movlw DATE_ADD
-	movwf datePointer
 	movlw DEFAULT_DECIMAL_VALUE;by default light 2nd decimal (from left)
 	movwf indicator
 	movlw .29
@@ -254,7 +250,7 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	movf accumulator,W
 	call PUSH_STACK
 	call WRITE_EEPROM 	;end of write A to EEPORM
-	mvf accumulator,W
+	movf accumulator,W
 	call PUSH_STACK
 	goto PROGRAM_LOOP
 	btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
@@ -275,25 +271,10 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	movf exchange,W
 	addwf accumulator,F
 	goto PROGRAM_MAIN_FORK
-	call POP_STACK		;xxxx010 = end of program
-	movwf accumulator	;last written address should be in stack
-	movwf 0xad		;see 0x1 above.
-	call PUSH_STACK
-	incf accumulator,F
-	movf accumulator
-	call PUSH_STACK
-	call WRITE_EEPROM
-	movwf 0xed
-	call PUSH_STACK
-	incf accumulator,W
-	call PUSH_STACK
-	call WRITE_EEPROM
-	movf accumulator,W
-	call PUSH_STACK
-PROGRAM_MAIN_FORK btfsc controlPORT,PROGRAM_MODE_BIT
+	call WRITE_EOP;xxxx010 = end of program
+PROGRAM_MAIN_FORK btfsc controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_LOOP
 	goto MAIN_LOOP
-	
 	;
 CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	bsf myStatus,BINARY_7SEG_BIT;binary first
@@ -485,55 +466,22 @@ INC_MONTH movlw .1
 RUN_PROGRAM movlw STACK_HEAD_ADDR
 	movwf stackPtr
 	movlw 0x0
-	call PUSH_STACK
-RUN_PROGRAM_LOOP call POP_STACK
-	FINISH RUN_PROGRAM CODE!!!!!
+	movwf programCounter
+RUN_PROGRAM_LOOP movf programCounter,W
 	call READ_EEPROM
-	goto RUN_COMMAND;requires piclang.asm
-END_OF_PROGRAM return
-	;
-DISPLAY_ME movf firstDisplay,W
-	movwf FSR
-DISPLAY_ME_LOOP	movf binaryMinute,W
-	movwf outport
-	movf binaryHours,W
-	movwf outport
-	movf INDF,W
-	movwf outport
-	incf FSR,F
-	movf lastDisplay,W
-	subwf FSR,W
-	btfss STATUS,Z
-	goto DISPLAY_ME_LOOP
-	return
-	;
-TOGGLE_ALARM movlw ALARM_FLAG_TOGGLE
-	xorwf myStatus,F;toggle bit alarm flag
-	return
-	;
-POP_STACK movf stackPtr,W
-	movwf FSR
-	decf stackPtr,F
-	return
-PUSH_STACK movwf accumulator 
-	incf stackPtr,F
-	movf stackPtr,W
-	movwf FSR
-	movf accumulator,W
-	movwf INDF
-	return;
-	;
-;Generic set subroutine. Can set current time, alarm time or date.
-;Input: Stack values from top to bottom: time addres, most significant value, 
-;			least significant value.
-;Output: null
-SET_TIME call POP_STACK
-	movwf FSR
-	call POP_STACK
-	movwf INDF
-	incf FSR,F
-	call POP_STACK
-	movwf INDF
+	movwf instruction
+	movlw LEOP
+	subwf instruction,W
+	btfsc STATUS,Z
+	goto $+3
+	call RUN_COMMAND;requires piclang.asm
+	goto RUN_PROGRAM_LOOP
+	movlw REOP
+	subwf instruction,W
+	btfsc STATUS,Z
+	goto $+3
+	call RUN_COMMAND
+	goto RUN_PROGRAM_LOOP
 	return
 	;
 SHOW_DATE movlw 0x88
@@ -559,116 +507,28 @@ SHOW_TIME movlw 0x88
 	movf hours,W
 	movwf leftDisplay
 	goto CREATE_DISPLAY
-LDA call POP_STACK
-	movwf accumulator
-	return
-ADD_A	call POP_STACK
-	addwf accumulator,F
-	return
-SUBTRACT_A call POP_STACK
-	subwf accumulator,F
-	return
-SWAP_STACK_X call POP_STACK
-	movwf exchange
-	return
-MOV_AF	call SWAP_STACK_X
-	movf accumulator,W
-	call PUSH_STACK
-	movf exchange,W
-	call PUSH_STACK
-	goto WRITE_EEPROM
-AND_A	call POP_STACK
-	andwf accumulator,F
-	return
-OR_A	call POP_STACK
-	iorwf accumulator,F
-	return
-XOR_A	call POP_STACK
-	xorwf accumulator,F
-	return
-PUSH_A	movf accumulator,W
-	goto PUSH_STACK
-SLEEP_UNTIL call POP_STACK
-	movwf exchange		;hour
-	call POP_STACK
-	movwf accumulator	;minute
-	movf exchange,W
-	subwf hours,W
+	;
+DISPLAY_ME movf firstDisplay,W
+	movwf FSR
+DISPLAY_ME_LOOP	movf binaryMinute,W
+	movwf outport
+	movf binaryHours,W
+	movwf outport
+	movf INDF,W
+	movwf outport
+	incf FSR,F
+	movf lastDisplay,W
+	subwf FSR,W
 	btfss STATUS,Z
-	goto $-3
-	movf accumulator,W
-	subwf minutes,W
-	btfss STATUS,Z
-	goto $-3
-	return
-;Shifts accumulator to the right. Any amount carried over
-;goes into exchange, as if exchange is to the right of
-;accumulator
-; 
-;INPUT: The Amount of times shift is performed is on top
-;	of the stack
-RRA	call POP_STACK
-	movwf instruction
-	movlw 0xff
-	andwf instruction,F
-	btfsc STATUS,Z
-	return			;in case we are told to rotate zero times :-/
-	clrf exchange
-	rrf accumulator,F
-	btfss STATUS,C
-	goto $+3
-	rrf exchange,F
-	bsf exchange,7
-	decfsz instruction,F
-	goto $-6
+	goto DISPLAY_ME_LOOP
 	return
 	;
-;Shifts accumulator to the left. Any amount carried over
-;goes into exchange, as if exchange is to the left of
-;accumulator
-; 
-;INPUT: The Amount of times shift is performed is on top
-;	of the stack
-RLA	call POP_STACK
-	movwf instruction
-	movlw 0xff
-	andwf instruction,F
-	btfsc STATUS,Z
-	return			;in case we are told to rotate zero times :-/
-	clrf exchange
-	rlf accumulator,F
-	btfss STATUS,C
-	goto $+3
-	rlf exchange,F
-	bsf exchange,0
-	decfsz instruction,F
-	goto $-6
+TOGGLE_ALARM movlw ALARM_FLAG_TOGGLE
+	xorwf myStatus,F;toggle bit alarm flag
 	return
 	;
-;Runs the command corresponding to the value of "instruction".
-;The return value is place at the top of the stack (i.e. stack)
-;Requires piclang.asm
-RUN_COMMAND movlw NUM_INSTRUCTIONS
-	subwf instruction,W
-	btfsc STATUS,DC
-	retlw ERROR_INVALID_INSTRUCTION
-	addwf PCL,F
-	goto LDA		;0x0
-	goto ADD_A		;0x1
-	goto SUBTRACT_A
-	goto MOV_AF		
-	goto PUSH_A		
-	goto AND_A		
-	goto OR_A		
-	goto XOR_A
-	goto RRA
-	goto RLA
-	goto SLEEP_UNTIL
-	goto SET_TIME	
-	goto SET_DATE	
-	goto SET_ALARM	
-	return
-
+include "program_subroutines.asm"
+include "..\..\piclang\piclang.asm"
 	END
 
 	;1.0:	added defines. Added stack. stackPtr will always
