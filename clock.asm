@@ -243,11 +243,13 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	btfsc STATUS,Z
 	goto RUN_PROGRAM
 	btfss instruction,0	;xxxxxx1 = write A to x in EEPROM 
-	goto $+7		;x will also be placed at the top of the stack.
-	rrf instruction,W
+	goto $+9		;x will also be placed at the top of the stack.
+	rrf instruction,F
+	movf instruction,W
 	call PUSH_STACK;this call is to keep the address, x, on the stack after this routine is finished.
 	movf accumulator,W
 	call PUSH_STACK
+	movf instruction,W
 	call PUSH_STACK
 	call WRITE_EEPROM 	;end of write A to EEPORM
 	goto PROGRAM_LOOP
