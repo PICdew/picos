@@ -1,5 +1,18 @@
+;piclang
+;Author David Coss
+;Version 0.1 (Written 2010)
+;License: GNU General Public License 3.0 (see http://www.gnu.org)
+;
+;This file is part of a package that provides EEPROM IO code, 
+;Program management and assembly language to the 
+;16F870 PIC microcontroller.
+;
 ;Requires a stack, which stackPtr storing the address of the current
-;location of the stack.
+;	location of the stack.
+;Requires instruction register.
+;Requires exchange register.
+;Requires definition of LEOP, REOP, which are the Left (first) and 
+;	Right(last) bytes of the end of program (EOP) signal
 
 ;Reads data from EEPROM.
 ;Uses FSR
@@ -66,3 +79,29 @@ WRITE_EEPROM bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
 	return
 	
+;Writes the end of program code(2-bytes), starting at address at the top
+;of the stack.
+WRITE_EOP call POP_STACK
+	movwf instruction
+	movlw LEOP
+	call PUSH_STACK
+	movf instruction,F
+	call PUSH_STACK
+	call WRITE_EEPROM
+	movlw REOP
+	call PUSH_STACK
+	incf instruction,W
+	call PUSH_STACK
+	goto WRITE_EEPROM
+;
+POP_STACK movf stackPtr,W
+	movwf FSR
+	decf stackPtr,F
+	return
+PUSH_STACK movwf exchange 
+	incf stackPtr,F
+	movf stackPtr,W
+	movwf FSR
+	movf exchange,W
+	movwf INDF
+	return;
