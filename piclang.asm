@@ -74,6 +74,7 @@ WRITE_EEPROM bcf STATUS,RP0;bank 0
 	movwf EECON2
 	bsf EECON1,WR;start writting
 	bsf INTCON,GIE;re-enable interrupts
+	bcf EECON1,WR
 	bcf EECON1,WREN;disable write.
 	bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
@@ -97,6 +98,7 @@ WRITE_EOP call POP_STACK
 POP_STACK movf stackPtr,W
 	movwf FSR
 	decf stackPtr,F
+	movf INDF,W
 	return
 PUSH_STACK movwf exchange 
 	incf stackPtr,F
