@@ -94,7 +94,7 @@ leftDisplay EQU 57h
 rightDisplay EQU 58h;Display place holders to make create display more generic. to show time, load minutes/hours into it.
 indicator EQU 59h;which decimal to light (tells a story)
 programCounter EQU 5Ah
-;USE THIS NEXT!!!  was alarmPointer EQU 5Bh
+pclTemp EQU 5Bh
 ;USE THIS NEXT!!!  was datePointer EQU 5Ch
 accumulator EQU 5Dh
 eepromSize EQU 5Eh
@@ -171,7 +171,7 @@ INIT movlw 0x6B;last memoryspot
 	movlw 0x6;
 	movwf ADCON1;SET bit 0 of porta to be digital (not analog :-/ )
 	movlw b'00010001';TIMER MUST BE INPUT!!!
-	movwf controlPortTRIS;bit 0 = hex/~octal, bit 1 = external alarm trigger, 4 = timer0 clock
+	movwf controlPortTRIS;bit 0 = Program Mode On, bit 1 = external alarm trigger, 4 = timer0 clock
 	movlw b'11111111';Oh, yeah. dip switch keyboard
 	movwf dipControlTRIS;bit 7 = trigger for dip switch commands.
 	bsf OPTION_REG,5;turn on timer0
@@ -225,7 +225,7 @@ DISPLAY_LOOP call DISPLAY_ME
 	decfsz counter
 	goto DISPLAY_LOOP
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
-	btfsc controlPort,PROGRAM_MODE_BIT
+	btfss controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_MODE
 	goto MAIN_LOOP ; repeat....
 	;
@@ -243,15 +243,13 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	btfsc STATUS,Z
 	goto RUN_PROGRAM
 	btfss instruction,0	;xxxxxx1 = write A to x in EEPROM 
-	goto $+10		;x will also be placed at the top of the stack.
-	call POP_STACK
-	rrf instruction,F
-	call PUSH_STACK
+	goto $+7		;x will also be placed at the top of the stack.
+	rrf instruction,W
+	call PUSH_STACK;this call is to keep the address, x, on the stack after this routine is finished.
 	movf accumulator,W
+	call PUSH_STACK
 	call PUSH_STACK
 	call WRITE_EEPROM 	;end of write A to EEPORM
-	movf accumulator,W
-	call PUSH_STACK
 	goto PROGRAM_LOOP
 	btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
 	goto $+17
@@ -390,7 +388,11 @@ REST_OF_MAKE_PACKET movlw 0x0
 	movf tmp,W
 	return
 	
-SEG_VALUES addwf PCL,F
+SEG_VALUES movwf pclTemp
+	movlw HIGH SEG_VALUES
+	movwf PCLATH
+	movf pclTemp,W
+	addwf PCL,F
 	retlw b'01111110';0
 	retlw b'00000110';1
 	retlw b'11011010';2
@@ -409,7 +411,11 @@ SEG_VALUES addwf PCL,F
 	retlw b'11110000';F
 	retlw 0x1;decimal point
 	;
-NUMBER_OF_DAYS addwf PCL,F
+NUMBER_OF_DAYS movwf pclTemp
+	movlw HIGH SEG_VALUES
+	movwf PCLATH
+	movf pclTemp,W
+	addwf PCL,F
 	retlw .30;!?!?!?!?
 	retlw .31;jan
 	retlw .28;feb (leap year???)

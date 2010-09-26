@@ -4,7 +4,12 @@
 RUN_COMMAND movlw NUM_INSTRUCTIONS
 	subwf instruction,W
 	btfsc STATUS,DC
-	retlw ERROR_INVALID_INSTRUCTION
+	goto $+3
+	incf instruction,F
+	return
+	movlw HIGH RUN_COMMAND
+	movwf PCLATH
+	movf instruction,W
 	addwf PCL,F
 	goto LDA		;0x0
 	goto ADD_A		;0x1
