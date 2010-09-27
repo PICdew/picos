@@ -47,7 +47,7 @@ map<arg_t,int> assemblerTable()
 }
 const map<arg_t,int> lookupTable = assemblerTable();
 
-string formatHex(const int& unformatted,ios::fmtflags currRadix)
+string formatHex(const int& unformatted,ios::fmtflags currRadix, int& hex)
 {
   ostringstream os;
   os.precision(2);
@@ -57,10 +57,11 @@ string formatHex(const int& unformatted,ios::fmtflags currRadix)
   string returnMe = os.str();
   while(returnMe.size() < 2)
     returnMe = "0" + returnMe;
+  hex = unformatted;
   return returnMe;
 }
 
-string formatHex(const string& unformatted)
+string formatHex(const string& unformatted, int& hex)
 {
   string semiformatted = unformatted;
   istringstream is;
@@ -100,7 +101,7 @@ string formatHex(const string& unformatted)
   if(is.fail())
     throw DavidException("Could not compile: " + unformatted);
   
-  return formatHex(val,ios::hex);
+  return formatHex(val,ios::hex,hex);
 }
 
 std::string checkAndInsert(const Command& command)
@@ -138,22 +139,44 @@ void compile(const args_t& precompiled, const string& filename)
 		std::cerr << "Could not open " << filename << " for writting" << std::endl;
 		return;
 	}
-	args_t compiled;
+
+	file << ":020000040000FA" << std::endl;//beginning line for 32-bit extension. Google Intel Hex for details.
+	int checksum = 0;
+	int counter = 0;
+	int address = 0x4200;
+	int hex;
 	for(args_t::const_iterator it = precompiled.begin();it != precompiled.end();it++)
 	{
+		if(counter % 8 == 0)
+		{
+			file.setf(std::ios_base::hex);
+			file << ":10" << address << "00";
+			address += 0x10;
+		}
 		if(lookupTable.find(*it) != lookupTable.end())
 		{
-		  file << formatHex(lookupTable.at(*it),radix) << endl;
-			continue;
+		  file << formatHex(lookupTable.at(*it),radix,hex) << endl;
+		  checksum += hex;
 		}
-		if(equs.find(*it) != equs.end())
+		else if(equs.find(*it) != equs.end())
 		{
-		  file << formatHex(equs.at(*it),radix) << endl;
-			continue;
+		  file << formatHex(equs.at(*it),radix,hex) << endl;
+		  checksum += hex;
 		}
-		file << formatHex(*it) << endl;
+		else
+		{
+			file << formatHex(*it,hex) << endl;
+			checksum += hex;
+		}
+		counter++;
+		if(counter % 8 == 0)
+		{
+			checksum += (hex && 0xff) ^ 0xff;
+			checksum++;
+			file << ((checksum < 0x10) ? "0" : "") << checksum << endl;
+			checksum = 0;
+		}
 	}
-	std::cerr << "Verify format." << endl;
 }
 
 std::string print_function(const Command& command)
