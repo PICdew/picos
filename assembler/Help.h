@@ -8,11 +8,11 @@
 
 class Help : public std::map<arg_t,std::string>{
 public:
-    Help();
+  Help(){}
     ~Help(){}
 
-    std::string getHelp(const arg_t&);
-
+    const std::string& getHelp(const arg_t&);
+    static Help getDefault();
     
 };
 

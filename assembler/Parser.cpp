@@ -90,10 +90,14 @@ Command * Parser::getCommand() {
  * Print out a list of valid command words.
  */
 void Parser::printHelp(arg_t& whatIsSaid) {
-    if (whatIsSaid.size() == 0)
-        return;
-    std::cout << DString("List of commands: ") << (whatIsSaid = commands->showAll()) << std::endl;
-    std::cout << std::endl;
+    if(whatIsSaid.size() != 0)
+      {
+	whatIsSaid = h->getHelp(whatIsSaid);
+	return;
+      }
+    whatIsSaid = "For help, enter help <command>\nCommands:\n";
+    for(Help::const_iterator it = h->begin();it != h->end();it++)
+      whatIsSaid += it->first + " ";
 }
 
 void Parser::start() {
@@ -128,11 +132,9 @@ bool Parser::processCommand(Command& command, std::string& whatIsSaid) {
         history->push_back(command.getWholeCommandString());
 
     std::string commandWord = command.getCommandWord();
-    if (commandWord== "help" && command.getSecondWord() == "") {
+    if (commandWord== "help"){
+      whatIsSaid = command.getSecondWord();
         printHelp(whatIsSaid);
-    } else if (commandWord == "help" && command.getSecondWord() != "") {
-
-        whatIsSaid = h->getHelp(command.getSecondWord());
         std::cout << whatIsSaid << std::endl;
     } else if (commandWord == "version") {
         std::cout << "Version: " << Build::getVersion() << std::endl;
@@ -189,6 +191,12 @@ arg_t Parser::getHistoryValue(Command& command) const {
         newCommand += " " + words.at(i);
     return newCommand;
 
+}
+
+void Parser::setHelp(const Help& newHelp)
+{
+  delete h;
+  h = new Help(newHelp);
 }
 
 int Parser::tab_complete(int a, int b) {

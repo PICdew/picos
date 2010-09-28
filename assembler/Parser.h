@@ -43,6 +43,7 @@
      */
     void start();
 
+    void setHelp(const Help& newHelp);
     void main(args_t& arguments);
     void main(int argc, char **args);
 

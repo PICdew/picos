@@ -1,6 +1,7 @@
 #include "Build.h"
 
 std::string Build::todo = "TODO: \n"
-  "0. Create program.";
+  "0. Add script parsing.\n"
+  "1. Test.";
 
 

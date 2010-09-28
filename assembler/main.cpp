@@ -15,6 +15,7 @@
 
 //this prevents the GUI from being used.
 #define GUI_CPP 1
+#include "libdnstd/Double.h"
 #include "libdnstd/StringTokenizer.h"
 #include "Parser.h"
 
@@ -24,6 +25,27 @@ using namespace std;
 ios::fmtflags radix;
 map<arg_t,int> equs;
 vector<string> precompiledCode;
+
+Help assemblerHelp()
+{
+  cerr << "assemberhelp()" << endl;
+  Help returnMe;
+  returnMe["lda"] = "loads the value to the accumulator";
+    returnMe["adda"] = "";
+    returnMe["suba"] = "";
+    returnMe["movaf"] = "";
+    returnMe["pusha"] = "";
+    returnMe["anda"] = "";
+    returnMe["ora"] = "";
+    returnMe["xora"] ="";
+    returnMe["rra"] = "";
+    returnMe["rla"] = "";
+    returnMe["sleep"] = "";
+    returnMe["sett"] = "";
+	returnMe["setd"] = "";
+    returnMe["seta"] = "";
+    return returnMe;
+}
 
 map<arg_t,int> assemblerTable()
 {
@@ -47,21 +69,19 @@ map<arg_t,int> assemblerTable()
 }
 const map<arg_t,int> lookupTable = assemblerTable();
 
-string formatHex(const int& unformatted,ios::fmtflags currRadix, int& hex)
+string formatHex(const int& unformatted,ios::fmtflags currRadix)
 {
   ostringstream os;
   os.precision(2);
   os.setf(currRadix,ios::basefield);
   os << unformatted;
-  std::cerr << "format: " << unformatted << " = " <<  os.str();
   string returnMe = os.str();
   while(returnMe.size() < 2)
     returnMe = "0" + returnMe;
-  hex = unformatted;
   return returnMe;
 }
 
-string formatHex(const string& unformatted, int& hex)
+string formatHex(const string& unformatted)
 {
   string semiformatted = unformatted;
   istringstream is;
@@ -94,14 +114,13 @@ string formatHex(const string& unformatted, int& hex)
 	}
     }
   is.clear();is.str(semiformatted);is.setf(currRadix,ios::basefield);
-  std::cerr << "formatting: " << unformatted << " ";
   int val = -1;
   is >> val;
   
   if(is.fail())
     throw DavidException("Could not compile: " + unformatted);
   
-  return formatHex(val,ios::hex,hex);
+  return formatHex(val,ios::hex);
 }
 
 std::string checkAndInsert(const Command& command)
@@ -145,37 +164,71 @@ void compile(const args_t& precompiled, const string& filename)
 	int counter = 0;
 	int address = 0x4200;
 	int hex;
+	string currLine = "";
 	for(args_t::const_iterator it = precompiled.begin();it != precompiled.end();it++)
 	{
 		if(counter % 8 == 0)
 		{
-			file.setf(std::ios_base::hex);
-			file << ":10" << address << "00";
+			currLine += formatHex(address,std::ios_base::hex);
+			checksum += (address & 0xff);
+			checksum += ((address >> 8) & 0xff);
 			address += 0x10;
 		}
 		if(lookupTable.find(*it) != lookupTable.end())
 		{
-		  file << formatHex(lookupTable.at(*it),radix,hex) << endl;
-		  checksum += hex;
+			hex = lookupTable.at(*it);
+			cout << *it << ": " <<  formatHex(hex,radix);
+			currLine += formatHex(hex,radix);
+			checksum += hex;
 		}
 		else if(equs.find(*it) != equs.end())
 		{
-		  file << formatHex(equs.at(*it),radix,hex) << endl;
-		  checksum += hex;
+			hex = equs.at(*it);
+			cout << *it << ": " <<  formatHex(hex,radix);
+			currLine += formatHex(hex,radix);
+			checksum += hex;
 		}
 		else
 		{
-			file << formatHex(*it,hex) << endl;
+			cout << *it << ": " <<  formatHex(*it);
+			currLine += formatHex(*it);
+			string _val = *it;
+			if(_val.substr(0,2) == "0x")
+				_val.erase(0,2);
+			istringstream is(_val);
+			is.setf(radix,ios_base::basefield);
+			is >> hex;
+			if(is.fail())
+			{
+				throw DavidException("Invalid variable: " + *it);
+			}
 			checksum += hex;
 		}
+		currLine += "00";
 		counter++;
 		if(counter % 8 == 0)
 		{
-			checksum += (hex && 0xff) ^ 0xff;
+			cout << "hex: " << checksum << " eol: " <<  formatHex(checksum,radix);
+			checksum &= 0xff;
+			checksum ^= 0xff;
 			checksum++;
-			file << ((checksum < 0x10) ? "0" : "") << checksum << endl;
+			int numBytes = (currLine.size()-4)/4;
+			file << ":" << ((numBytes < 10) ? "0" : "") << numBytes << currLine << formatHex(checksum,ios_base::hex) << endl;
+			currLine = "";
 			checksum = 0;
 		}
+	}
+	if(counter % 8 != 0)
+	{
+		cout << "hex: " << checksum << " eol: " <<  formatHex(checksum,radix);
+		checksum &= 0xff;
+		checksum ^= 0xff;
+		checksum++;
+		currLine +=  (checksum < 0x10) ? "0" : "";
+		int numBytes = (currLine.size()-4)/4;
+		file << ":" << ((numBytes < 10) ? "0" : "") << numBytes << currLine << formatHex(checksum,ios_base::hex) << endl;
+		currLine = "";
+		checksum = 0;
 	}
 }
 
@@ -262,6 +315,7 @@ int main(int argc, char **argv)
 	{
 		try{
 		  Parser p;
+		  p.setHelp(assemblerHelp());
 		  p.main(argc,argv);
 		  return 0;
 		}
@@ -274,6 +328,7 @@ int main(int argc, char **argv)
 	else{
 		try{
 			Parser p;
+			p.setHelp(assemblerHelp());
 			p.main();
 			return 0;
 		}
