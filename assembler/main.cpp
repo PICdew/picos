@@ -26,47 +26,7 @@ ios::fmtflags radix;
 map<arg_t,int> equs;
 vector<string> precompiledCode;
 
-Help assemblerHelp()
-{
-  cerr << "assemberhelp()" << endl;
-  Help returnMe;
-  returnMe["lda"] = "loads the value to the accumulator";
-    returnMe["adda"] = "";
-    returnMe["suba"] = "";
-    returnMe["movaf"] = "";
-    returnMe["pusha"] = "";
-    returnMe["anda"] = "";
-    returnMe["ora"] = "";
-    returnMe["xora"] ="";
-    returnMe["rra"] = "";
-    returnMe["rla"] = "";
-    returnMe["sleep"] = "";
-    returnMe["sett"] = "";
-	returnMe["setd"] = "";
-    returnMe["seta"] = "";
-    return returnMe;
-}
-
-map<arg_t,int> assemblerTable()
-{
-    map<arg_t,int> returnMe;
-    int opcode = 0;
-    returnMe["lda"] = opcode++;
-    returnMe["adda"] = opcode++;
-    returnMe["suba"] = opcode++;
-    returnMe["movaf"] = opcode++;
-    returnMe["pusha"] = opcode++;
-    returnMe["anda"] = opcode++;
-    returnMe["ora"] = opcode++;
-    returnMe["xora"] = opcode++;
-    returnMe["rra"] = opcode++;
-    returnMe["rla"] = opcode++;
-    returnMe["sleep"] = opcode++;
-    returnMe["sett"] = opcode++;
-	returnMe["setd"] = opcode++;
-    returnMe["seta"] = opcode++;
-    return returnMe;
-}
+#include "opcodes.cpp"
 const map<arg_t,int> lookupTable = assemblerTable();
 
 string formatHex(const int& unformatted,ios::fmtflags currRadix)
@@ -307,7 +267,8 @@ int main(int argc, char **argv)
 	}
 	if((argc > 1) && (DString(argv[1]) == "--version"))
 	{
-	  cout << "LinAl version: " << Build::getVersion() << endl;
+	  cout << "assembler version: " << Build::getVersion() << endl;
+	  cout << "opcode version: " << opcodeVersion[0] << "." << opcodeVersion[1] << "." << opcodeVersion[2] << endl;
 		cout << "Last Build: " << Build::getBuild() << endl;
 		return 1;
 	}
