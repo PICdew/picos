@@ -539,6 +539,7 @@ include "program_subroutines.asm"
 include "..\..\piclang\piclang.asm"
 	END
 
+	;1.1: Added multiple opcodes.
 	;1.0:	added defines. Added stack. stackPtr will always
 	;		contain the "top" of the stack. Therefore,
 	;		popping the stack means:

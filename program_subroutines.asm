@@ -11,20 +11,25 @@ RUN_COMMAND movlw NUM_INSTRUCTIONS
 	movwf PCLATH
 	movf instruction,W
 	addwf PCL,F
-	goto LDA		;0x0
-	goto ADD_A		;0x1
-	goto SUBTRACT_A
-	goto MOV_AF		
-	goto PUSH_A		
-	goto AND_A		
-	goto OR_A		
-	goto XOR_A
-	goto RRA
-	goto RLA
-	goto SLEEP_UNTIL
-	goto SET_TIME	
-	goto SET_DATE
-	goto SET_ALARM
+	goto lda		;0x0
+	goto adda		;0x1
+	goto suba
+	goto movaf		
+	goto pusha		
+	goto anda		
+	goto ora		
+	goto Xora
+	goto rra
+	goto rla
+	goto sleep
+	goto inca
+	goto deca
+	goto bsa
+	goto bca
+	goto clra
+	goto sett	
+	goto setd
+	goto seta
 END_OF_FUNCTION incf programCounter,F
 	return
 GET_ARG incf programCounter,F
@@ -35,7 +40,7 @@ GET_ARG incf programCounter,F
 ;Input: Stack values from top to bottom: most significant value, 
 ;			least significant value.
 ;Output: null
-SET_TIME call GET_ARG
+sett call GET_ARG
 	call GET_ARG
 	movlw TIME_ADDR
 SET_GENERIC_TIMEDATE movwf FSR
@@ -45,25 +50,25 @@ SET_GENERIC_TIMEDATE movwf FSR
 	call POP_STACK
 	movwf INDF
 	goto END_OF_FUNCTION
-;SET_DATE uses SET_GENERIC_TIMEDATE
-SET_DATE call GET_ARG
+;setd uses SET_GENERIC_TIMEDATE
+setd call GET_ARG
 	call GET_ARG
 	movlw DATE_ADDR
 	goto SET_GENERIC_TIMEDATE
-SET_ALARM call GET_ARG
+seta call GET_ARG
 	call GET_ARG
 	movlw ALARM_ADDR
 	goto SET_GENERIC_TIMEDATE
 	;
-LDA call GET_ARG
+lda call GET_ARG
 	call POP_STACK
 	movwf accumulator
 	goto END_OF_FUNCTION
-ADD_A call GET_ARG
+adda call GET_ARG
 	call POP_STACK
 	addwf accumulator,F
 	goto END_OF_FUNCTION
-SUBTRACT_A call GET_ARG
+suba call GET_ARG
 	call POP_STACK
 	subwf accumulator,F
 	goto END_OF_FUNCTION
@@ -71,27 +76,27 @@ SWAP_STACK_X call GET_ARG
 	call POP_STACK
 	movwf exchange
 	goto END_OF_FUNCTION
-MOV_AF	movf accumulator,W
+movaf	movf accumulator,W
 	call PUSH_STACK
 	call GET_ARG;places F on the stack
 	call WRITE_EEPROM
 	goto END_OF_FUNCTION
-AND_A call GET_ARG
+anda call GET_ARG
 	call POP_STACK
 	andwf accumulator,F
 	goto END_OF_FUNCTION
-OR_A call GET_ARG
+ora call GET_ARG
 	call POP_STACK
 	iorwf accumulator,F
 	goto END_OF_FUNCTION
-XOR_A call GET_ARG
+xora call GET_ARG
 	call POP_STACK
 	xorwf accumulator,F
 	goto END_OF_FUNCTION
-PUSH_A movf accumulator,W
+pusha movf accumulator,W
 	call PUSH_STACK
 	goto END_OF_FUNCTION
-SLEEP_UNTIL call GET_ARG
+sleep call GET_ARG
 	call GET_ARG
 	call POP_STACK
 	movwf exchange		;hour
@@ -112,7 +117,7 @@ SLEEP_UNTIL call GET_ARG
 ; 
 ;INPUT: The Amount of times shift is performed is on top
 ;	of the stack
-RRA	call GET_ARG
+rra	call GET_ARG
 	call POP_STACK
 	movwf instruction
 	movlw 0xff
@@ -135,7 +140,7 @@ RRA	call GET_ARG
 ; 
 ;INPUT: The Amount of times shift is performed is on top
 ;	of the stack
-RLA	call GET_ARG
+rla	call GET_ARG
 	call POP_STACK
 	movwf instruction
 	movlw 0xff
@@ -152,3 +157,32 @@ RLA	call GET_ARG
 	goto $-6
 	goto END_OF_FUNCTION
 	;
+inca incf accumulator,F
+	goto END_OF_FUNCTION
+	;
+deca decf accumulator,F
+	goto END_OF_FUNCTION
+	;
+bsa call bsa_bca_setup
+	orwf accumulator,F
+	goto END_OF_FUNCTION
+	;
+bca call bsa_bca_setup
+	xor accumulator,F
+	goto END_OF_FUNCTION
+	;
+bsa_bca_setup call GET_ARG
+	call POP_STACK
+	movwf temp
+	incf temp;1-indexed makes decfsz work
+	clrf exchange
+	bsf exchange,0
+	decfsz temp,F	
+	rlf exchange,F
+	movf exchange,W
+	return
+	;
+clra clrf accumulator,F
+	goto END_OF_FUNCTION
+	
+	
