@@ -222,7 +222,7 @@ MAIN_LOOP call SHOW_TIME
 	movlw 0xff
 	movwf counter
 DISPLAY_LOOP call DISPLAY_ME
-	decfsz counter
+	decfsz counter,F
 	goto DISPLAY_LOOP
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
 	btfss controlPort,PROGRAM_MODE_BIT
@@ -437,11 +437,11 @@ INC_MINUTES incf minutes,F
 	xorwf minutes,W
 	btfsc STATUS,Z
 	call INC_HOURS
-	incf totalMinutesLOW
+	incf totalMinutesLOW,F
 	btfsc STATUS,C
-	incf totalMinutesMIDDLE
+	incf totalMinutesMIDDLE,F
 	btfsc STATUS,C
-	incf totalMinutesHIGH
+	incf totalMinutesHIGH,F
 	return
 	;
 INC_HOURS clrf minutes
@@ -463,7 +463,7 @@ INC_DAYS movf dateMonth,W
 	;
 INC_MONTH movlw .1
 	movwf dateDay
-	incf dateMonth
+	incf dateMonth,F
 	movlw .13
 	xorwf dateMonth,W
 	btfss STATUS,Z
@@ -536,7 +536,7 @@ TOGGLE_ALARM movlw ALARM_FLAG_TOGGLE
 	return
 	;
 include "program_subroutines.asm"
-include "..\..\piclang\piclang.asm"
+include "../piclang/piclang.asm"
 	END
 
 	;1.1: Added multiple opcodes.

@@ -18,10 +18,10 @@ RUN_COMMAND movlw NUM_INSTRUCTIONS
 	goto pusha		
 	goto anda		
 	goto ora		
-	goto Xora
+	goto xora
 	goto rra
 	goto rla
-	goto sleep
+	goto sleepa
 	goto inca
 	goto deca
 	goto bsa
@@ -96,7 +96,7 @@ xora call GET_ARG
 pusha movf accumulator,W
 	call PUSH_STACK
 	goto END_OF_FUNCTION
-sleep call GET_ARG
+sleepa call GET_ARG
 	call GET_ARG
 	call POP_STACK
 	movwf exchange		;hour
@@ -164,25 +164,25 @@ deca decf accumulator,F
 	goto END_OF_FUNCTION
 	;
 bsa call bsa_bca_setup
-	orwf accumulator,F
+	iorwf accumulator,F
 	goto END_OF_FUNCTION
 	;
 bca call bsa_bca_setup
-	xor accumulator,F
+	xorwf accumulator,F
 	goto END_OF_FUNCTION
 	;
 bsa_bca_setup call GET_ARG
 	call POP_STACK
-	movwf temp
-	incf temp;1-indexed makes decfsz work
+	movwf tmp
+	incf tmp,F;1-indexed makes decfsz work
 	clrf exchange
 	bsf exchange,0
-	decfsz temp,F	
+	decfsz tmp,F	
 	rlf exchange,F
 	movf exchange,W
 	return
 	;
-clra clrf accumulator,F
+clra clrf accumulator
 	goto END_OF_FUNCTION
 	
 	
