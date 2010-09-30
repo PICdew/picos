@@ -16,7 +16,7 @@ Help assemblerHelp()
     returnMe["xora"] ="";
     returnMe["rra"] = "";
     returnMe["rla"] = "";
-    returnMe["sleep"] = "";
+    returnMe["sleepa"] = "";
     returnMe["sett"] = "";
 	returnMe["setd"] = "";
     returnMe["seta"] = "";
