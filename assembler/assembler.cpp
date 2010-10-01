@@ -27,7 +27,8 @@ map<arg_t,int> equs;
 vector<string> precompiledCode;
 
 #include "opcodes.cpp"
-const map<arg_t,int> lookupTable = assemblerTable();
+Help makeHelp(){return assemblerHelp();}//for tab complete
+const map<arg_t,opcode_t> lookupTable = assemblerTable();
 
 string formatHex(const int& unformatted,ios::fmtflags currRadix)
 {
@@ -276,7 +277,7 @@ int main(int argc, char **argv)
 	{
 		try{
 		  Parser p;
-		  p.setHelp(assemblerHelp());
+                  p.setHelp(makeHelp());
 		  p.main(argc,argv);
 		  return 0;
 		}

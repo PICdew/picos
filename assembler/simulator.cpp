@@ -1,40 +1,87 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <map>
+
 #include "opcodes.cpp"
 #include "Parser.h"
 #include "Help.h"
 
 #define STACK_SIZE 8
 
-typedef unsigned short mem_t;
+typedef unsigned short int mem_t;
 
 using namespace std;
+
+Parser gParser;
+
 
 class Memory{
 public:
 	mem_t accumulator;
 	mem_t exchange;
+        mem_t time[2];
+        mem_t date[2];
+        mem_t alarm[2];
 	vector<mem_t> stack;
+        vector<mem_t> ram;
 
-	Memory : accumulator(0), exchange(0){stack.capacity(STACK_SIZE);}
-};
+        Memory() : accumulator(0), exchange(0){stack.clear();ram.resize(0x3d,0);}
+}gMemory;
+
+std::ostream& operator<<(std::ostream& stream, Memory& mem)
+{
+    using std::endl;
+    stream.setf(std::ios::hex,std::ios::basefield);
+    stream << "A: " << mem.accumulator << endl;
+    stream << "X: " << mem.exchange << endl;
+    stream << "RAM: " << endl;
+    std::vector<mem_t>::const_iterator it;
+    int counter = 0;
+    for(it = mem.ram.begin();it != mem.ram.end();it++)
+    {
+        if(counter % 16 == 0)
+            stream << counter << ": ";
+        stream << *it;
+        counter++;
+        if(counter % 8 == 0)
+            stream << " ";
+        if(counter % 16 == 0)
+            stream << endl;
+    }
+    if(counter % 16 != 0)
+        stream << endl;
+    stream << "Stack: " << endl;
+    for(it = mem.stack.begin();it != mem.stack.end();it++)
+        stream << *it << endl;
+
+    return stream;
+}
 
 class Program : private std::vector<mem_t>
 {
 public:
-	iterator programCounter;
+    typedef std::vector<mem_t>::iterator pcl;
+    std::vector<mem_t>::iterator programCounter;
 	
 	void insert(const mem_t& newVal){bool wasEmpty = (this->size() == 0);this->push_back(newVal);if(wasEmpty){programCounter = this->begin();}}
-	iterator& goto(const size_t& loc){programCounter = this->begin();
+        const mem_t& jmp(const size_t& loc){programCounter = this->begin();
 		for(size_t i = 0;i<loc;i++)
 			programCounter++;
-		return programCounter;
+                return *programCounter;
 	}
-	mem_t next(){return ++programCounter;}
-	mem_t previous(){return --programCounter;}
+        const mem_t& next(){return *(++programCounter);}
+        const mem_t& previous(){return *(--programCounter);}
+
+        pcl first(){return this->begin();}
+        pcl eop(){return this->end();}
 	
 	void reset(){this->clear();programCounter = this->begin();}
 	
 	bool loadHex(const std::string& fileName);
-}
+        pcl continueProg(Memory& mem, pcl startLoc, pcl endLoc);
+        void simCommand(const mem_t& memval, Memory& mem);
+}gProg;
 
 bool Program::loadHex(const std::string& fileName)
 {
@@ -64,8 +111,8 @@ bool Program::loadHex(const std::string& fileName)
 			currLine.erase(0,4);
 			mem_t currData;
 			std::istringstream buff(word);
-			currData >> buff;
-			if(currData.fail())
+                        buff >> currData;
+                        if(buff.fail())
 			{
 				std::cerr << "Invalid memory type: " << word << std::endl;
 				return false;
@@ -76,12 +123,149 @@ bool Program::loadHex(const std::string& fileName)
 	return true;
 }
 
-string print(Command& command)
+void Program::simCommand(const mem_t& memval, Memory& mem)
+{
+    switch(memval)
+    {
+    case 0:
+        {
+            mem.accumulator = *(++programCounter);
+            break;
+        }
+    case 1:
+        {
+            mem.accumulator += *(++programCounter);
+            break;
+        }
+    case 2:
+        {
+            mem.accumulator -= *(++programCounter);
+            break;
+        }
+    case 3:
+        {
+            mem_t val = *(++programCounter);
+            if(val >= mem.ram.size())
+            {
+                std::cerr << "Value exceeded memory size" << std::endl;
+                return;
+            }
+            mem.ram[val] = mem.accumulator;
+            break;
+        }
+    case 4:
+        {
+            mem.stack.push_back(*(++programCounter));
+            break;
+        }
+    case 5:
+        {
+            mem.accumulator &= *(++programCounter);
+            break;
+        }
+    case 6:
+        {
+            mem.accumulator |= *(++programCounter);
+            break;
+        }
+    case 7:
+        {
+            mem.accumulator ^= *(++programCounter);
+            break;
+        }
+    case 8:
+        {
+            mem.accumulator >> *(++programCounter);
+            break;
+        }
+    case 9:
+        {
+            mem.accumulator << *(++programCounter);
+            break;
+        }
+    case 10:
+        {
+            std::cout << "sleeping" << std::endl;
+            int a = 0;
+            for(int i = 0;i<1e9;i++)
+            {
+                a++;
+            }
+            break;
+        }
+    case 11:
+        {
+            mem.accumulator++;
+            break;
+        }
+    case 12:
+        {
+            mem.accumulator--;
+            break;
+        }
+    case 13:
+        {
+            mem_t val = *(++programCounter);
+            mem_t bitmask = 1;
+            bitmask << val;
+            mem.accumulator |= bitmask;
+            break;
+        }
+    case 14:
+        {
+            mem_t val = *(++programCounter);
+            mem_t bitmask = 1;
+            bitmask << val;
+            bitmask ^= 0xff;
+            mem.accumulator &= bitmask;
+            break;
+        }
+    case 15:
+        {
+            mem.accumulator = 0;
+            break;
+        }
+    case 16:
+        {
+            mem.time[0] = *(++programCounter);
+            mem.time[1] = *(++programCounter);
+            break;
+        }
+    case 17:
+        {
+            mem.date[0] = *(++programCounter);
+            mem.date[1] = *(++programCounter);
+            break;
+        }
+    case 18:
+        {
+            mem.alarm[0] = *(++programCounter);
+            mem.alarm[1] = *(++programCounter);
+            break;
+        }
+    default:
+        break;
+    }
+}
+
+Program::pcl Program::continueProg(Memory& mem, pcl startLoc, pcl endLoc)
+{
+    this->programCounter = startLoc;
+    for(;this->programCounter != endLoc;programCounter++)
+    {
+        simCommand(*(this->programCounter),mem);
+    }
+    return this->programCounter;
+}
+
+string print_function(const Command& command)
 {
 	size_t numArgs = command.getWords().size();
 
 	if(numArgs == 0)
-		return printHelp("");
+        {
+            return "";
+        }
 	arg_t arg = command.getCommandWord();
 	args_t words = command.getWords();
 	if(arg == "load" && numArgs == 2)
@@ -93,13 +277,24 @@ string print(Command& command)
 	}
 	else if(arg == "run")
 	{
-		return gProg.continueProgram(gMemory,0);//program array, memory, programCounter
+                gProg.continueProg(gMemory,gProg.first(),gProg.eop());//program array, memory, programCounter
+                return "done.";
 	}
-
+        else if(arg == "print")
+        {
+            std::cout << gMemory << std::endl;
+        }
+    return "unknown command.";
 }
 
-string doOpcode(const opcode_t& op)
+
+Help makeHelp()
 {
+    Help returnMe;
+    returnMe["load"] = "Loads hex file.\nUsage: load <filename>";
+    returnMe["run"] = "Runs the program.";
+    returnMe["print"] = "Prints memory.";
+    return returnMe;
 }
 
 opcode_t getMemoryVal(const arg_t& arg, int& state)
@@ -118,7 +313,7 @@ opcode_t getMemoryVal(const arg_t& arg, int& state)
 
 int main(int argc, char** argv)
 {
-	Parser p;
-	p.start(argc,argv);
+    gParser.setHelp(makeHelp());
+        gParser.main(argc,argv);
 	return 0;
 }

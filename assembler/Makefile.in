@@ -32,7 +32,7 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = assembler$(EXEEXT)
+bin_PROGRAMS = assembler$(EXEEXT) simulator$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -52,13 +52,21 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_assembler_OBJECTS = assembler-Build.$(OBJEXT) \
 	assembler-Command.$(OBJEXT) assembler-CommandWords.$(OBJEXT) \
-	assembler-main.$(OBJEXT) assembler-Parser.$(OBJEXT) \
+	assembler-assembler.$(OBJEXT) assembler-Parser.$(OBJEXT) \
 	assembler-Help.$(OBJEXT)
 assembler_OBJECTS = $(am_assembler_OBJECTS)
 am__DEPENDENCIES_1 =
 assembler_DEPENDENCIES = $(am__DEPENDENCIES_1)
 assembler_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(assembler_LDFLAGS) $(LDFLAGS) -o $@
+am_simulator_OBJECTS = simulator-Build.$(OBJEXT) \
+	simulator-Command.$(OBJEXT) simulator-CommandWords.$(OBJEXT) \
+	simulator-simulator.$(OBJEXT) simulator-Parser.$(OBJEXT) \
+	simulator-Help.$(OBJEXT)
+simulator_OBJECTS = $(am_simulator_OBJECTS)
+simulator_DEPENDENCIES = $(am__DEPENDENCIES_1)
+simulator_LINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(simulator_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -68,8 +76,8 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(assembler_SOURCES)
-DIST_SOURCES = $(assembler_SOURCES)
+SOURCES = $(assembler_SOURCES) $(simulator_SOURCES)
+DIST_SOURCES = $(assembler_SOURCES) $(simulator_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -177,10 +185,14 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-assembler_SOURCES = Build.cpp Command.cpp CommandWords.cpp main.cpp Parser.cpp Help.cpp
+assembler_SOURCES = Build.cpp Command.cpp CommandWords.cpp assembler.cpp Parser.cpp Help.cpp
 assembler_CPPFLAGS = ${LIBDNSTD_CPPFLAGS}
 assembler_LDFLAGS = ${LIBDNSTD_LDFLAGS} ${LIBREADLINE}
 assembler_LDADD = ${LIBDNSTD_LDADD}
+simulator_SOURCES = Build.cpp Command.cpp CommandWords.cpp simulator.cpp Parser.cpp Help.cpp
+simulator_CPPFLAGS = ${LIBDNSTD_CPPFLAGS}
+simulator_LDFLAGS = ${LIBDNSTD_LDFLAGS} ${LIBREADLINE}
+simulator_LDADD = ${LIBDNSTD_LDADD}
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -277,6 +289,9 @@ clean-binPROGRAMS:
 assembler$(EXEEXT): $(assembler_OBJECTS) $(assembler_DEPENDENCIES) 
 	@rm -f assembler$(EXEEXT)
 	$(assembler_LINK) $(assembler_OBJECTS) $(assembler_LDADD) $(LIBS)
+simulator$(EXEEXT): $(simulator_OBJECTS) $(simulator_DEPENDENCIES) 
+	@rm -f simulator$(EXEEXT)
+	$(simulator_LINK) $(simulator_OBJECTS) $(simulator_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -289,7 +304,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assembler-CommandWords.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assembler-Help.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assembler-Parser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assembler-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/assembler-assembler.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Build.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Command.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-CommandWords.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Help.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Parser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-simulator.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -347,19 +368,19 @@ assembler-CommandWords.obj: CommandWords.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o assembler-CommandWords.obj `if test -f 'CommandWords.cpp'; then $(CYGPATH_W) 'CommandWords.cpp'; else $(CYGPATH_W) '$(srcdir)/CommandWords.cpp'; fi`
 
-assembler-main.o: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT assembler-main.o -MD -MP -MF $(DEPDIR)/assembler-main.Tpo -c -o assembler-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/assembler-main.Tpo $(DEPDIR)/assembler-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='assembler-main.o' libtool=no @AMDEPBACKSLASH@
+assembler-assembler.o: assembler.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT assembler-assembler.o -MD -MP -MF $(DEPDIR)/assembler-assembler.Tpo -c -o assembler-assembler.o `test -f 'assembler.cpp' || echo '$(srcdir)/'`assembler.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/assembler-assembler.Tpo $(DEPDIR)/assembler-assembler.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='assembler.cpp' object='assembler-assembler.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o assembler-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o assembler-assembler.o `test -f 'assembler.cpp' || echo '$(srcdir)/'`assembler.cpp
 
-assembler-main.obj: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT assembler-main.obj -MD -MP -MF $(DEPDIR)/assembler-main.Tpo -c -o assembler-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/assembler-main.Tpo $(DEPDIR)/assembler-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='assembler-main.obj' libtool=no @AMDEPBACKSLASH@
+assembler-assembler.obj: assembler.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT assembler-assembler.obj -MD -MP -MF $(DEPDIR)/assembler-assembler.Tpo -c -o assembler-assembler.obj `if test -f 'assembler.cpp'; then $(CYGPATH_W) 'assembler.cpp'; else $(CYGPATH_W) '$(srcdir)/assembler.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/assembler-assembler.Tpo $(DEPDIR)/assembler-assembler.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='assembler.cpp' object='assembler-assembler.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o assembler-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o assembler-assembler.obj `if test -f 'assembler.cpp'; then $(CYGPATH_W) 'assembler.cpp'; else $(CYGPATH_W) '$(srcdir)/assembler.cpp'; fi`
 
 assembler-Parser.o: Parser.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT assembler-Parser.o -MD -MP -MF $(DEPDIR)/assembler-Parser.Tpo -c -o assembler-Parser.o `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
@@ -388,6 +409,90 @@ assembler-Help.obj: Help.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Help.cpp' object='assembler-Help.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(assembler_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o assembler-Help.obj `if test -f 'Help.cpp'; then $(CYGPATH_W) 'Help.cpp'; else $(CYGPATH_W) '$(srcdir)/Help.cpp'; fi`
+
+simulator-Build.o: Build.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Build.o -MD -MP -MF $(DEPDIR)/simulator-Build.Tpo -c -o simulator-Build.o `test -f 'Build.cpp' || echo '$(srcdir)/'`Build.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Build.Tpo $(DEPDIR)/simulator-Build.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Build.cpp' object='simulator-Build.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Build.o `test -f 'Build.cpp' || echo '$(srcdir)/'`Build.cpp
+
+simulator-Build.obj: Build.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Build.obj -MD -MP -MF $(DEPDIR)/simulator-Build.Tpo -c -o simulator-Build.obj `if test -f 'Build.cpp'; then $(CYGPATH_W) 'Build.cpp'; else $(CYGPATH_W) '$(srcdir)/Build.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Build.Tpo $(DEPDIR)/simulator-Build.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Build.cpp' object='simulator-Build.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Build.obj `if test -f 'Build.cpp'; then $(CYGPATH_W) 'Build.cpp'; else $(CYGPATH_W) '$(srcdir)/Build.cpp'; fi`
+
+simulator-Command.o: Command.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Command.o -MD -MP -MF $(DEPDIR)/simulator-Command.Tpo -c -o simulator-Command.o `test -f 'Command.cpp' || echo '$(srcdir)/'`Command.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Command.Tpo $(DEPDIR)/simulator-Command.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Command.cpp' object='simulator-Command.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Command.o `test -f 'Command.cpp' || echo '$(srcdir)/'`Command.cpp
+
+simulator-Command.obj: Command.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Command.obj -MD -MP -MF $(DEPDIR)/simulator-Command.Tpo -c -o simulator-Command.obj `if test -f 'Command.cpp'; then $(CYGPATH_W) 'Command.cpp'; else $(CYGPATH_W) '$(srcdir)/Command.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Command.Tpo $(DEPDIR)/simulator-Command.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Command.cpp' object='simulator-Command.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Command.obj `if test -f 'Command.cpp'; then $(CYGPATH_W) 'Command.cpp'; else $(CYGPATH_W) '$(srcdir)/Command.cpp'; fi`
+
+simulator-CommandWords.o: CommandWords.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-CommandWords.o -MD -MP -MF $(DEPDIR)/simulator-CommandWords.Tpo -c -o simulator-CommandWords.o `test -f 'CommandWords.cpp' || echo '$(srcdir)/'`CommandWords.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-CommandWords.Tpo $(DEPDIR)/simulator-CommandWords.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CommandWords.cpp' object='simulator-CommandWords.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-CommandWords.o `test -f 'CommandWords.cpp' || echo '$(srcdir)/'`CommandWords.cpp
+
+simulator-CommandWords.obj: CommandWords.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-CommandWords.obj -MD -MP -MF $(DEPDIR)/simulator-CommandWords.Tpo -c -o simulator-CommandWords.obj `if test -f 'CommandWords.cpp'; then $(CYGPATH_W) 'CommandWords.cpp'; else $(CYGPATH_W) '$(srcdir)/CommandWords.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-CommandWords.Tpo $(DEPDIR)/simulator-CommandWords.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CommandWords.cpp' object='simulator-CommandWords.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-CommandWords.obj `if test -f 'CommandWords.cpp'; then $(CYGPATH_W) 'CommandWords.cpp'; else $(CYGPATH_W) '$(srcdir)/CommandWords.cpp'; fi`
+
+simulator-simulator.o: simulator.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-simulator.o -MD -MP -MF $(DEPDIR)/simulator-simulator.Tpo -c -o simulator-simulator.o `test -f 'simulator.cpp' || echo '$(srcdir)/'`simulator.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-simulator.Tpo $(DEPDIR)/simulator-simulator.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='simulator.cpp' object='simulator-simulator.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-simulator.o `test -f 'simulator.cpp' || echo '$(srcdir)/'`simulator.cpp
+
+simulator-simulator.obj: simulator.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-simulator.obj -MD -MP -MF $(DEPDIR)/simulator-simulator.Tpo -c -o simulator-simulator.obj `if test -f 'simulator.cpp'; then $(CYGPATH_W) 'simulator.cpp'; else $(CYGPATH_W) '$(srcdir)/simulator.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-simulator.Tpo $(DEPDIR)/simulator-simulator.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='simulator.cpp' object='simulator-simulator.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-simulator.obj `if test -f 'simulator.cpp'; then $(CYGPATH_W) 'simulator.cpp'; else $(CYGPATH_W) '$(srcdir)/simulator.cpp'; fi`
+
+simulator-Parser.o: Parser.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Parser.o -MD -MP -MF $(DEPDIR)/simulator-Parser.Tpo -c -o simulator-Parser.o `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Parser.Tpo $(DEPDIR)/simulator-Parser.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Parser.cpp' object='simulator-Parser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Parser.o `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
+
+simulator-Parser.obj: Parser.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Parser.obj -MD -MP -MF $(DEPDIR)/simulator-Parser.Tpo -c -o simulator-Parser.obj `if test -f 'Parser.cpp'; then $(CYGPATH_W) 'Parser.cpp'; else $(CYGPATH_W) '$(srcdir)/Parser.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Parser.Tpo $(DEPDIR)/simulator-Parser.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Parser.cpp' object='simulator-Parser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Parser.obj `if test -f 'Parser.cpp'; then $(CYGPATH_W) 'Parser.cpp'; else $(CYGPATH_W) '$(srcdir)/Parser.cpp'; fi`
+
+simulator-Help.o: Help.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Help.o -MD -MP -MF $(DEPDIR)/simulator-Help.Tpo -c -o simulator-Help.o `test -f 'Help.cpp' || echo '$(srcdir)/'`Help.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Help.Tpo $(DEPDIR)/simulator-Help.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Help.cpp' object='simulator-Help.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Help.o `test -f 'Help.cpp' || echo '$(srcdir)/'`Help.cpp
+
+simulator-Help.obj: Help.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Help.obj -MD -MP -MF $(DEPDIR)/simulator-Help.Tpo -c -o simulator-Help.obj `if test -f 'Help.cpp'; then $(CYGPATH_W) 'Help.cpp'; else $(CYGPATH_W) '$(srcdir)/Help.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/simulator-Help.Tpo $(DEPDIR)/simulator-Help.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Help.cpp' object='simulator-Help.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Help.obj `if test -f 'Help.cpp'; then $(CYGPATH_W) 'Help.cpp'; else $(CYGPATH_W) '$(srcdir)/Help.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

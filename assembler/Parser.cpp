@@ -199,10 +199,13 @@ void Parser::setHelp(const Help& newHelp)
   h = new Help(newHelp);
 }
 
+extern Help makeHelp();
 int Parser::tab_complete(int a, int b) {
     Parser p;
+    p.setHelp(makeHelp());
     arg_t blah = "";
     p.printHelp(blah);
+    std::cout << blah << std::endl;
     return 0;
 }
 
