@@ -168,7 +168,10 @@ bsa call bsa_bca_setup
 	goto END_OF_FUNCTION
 	;
 bca call bsa_bca_setup
-	xorwf accumulator,F
+	movwf tmp
+	movlw 0xff
+	xorwf tmp,W
+	andwf accumulator,F
 	goto END_OF_FUNCTION
 	;
 bsa_bca_setup call GET_ARG
