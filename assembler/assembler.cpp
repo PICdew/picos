@@ -131,6 +131,7 @@ void compile(const args_t& precompiled, const string& filename)
 		if(counter % 8 == 0)
 		{
 			currLine += formatHex(address,std::ios_base::hex);
+			currLine += "00";
 			checksum += (address & 0xff);
 			checksum += ((address >> 8) & 0xff);
 			address += 0x10;

@@ -76,7 +76,7 @@ public:
         pcl first(){return this->begin();}
         pcl eop(){return this->end();}
 	
-	void reset(){this->clear();programCounter = this->begin();}
+	void reset(){programCounter = this->begin();}
 	
 	bool loadHex(const std::string& fileName);
         pcl continueProg(Memory& mem, pcl startLoc, pcl endLoc);
@@ -98,8 +98,8 @@ bool Program::loadHex(const std::string& fileName)
 	while(file.is_open() && !file.eof())
 	{
 		file >> currLine;
-		// ":" + byte size + 4-byte addres + byte record type + n-byte data + checksum
-		currLine.erase(0,11);
+		// ":" + byte size + 2-byte addres + byte record type + n-byte data + checksum
+		currLine.erase(0,7);
 		std::string recordType = currLine.substr(0,2);
 		currLine.erase(0,2);
 		if(recordType != "00")
@@ -111,8 +111,9 @@ bool Program::loadHex(const std::string& fileName)
 			currLine.erase(0,4);
 			mem_t currData;
 			std::istringstream buff(word);
-                        buff >> currData;
-                        if(buff.fail())
+			buff.setf(std::ios_base::hex,std::ios_base::basefield);
+			buff >> currData;
+			if(buff.fail())
 			{
 				std::cerr << "Invalid memory type: " << word << std::endl;
 				return false;
@@ -280,10 +281,32 @@ string print_function(const Command& command)
                 gProg.continueProg(gMemory,gProg.first(),gProg.eop());//program array, memory, programCounter
                 return "done.";
 	}
-        else if(arg == "print")
-        {
-            std::cout << gMemory << std::endl;
-        }
+	else if(arg == "print")
+	{
+		std::cout << gMemory << std::endl;
+	}
+	else if(arg == "step")
+	{
+		gProg.continueProg(gMemory,gProg.programCounter,gProg.programCounter+1);
+		return "stepped forward 1 function.";
+	}
+	else if(arg == "dump")
+	{
+		if(numArgs < 2)
+		{
+			return "need variable to dump";
+		}
+		if(words[1] == "program")
+			{
+				Program::pcl placeHolder = gProg.programCounter;
+				gProg.reset();
+				int lineCounter = 0;
+				while(gProg.programCounter != gProg.eop())
+					std::cout << lineCounter++ << ": " <<  gProg.next() << std::endl;
+			}
+
+		return "";
+	}
     return "unknown command.";
 }
 
