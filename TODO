@@ -1,0 +1,4 @@
+CLEAN CODE!!!
+
+Make sure macros are of the correct form and are being inserted in the assembly.
+use the suffix "_MAC" to denote a macro and then preserve the label that was originially used.

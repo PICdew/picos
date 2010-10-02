@@ -1,17 +1,20 @@
+#define NUM_INSTRUCTIONS .14
+
 ;Runs the command corresponding to the value of "instruction".
 ;The return value is place at the top of the stack (i.e. stack)
 ;Requires piclang.asm
+RUN_COMMAND_MAC macro instruction,programCounter
 RUN_COMMAND movlw NUM_INSTRUCTIONS
 	subwf instruction,W
 	btfsc STATUS,DC
 	goto $+3
 	incf instruction,F
 	return
-	movlw HIGH RUN_COMMAND
+	movlw HIGH RUN_COMMAND_TABLE
 	movwf PCLATH
 	movf instruction,W
 	addwf PCL,F
-	goto lda		;0x0
+RUN_COMMAND_TABLE	goto lda		;0x0
 	goto adda		;0x1
 	goto suba
 	goto movaf		
@@ -32,10 +35,7 @@ RUN_COMMAND movlw NUM_INSTRUCTIONS
 	goto seta
 END_OF_FUNCTION incf programCounter,F
 	return
-GET_ARG incf programCounter,F
-	movf programCounter,W
-	call READ_EEPROM
-	goto PUSH_STACK
+	
 ;Generic set subroutine. Can set current time, alarm time or date.
 ;Input: Stack values from top to bottom: most significant value, 
 ;			least significant value.
@@ -188,4 +188,4 @@ bsa_bca_setup call GET_ARG
 clra clrf accumulator
 	goto END_OF_FUNCTION
 	
-	
+	endm;RUN_COMMAND_MAC
