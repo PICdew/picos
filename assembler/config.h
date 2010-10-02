@@ -62,4 +62,4 @@
 #define VERSION "0.1"
 
 /* Define if you have libreadline */
-/* #undef __USE_READLINE__ */
+#define __USE_READLINE__ 1

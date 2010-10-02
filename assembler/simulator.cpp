@@ -8,7 +8,7 @@
 #include "Help.h"
 
 #define STACK_SIZE 8
-
+#define EEPROM_SIZE 0x3d
 typedef unsigned short int mem_t;
 
 using namespace std;
@@ -26,8 +26,21 @@ public:
 	vector<mem_t> stack;
         vector<mem_t> ram;
 
-        Memory() : accumulator(0), exchange(0){stack.clear();ram.resize(0x3d,0);}
+        Memory() : accumulator(0), exchange(0){stack.clear();ram.resize(EEPROM_SIZE,0);}
+  void clear();
 }gMemory;
+
+void Memory::clear()
+{
+  accumulator =  exchange = 0;
+  for(size_t i = 0;i<2;i++)
+    {
+      time[i] = date[i] = alarm[i] = 0;
+    }
+  stack.clear();
+  ram.clear();
+  ram.resize(EEPROM_SIZE,0);
+}
 
 std::ostream& operator<<(std::ostream& stream, Memory& mem)
 {
@@ -38,10 +51,15 @@ std::ostream& operator<<(std::ostream& stream, Memory& mem)
     stream << "RAM: " << endl;
     std::vector<mem_t>::const_iterator it;
     int counter = 0;
+    stream << "xxh 0      4         8       C" << endl;
     for(it = mem.ram.begin();it != mem.ram.end();it++)
     {
         if(counter % 16 == 0)
             stream << counter << ": ";
+	if(counter == 0)
+	  stream << " ";
+	if(*it < 0x10)
+	  stream << "0";
         stream << *it;
         counter++;
         if(counter % 8 == 0)
@@ -52,7 +70,10 @@ std::ostream& operator<<(std::ostream& stream, Memory& mem)
     if(counter % 16 != 0)
         stream << endl;
     stream << "Stack: " << endl;
-    for(it = mem.stack.begin();it != mem.stack.end();it++)
+    if(mem.stack.size() == 0)
+      stream << "(empty)";
+    else
+      for(it = mem.stack.begin();it != mem.stack.end();it++)
         stream << *it << endl;
 
     return stream;
@@ -76,7 +97,8 @@ public:
         pcl first(){return this->begin();}
         pcl eop(){return this->end();}
 	
-	void reset(){programCounter = this->begin();}
+  void restart(){programCounter = this->begin();}
+  void reset(){this->clear();restart();}
 	
 	bool loadHex(const std::string& fileName);
         pcl continueProg(Memory& mem, pcl startLoc, pcl endLoc);
@@ -121,6 +143,7 @@ bool Program::loadHex(const std::string& fileName)
 			gProg.insert(currData);
 		}
 	}
+	gProg.restart();
 	return true;
 }
 
@@ -283,7 +306,10 @@ string print_function(const Command& command)
 	}
 	else if(arg == "print")
 	{
-		std::cout << gMemory << std::endl;
+	  ostringstream buff;
+	  buff.setf(ios_base::hex,ios_base::basefield);
+	  buff << gMemory;
+	  return buff.str();
 	}
 	else if(arg == "step")
 	{
@@ -299,7 +325,7 @@ string print_function(const Command& command)
 		if(words[1] == "program")
 			{
 				Program::pcl placeHolder = gProg.programCounter;
-				gProg.reset();
+				gProg.restart();
 				int lineCounter = 0;
 				while(gProg.programCounter != gProg.eop())
 					std::cout << lineCounter++ << ": " <<  gProg.next() << std::endl;
@@ -307,6 +333,12 @@ string print_function(const Command& command)
 
 		return "";
 	}
+	else if(arg == "clear")
+	  {
+	    gProg.reset();
+	    gMemory.clear();
+	    return "Program reset.";
+	  }
     return "unknown command.";
 }
 

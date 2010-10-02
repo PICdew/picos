@@ -250,6 +250,15 @@ std::string print_function(const Command& command)
 	      }
 	    return "Radix set to " + newRadix;	    
 	  }
+	else if(command.getCommandWord() == "print")
+	  {
+	    vector<string>::const_iterator line;
+	    int counter = 0;
+	    ostringstream buff;
+	    for(line = precompiledCode.begin();line < precompiledCode.end();line++)
+	      buff << ++counter << ": " << *line << endl;
+	    return buff.str();
+	  }
 	else if(lookupTable.find(command.getCommandWord()) == lookupTable.end())
 	  return "unknown command: " + command.getCommandWord();
 	

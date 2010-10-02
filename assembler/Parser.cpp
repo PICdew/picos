@@ -78,12 +78,8 @@ Command * Parser::getCommand() {
     cout.flush();
     cin.ignore(255, '\n');
 
-      
-    if (strlen(inputLine) == 0 || std::string(inputLine) == "") {
-        return new Command("help");
-    } else {
-        return new Command(inputLine);
-    }
+    return new Command(inputLine);
+
 }
 
 /**
@@ -138,18 +134,6 @@ bool Parser::processCommand(Command& command, std::string& whatIsSaid) {
         std::cout << whatIsSaid << std::endl;
     } else if (commandWord == "version") {
         std::cout << "Version: " << Build::getVersion() << std::endl;
-    } else if (commandWord == "print") {
-        whatIsSaid = Command::print(command);
-        std::cout << whatIsSaid << std::endl;
-    }
-    else if (commandWord == "save") {
-        if (!command.hasSecondWord()) {
-            std::cout << "file name needed with save." << std::endl;
-        } else {
-//            std::string fileName = command.getSecondWord();
-            std::cout << "add save routine." << std::endl;
-            //std::cout << "File saved as " << fileName << std::endl;
-        }
     } else if (commandWord == "history") {
         if (history->size() == 0) {
             std::cout << "No commands have been entered yet." << std::endl;
@@ -199,6 +183,7 @@ void Parser::setHelp(const Help& newHelp)
   h = new Help(newHelp);
 }
 
+#ifdef __USE_READLINE__
 extern Help makeHelp();
 int Parser::tab_complete(int a, int b) {
     Parser p;
@@ -208,4 +193,4 @@ int Parser::tab_complete(int a, int b) {
     std::cout << blah << std::endl;
     return 0;
 }
-
+#endif
