@@ -19,7 +19,8 @@
 ;Input: Top of stack will contain address from which to read eeprom data
 ;Output: Data from eeprom will be at the top of the stack.
 ;bank 0 is used after return
-READ_EEPROM bcf STATUS,RP0;bank 0
+READ_EEPROM macro stackPtr
+	bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
 	movf stackPtr,W
 	movwf FSR
@@ -35,13 +36,15 @@ READ_EEPROM bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1;bank 0
 	movwf INDF
 	return
+	endm
 	
 ;Writes data to EEPROM
 ;Uses FSR
 ;Input: EEADR is on the top of the stack and EEDATA is below it.
 ;Output: EEDATA is on the top of the stack.
 ;bank 0 is used after return
-WRITE_EEPROM bcf STATUS,RP0;bank 0
+WRITE_EEPROM macro stackPtr 
+	bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
 	movf stackPtr,W
 	movwf FSR
@@ -94,16 +97,77 @@ WRITE_EOP call POP_STACK
 	incf instruction,W
 	call PUSH_STACK
 	goto WRITE_EEPROM
-;
-POP_STACK movf stackPtr,W
-	movwf FSR
-	decf stackPtr,F
-	movf INDF,W
-	return
-PUSH_STACK movwf exchange 
-	incf stackPtr,F
-	movf stackPtr,W
-	movwf FSR
+	endm
+
+PROGRAM_LOOP macro dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK
+	btfss dipControl,INPUT_BIT
+	goto $-1
+	movf dipControl,W
+	movwf instruction
+	bcf instruction,INPUT_BIT
+	movlw 0x0		;0x0 = run program
+	addwf instruction,W
+	btfsc STATUS,Z
+	goto RUN_PROGRAM
+	btfss instruction,0	;xxxxxx1 = write A to x in EEPROM 
+	goto $+9		;x will also be placed at the top of the stack.
+	rrf instruction,F
+	movf instruction,W
+	call PUSH_STACK;this call is to keep the address, x, on the stack after this routine is finished.
+	movf accumulator,W
+	call PUSH_STACK
+	movf instruction,W
+	call PUSH_STACK
+	call WRITE_EEPROM 	;end of write A to EEPORM
+	goto PROGRAM_LOOP
+	btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
+	goto $+17
+	btfsc instruction,1
+	movlw 0xf0
+	movlw 0xf
+	swapf accumulator,F
+	andwf accumulator,F
+	swapf accumulator,F
+	andwf instruction,W
+	movwf exchange
+	btfsc instruction,1
+	goto $+4
+	rrf exchange,F
+	rrf exchange,F
+	rrf exchange,F
 	movf exchange,W
-	movwf INDF
-	return;
+	addwf accumulator,F
+	goto PROGRAM_MAIN_FORK
+	call WRITE_EOP;xxxx010 = end of program
+	endm
+
+RUN_PROGRAM_MAC STACK_HEAD_ADDR,stackPtr,programCounter,READ_EEPROM,instruction,LEOP,REOP,instruction,RUN_COMMAND
+RUN_PROGRAM movlw STACK_HEAD_ADDR
+	movwf stackPtr
+	movlw 0x0
+	movwf programCounter
+RUN_PROGRAM_LOOP movf programCounter,W
+	call READ_EEPROM
+	movwf instruction
+	movlw LEOP
+	subwf instruction,W
+	btfsc STATUS,Z
+	goto $+3
+	call RUN_COMMAND;requires piclang.asm
+	goto RUN_PROGRAM_LOOP
+	movlw REOP
+	subwf instruction,W
+	btfsc STATUS,Z
+	goto $+3
+	call RUN_COMMAND
+	goto RUN_PROGRAM_LOOP
+	return
+	endm
+	
+GET_ARG_MAC macro programCounter,READ_EEPROM,PUSH_STACK
+GET_ARG incf programCounter,F
+	movf programCounter,W
+	call READ_EEPROM
+	goto PUSH_STACK
+	endm
+	
