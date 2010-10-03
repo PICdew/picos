@@ -10,12 +10,6 @@
 #define dipControl PORTB
 #define dipControlTRIS TRISB
 
-#define LEOP 0xde;EOP bytes
-#define REOP 0xad;see piclang.asm
-
-;Retvals
-#define ERROR_INVALID_INSTRUCTION 0x1
-
 ;In the follwing bit definitions, the first word/phrase indicates
 ;the meaning of Logic 1 and the second word/phrase indicates
 ;the meaning of Logic 0
@@ -38,4 +32,5 @@
 #define PROGRAM_MODE_BIT 0
 #define ALARM_TRIGGER_BIT 1
 #define TIMER0_CLK 4
+#define INITIAL_TIMER_VALUE 0xc4
 

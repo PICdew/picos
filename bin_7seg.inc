@@ -4,7 +4,7 @@
 #define MSN_RIGHT_DECIMAL_VALUE 0x18
 #define DISPLAY_MEMORY_WIDTH 0x8
 
-INIT_DISPLAY macro firstDisplay,lastDisplay
+INIT_DISPLAY_MAC macro firstDisplay,lastDisplay,indicator
 	movlw DEFAULT_DECIMAL_VALUE;by default light 2nd decimal (from left)
 	movwf indicator
 	movlw 0x2
@@ -148,9 +148,9 @@ REST_OF_MAKE_PACKET movlw 0x0
 	movf tmp,W
 	return
 	endm
-	
-SEG_VALUES pclTemp 
-	movwf pclTemp
+
+SEG_VALUES_MAC macro pclTemp
+SEG_VALUES movwf pclTemp
 	movlw HIGH SEG_VALUES_TABLE
 	movwf PCLATH
 	movf pclTemp,W
@@ -174,7 +174,7 @@ SEG_VALUES_TABLE retlw b'01111110';0
 	retlw 0x1;decimal point
 	endm
 	
-DISPLAY_ME_MAC firstDisplay,outport,binaryHours,lastDisplay 
+DISPLAY_ME_MAC macro firstDisplay,outport,binaryHours,lastDisplay 
 DISPLAY_ME movf firstDisplay,W
 	movwf FSR
 DISPLAY_ME_LOOP	movf binaryMinute,W

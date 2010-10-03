@@ -1,19 +1,7 @@
 #define NUM_INSTRUCTIONS .14
+;Retvals
+#define ERROR_INVALID_INSTRUCTION 0x1
 
-;Runs the command corresponding to the value of "instruction".
-;The return value is place at the top of the stack (i.e. stack)
-;Requires piclang.asm
-RUN_COMMAND_MAC macro instruction,programCounter
-RUN_COMMAND movlw NUM_INSTRUCTIONS
-	subwf instruction,W
-	btfsc STATUS,DC
-	goto $+3
-	incf instruction,F
-	return
-	movlw HIGH RUN_COMMAND_TABLE
-	movwf PCLATH
-	movf instruction,W
-	addwf PCL,F
 RUN_COMMAND_TABLE	goto lda		;0x0
 	goto adda		;0x1
 	goto suba
@@ -30,19 +18,16 @@ RUN_COMMAND_TABLE	goto lda		;0x0
 	goto bsa
 	goto bca
 	goto clra
-	goto sett	
+	goto SETT	
 	goto setd
 	goto seta
-END_OF_FUNCTION incf programCounter,F
-	return
-	
 ;Generic set subroutine. Can set current time, alarm time or date.
 ;Input: Stack values from top to bottom: most significant value, 
 ;			least significant value.
 ;Output: null
-sett call GET_ARG
+SETT call GET_ARG
 	call GET_ARG
-	movlw TIME_ADDR
+	movlw low minutes
 SET_GENERIC_TIMEDATE movwf FSR
 	call POP_STACK
 	movwf INDF
@@ -53,11 +38,11 @@ SET_GENERIC_TIMEDATE movwf FSR
 ;setd uses SET_GENERIC_TIMEDATE
 setd call GET_ARG
 	call GET_ARG
-	movlw DATE_ADDR
+	movlw low dateDay
 	goto SET_GENERIC_TIMEDATE
 seta call GET_ARG
 	call GET_ARG
-	movlw ALARM_ADDR
+	movlw alarmMinutes
 	goto SET_GENERIC_TIMEDATE
 	;
 lda call GET_ARG
@@ -187,5 +172,3 @@ bsa_bca_setup call GET_ARG
 	;
 clra clrf accumulator
 	goto END_OF_FUNCTION
-	
-	endm;RUN_COMMAND_MAC

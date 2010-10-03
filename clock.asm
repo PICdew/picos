@@ -5,19 +5,18 @@
 	;
 	; See bottom for description of changes per version.
 	;
-include "header.asm"
-include "mem.asm"
-include "kernel.asm"
-include "piclang.asm"
-include "bin_7seg.asm'
-include "stack.asm"
-include "program_subroutines.asm"
+#include "header.inc"
+#include "mem.inc"
+#include "kernel.inc"
+#include "../../piclang/piclang.inc"
+#include "bin_7seg.inc"
+#include "stack.inc"
 	org 0x00
 	goto INIT
 	;
 	org 0x04
-	call INC_MINUTES
 	START_INTERRUPT saveW
+	call INC_MINUTES
 	movf resetTMR0,W
 	movwf TMR0;reset timer value
 	bcf controlPort,1
@@ -32,15 +31,14 @@ include "program_subroutines.asm"
 	btfsc STATUS,Z
 	bsf controlPort,1
 END_OF_INTERRUPT nop
-	FINISH_INTERRUPT saveW,INTCON
+	FINISH_INTERRUPT saveW
 	retfie
-INIT movlw LAST_MEMORY_ADDR;last memoryspot
-	movwf endOfNamedSpots;So I can keep track of when my "name space" ends
-	;init stack
-	INIT_STACK STACK_HEAD_ADDR,stackPtr
+INIT nop
+	INIT_MEMORY_MAC endOfMemory;init stack
+	INIT_STACK_MAC stackHead,stackPtr
 	;
 	;init display
-	INIT_DISPLAY firstDisplay,lastDisplay,indicator
+	INIT_DISPLAY_MAC firstDisplay,lastDisplay,indicator
 	movlw INITIAL_TIMER_VALUE
 	movwf resetTMR0;
 	;
@@ -68,8 +66,8 @@ INIT movlw LAST_MEMORY_ADDR;last memoryspot
 	bcf STATUS,RP0
 	;
 	bcf STATUS,0       ; Clear carry bit
-	 bcf STATUS,2       ; Clear zero flag
-	 bcf STATUS,1       ;
+	bcf STATUS,2       ; Clear zero flag
+	bcf STATUS,1       ;
 	bsf INTCON,5       ; Enable timer0 interrupt
 	bcf INTCON,2       ; Clear interrupt flag
 	bsf INTCON,7       ; Enable global interrupt
@@ -105,52 +103,26 @@ MAIN_LOOP call SHOW_TIME
 	call SHOW_DATE
 	btfsc dipControl,DISPLAY_ALARM_BIT
 	nop;fill this in
-	call CREATE_DISPLAY
-	movlw 0xff
-	movwf counter
-DISPLAY_LOOP call DISPLAY_ME
-	decfsz counter,F
-	goto DISPLAY_LOOP
-	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
-	btfss controlPort,PROGRAM_MODE_BIT
-	goto PROGRAM_MODE
-	goto MAIN_LOOP ; repeat....
+	MAIN_PROCESS_MAC CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP;generic process loop from kernel.asm
 	;
 PROGRAM_MODE movlw STACK_HEAD_ADDR
 	movwf stackPtr
 	movlw 0x0
 	call PUSH_STACK
-	PROGRAM_LOOP macro dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK
+	PROGRAM_LOOP dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK
 	;
 PROGRAM_MAIN_FORK btfsc controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_LOOP
 	goto MAIN_LOOP
 	;
-CREATE_DISPLAY myStatus,minutes,hours,MAKE_PACKET,binaryMinute,binaryHours,controlPort,rightDisplay,SEG_VALUES,output,LOAD_PACKET,indicator,hexToOctal 	
-LOAD_PACKET macro firstDisplay,currSeg,MAKE_PACKET,output,indicator
-MAKE_PACKET macro tmp,myStatus
+	;
+;Subroutines
+#include "program_subroutines.asm"
+	;macro calls
+	CREATE_DISPLAY myStatus,minutes,hours,MAKE_PACKET,binaryMinute,binaryHours,controlPort,rightDisplay,SEG_VALUES,output,LOAD_PACKET,indicator,hexToOctal 	
+	LOAD_PACKET firstDisplay,currSeg,MAKE_PACKET,output,indicator
+	MAKE_PACKET tmp,myStatus
 
-SEG_VALUES pclTemp
-
-NUMBER_OF_DAYS movwf pclTemp
-	movlw HIGH SEG_VALUES
-	movwf PCLATH
-	movf pclTemp,W
-	addwf PCL,F
-	retlw .30;!?!?!?!?
-	retlw .31;jan
-	retlw .28;feb (leap year???)
-	retlw .31;mar
-	retlw .30;apr
-	retlw .31;may
-	retlw .30;june
-	retlw .31;july
-	retlw .31;august
-	retlw .30;sept
-	retlw .31;oct
-	retlw .30;nov
-	retlw .31;dec
-;
 INC_MINUTES incf minutes,F
 	movlw .60
 	xorwf minutes,W
@@ -222,6 +194,31 @@ DISPLAY_ME_MAC firstDisplay,outport,binaryHours,lastDisplay
 TOGGLE_ALARM movlw ALARM_FLAG_TOGGLE
 	xorwf myStatus,F;toggle bit alarm flag
 	return
+;
+;
+;Lookup tables
+SEG_VALUES pclTemp
+
+NUMBER_OF_DAYS movwf pclTemp
+	movlw HIGH SEG_VALUES
+	movwf PCLATH
+	movf pclTemp,W
+	addwf PCL,F
+	retlw .30;!?!?!?!?
+	retlw .31;jan
+	retlw .28;feb (leap year???)
+	retlw .31;mar
+	retlw .30;apr
+	retlw .31;may
+	retlw .30;june
+	retlw .31;july
+	retlw .31;august
+	retlw .30;sept
+	retlw .31;oct
+	retlw .30;nov
+	retlw .31;dec
+;
+
 	;
 	END
 

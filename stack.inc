@@ -2,11 +2,9 @@
 ;Author: David Coss
 ;Date: 10/1/10
 ;License: GPL v3.0 (http://www.gnu.org)
-#define STACK_LENGTH 8
-
-INIT_STACK macro headaddr,ptr 
-	movlw headaddr;initialize stack
-	movwf ptr
+INIT_STACK_MAC macro headaddr,stackPtr 
+	movlw low headaddr;initialize stack
+	movwf stackPtr
 	endm
 
 ;pops the stack onto W-reg
@@ -19,7 +17,7 @@ POP_STACK movf stackPtr,W
 	endm
 	;
 ;push W-reg onto the stack
-PUSH_STACK_MAC stackTemp,stackPtr 
+PUSH_STACK_MAC macro stackTemp,stackPtr 
 PUSH_STACK movwf stackTemp 
 	incf stackPtr,F
 	movf stackPtr,W
