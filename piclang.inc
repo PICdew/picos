@@ -11,16 +11,16 @@
 ;	location of the stack.
 ;Requires instruction register.
 ;Requires exchange register.
-;Requires definition of LEOP, REOP, which are the Left (first) and 
-;	Right(last) bytes of the end of program (EOP) signal
+
+#define EOP 0xff;EOP byte
 
 ;Reads data from EEPROM.
 ;Uses FSR
 ;Input: Top of stack will contain address from which to read eeprom data
 ;Output: Data from eeprom will be at the top of the stack.
 ;bank 0 is used after return
-READ_EEPROM macro stackPtr
-	bcf STATUS,RP0;bank 0
+READ_EEPROM_MAC macro stackPtr
+READ_EEPROM bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
 	movf stackPtr,W
 	movwf FSR
@@ -43,8 +43,8 @@ READ_EEPROM macro stackPtr
 ;Input: EEADR is on the top of the stack and EEDATA is below it.
 ;Output: EEDATA is on the top of the stack.
 ;bank 0 is used after return
-WRITE_EEPROM macro stackPtr 
-	bcf STATUS,RP0;bank 0
+WRITE_EEPROM_MAC macro stackPtr 
+WRITE_EEPROM bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
 	movf stackPtr,W
 	movwf FSR
@@ -82,25 +82,10 @@ WRITE_EEPROM macro stackPtr
 	bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1
 	return
-	
-;Writes the end of program code(2-bytes), starting at address at the top
-;of the stack.
-WRITE_EOP call POP_STACK
-	movwf instruction
-	movlw LEOP
-	call PUSH_STACK
-	movf instruction,F
-	call PUSH_STACK
-	call WRITE_EEPROM
-	movlw REOP
-	call PUSH_STACK
-	incf instruction,W
-	call PUSH_STACK
-	goto WRITE_EEPROM
 	endm
-
-PROGRAM_LOOP macro dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK
-	btfss dipControl,INPUT_BIT
+	
+PROGRAM_LOOP_MAC macro dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
+PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	goto $-1
 	movf dipControl,W
 	movwf instruction
@@ -138,28 +123,31 @@ PROGRAM_LOOP macro dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exc
 	movf exchange,W
 	addwf accumulator,F
 	goto PROGRAM_MAIN_FORK
-	call WRITE_EOP;xxxx010 = end of program
-	endm
+	goto WRITE_EOP;xxxx010 = end of program
+	;Writes the end of program code(2-bytes), starting at address at the top
+;of the stack.
+WRITE_EOP call POP_STACK
+	movwf instruction
+	movlw EOP
+	call PUSH_STACK
+	movf instruction,F
+	call PUSH_STACK
+	goto WRITE_EEPROM
+	endm;PROGRAM_LOOP_MAC
 
-RUN_PROGRAM_MAC STACK_HEAD_ADDR,stackPtr,programCounter,READ_EEPROM,instruction,LEOP,REOP,instruction,RUN_COMMAND
-RUN_PROGRAM movlw STACK_HEAD_ADDR
+RUN_PROGRAM_MAC macro stackHead,stackPtr,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
+RUN_PROGRAM movlw low stackHead
 	movwf stackPtr
 	movlw 0x0
 	movwf programCounter
 RUN_PROGRAM_LOOP movf programCounter,W
 	call READ_EEPROM
 	movwf instruction
-	movlw LEOP
+	movlw EOP
 	subwf instruction,W
 	btfsc STATUS,Z
 	goto $+3
 	call RUN_COMMAND;requires piclang.asm
-	goto RUN_PROGRAM_LOOP
-	movlw REOP
-	subwf instruction,W
-	btfsc STATUS,Z
-	goto $+3
-	call RUN_COMMAND
 	goto RUN_PROGRAM_LOOP
 	return
 	endm
@@ -171,3 +159,20 @@ GET_ARG incf programCounter,F
 	goto PUSH_STACK
 	endm
 	
+;Runs the command corresponding to the value of "instruction".
+;The return value is place at the top of the stack (i.e. stack)
+;SUPPLY RUN_COMMAND_TABLE or suffer the consequences!!!
+RUN_COMMAND_MAC macro instruction,programCounter,RUN_COMMAND_TABLE
+RUN_COMMAND movlw NUM_INSTRUCTIONS
+	subwf instruction,W
+	btfsc STATUS,DC
+	goto $+3
+	incf instruction,F
+	return
+	movlw HIGH RUN_COMMAND_TABLE
+	movwf PCLATH
+	movf instruction,W
+	addwf PCL,F;USES RUN_COMMAND_TABLE as a lookup table.
+END_OF_FUNCTION incf programCounter,F
+	return
+	endm;RUN_COMMAND_MAC
