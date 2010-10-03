@@ -7,8 +7,12 @@
 INIT_DISPLAY_MAC macro firstDisplay,lastDisplay,indicator
 	movlw DEFAULT_DECIMAL_VALUE;by default light 2nd decimal (from left)
 	movwf indicator
+	movlw low lsdMinute
+	movwf firstDisplay
+	movlw low binaryHours
+	movwf lastDisplay
 	movlw 0x2
-	subwf lastDisplay,W
+	subwf lastDisplay
 	movwf FSR;clear decimal points on 7-seg
 	movlw DEFAULT_DECIMAL_VALUE
 	movwf INDF
@@ -26,8 +30,8 @@ INIT_DISPLAY_MAC macro firstDisplay,lastDisplay,indicator
 	movwf INDF
 	endm
 
-CREATE_DISPLAY macro myStatus,minutes,hours,MAKE_PACKET,binaryMinute,binaryHours,controlPort,rightDisplay,SEG_VALUES,output,LOAD_PACKET,indicator,hexToOctal 
-	bcf myStatus,HOUR_MIN_BIT ;; display minutes
+CREATE_DISPLAY_MAC macro myStatus,minutes,hours,MAKE_PACKET,binaryMinute,binaryHours,controlPort,rightDisplay,SEG_VALUES,output,LOAD_PACKET,indicator,hexToOctal 
+CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	bsf myStatus,BINARY_7SEG_BIT;binary first
 	bsf myStatus,LSN_MSG_7SEG_BIT;right first
 	movf minutes,W;time *always* displayed in binary!
@@ -106,8 +110,8 @@ CREATE_DISPLAY macro myStatus,minutes,hours,MAKE_PACKET,binaryMinute,binaryHours
 	endm
 	
 ;Loads a 7-seg packet
-LOAD_PACKET macro firstDisplay,currSeg,MAKE_PACKET,output,indicator 
-	addwf firstDisplay,W;digit offset
+LOAD_PACKET_MAC macro firstDisplay,currSeg,MAKE_PACKET,output,indicator 
+LOAD_PACKET addwf firstDisplay,W;digit offset
 	movwf FSR
 	movlw 0x7
 	movwf currSeg
@@ -125,8 +129,8 @@ LOAD_PACKET_LOOP movf currSeg,W
 	endm
 	
 ;Creates a 7-seg packet
-MAKE_PACKET macro tmp,myStatus 
-	movwf tmp
+MAKE_PACKET_MAC macro tmp,myStatus 
+MAKE_PACKET movwf tmp
 	bcf tmp,7
 	bcf tmp,6
 	btfsc myStatus,HOUR_MIN_BIT;hours/~min

@@ -24,7 +24,7 @@ MAIN_PROCESS call CREATE_DISPLAY
 	decfsz counter,F
 	goto $-2
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
-	btfss controlPort,PROGRAM_MODE_BIT
+PROGRAM_MAIN_FORK	btfsc controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_MODE
 	goto MAIN_LOOP ; repeat....
 	endm

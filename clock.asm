@@ -109,20 +109,26 @@ PROGRAM_MODE movlw STACK_HEAD_ADDR
 	movwf stackPtr
 	movlw 0x0
 	call PUSH_STACK
-	PROGRAM_LOOP dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK
-	;
-PROGRAM_MAIN_FORK btfsc controlPort,PROGRAM_MODE_BIT
-	goto PROGRAM_LOOP
-	goto MAIN_LOOP
+	PROGRAM_LOOP_MAC dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
 	;
 	;
 ;Subroutines
 #include "program_subroutines.asm"
 	;macro calls
-	CREATE_DISPLAY myStatus,minutes,hours,MAKE_PACKET,binaryMinute,binaryHours,controlPort,rightDisplay,SEG_VALUES,output,LOAD_PACKET,indicator,hexToOctal 	
-	LOAD_PACKET firstDisplay,currSeg,MAKE_PACKET,output,indicator
-	MAKE_PACKET tmp,myStatus
-
+	CREATE_DISPLAY_MAC myStatus,minutes,hours,MAKE_PACKET,binaryMinute,binaryHours,controlPort,rightDisplay,SEG_VALUES,output,LOAD_PACKET,indicator,hexToOctal 
+	LOAD_PACKET_MAC firstDisplay,currSeg,MAKE_PACKET,output,indicator
+	MAKE_PACKET_MAC tmp,myStatus 
+	SEG_VALUES_MAC pclTemp
+	DISPLAY_ME_MAC firstDisplay,outport,binaryHours,lastDisplay 	
+	PUSH_STACK_MAC stackTemp,stackPtr
+	POP_STACK_MAC stackPtr
+	GET_ARG_MAC programCounter,READ_EEPROM,PUSH_STACK
+	WRITE_EEPROM_MAC stackPtr
+	READ_EEPROM_MAC stackPtr
+	RUN_PROGRAM_MAC stackHead,stackPtr,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
+	RUN_COMMAND_MAC instruction,programCounter,RUN_COMMAND_TABLE
+	;
+	;
 INC_MINUTES incf minutes,F
 	movlw .60
 	xorwf minutes,W
@@ -162,8 +168,6 @@ INC_MONTH movlw .1
 	movlw .1
 	movwf dateMonth
 	;
-
-RUN_PROGRAM_MAC STACK_HEAD_ADDR,stackPtr,programCounter,READ_EEPROM,instruction,LEOP,REOP,instruction,RUN_COMMAND
 	;
 SHOW_DATE movlw 0x88
 	movwf indicator
@@ -189,16 +193,12 @@ SHOW_TIME movlw 0x88
 	movwf leftDisplay
 	goto CREATE_DISPLAY
 	;
-DISPLAY_ME_MAC firstDisplay,outport,binaryHours,lastDisplay
 	;
 TOGGLE_ALARM movlw ALARM_FLAG_TOGGLE
 	xorwf myStatus,F;toggle bit alarm flag
 	return
 ;
 ;
-;Lookup tables
-SEG_VALUES pclTemp
-
 NUMBER_OF_DAYS movwf pclTemp
 	movlw HIGH SEG_VALUES
 	movwf PCLATH
