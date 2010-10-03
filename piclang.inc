@@ -116,14 +116,13 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	andwf instruction,W
 	movwf exchange
 	btfsc instruction,1
-	goto $+4
+	goto WRITE_EOP;xxxx010 = end of program
 	rrf exchange,F
 	rrf exchange,F
 	rrf exchange,F
 	movf exchange,W
 	addwf accumulator,F
 	goto PROGRAM_MAIN_FORK
-	goto WRITE_EOP;xxxx010 = end of program
 	;Writes the end of program code(2-bytes), starting at address at the top
 ;of the stack.
 WRITE_EOP call POP_STACK
@@ -164,6 +163,7 @@ GET_ARG incf programCounter,F
 ;SUPPLY RUN_COMMAND_TABLE or suffer the consequences!!!
 RUN_COMMAND_MAC macro instruction,programCounter,RUN_COMMAND_TABLE
 RUN_COMMAND movlw NUM_INSTRUCTIONS
+	local tableLOW
 	subwf instruction,W
 	btfsc STATUS,DC
 	goto $+3
@@ -171,7 +171,8 @@ RUN_COMMAND movlw NUM_INSTRUCTIONS
 	return
 	movlw HIGH RUN_COMMAND_TABLE
 	movwf PCLATH
-	movf instruction,W
+	movlw low RUN_COMMAND_TABLE
+	addwf instruction,W
 	addwf PCL,F;USES RUN_COMMAND_TABLE as a lookup table.
 END_OF_FUNCTION incf programCounter,F
 	return
