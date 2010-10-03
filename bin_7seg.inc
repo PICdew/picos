@@ -12,7 +12,7 @@ INIT_DISPLAY_MAC macro firstDisplay,lastDisplay,indicator
 	movlw low binaryHours
 	movwf lastDisplay
 	movlw 0x2
-	subwf lastDisplay
+	subwf lastDisplay,W
 	movwf FSR;clear decimal points on 7-seg
 	movlw DEFAULT_DECIMAL_VALUE
 	movwf INDF
