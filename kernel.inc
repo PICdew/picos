@@ -7,6 +7,71 @@
 #define KERNEL_MINOR_VERSION 0
 #define KERNEL_REVISION 0
 
+#define CALL_STACK_LIMIT low endOfMemory
+END_OF_PHYSICAL_MEMORY equ 6fh
+
+;Error valules written to errorByte
+#define CALL_STACK_OVERFLOW 1
+#define CALL_STACK_UNDERFLOW 2
+
+
+errorByte equ END_OF_PHYSICAL_MEMORY
+callStackPtr equ errorByte - 1
+
+INIT_KERNEL_MAC errorByte
+	clrf errorByte
+	endm
+
+;call stack Routines to be used by pic os
+;thePtr contains the current memory 
+;location of the top of the stack.
+;the value of thePtr increases when
+;the stack is popped and decreases
+;upon push.
+;Return locations should be stored
+;as two bytes in the stack, with
+;the upper byte at the top, because
+;pics will have address greater than
+;255
+INIT_CALL_STACK_MAC thePtr,MAIN_LOOP
+	movlw low MAIN_LOOP
+	call PUSH_CALL_STACK
+	movlw high MAIN_LOOP
+	call PUSH_CALL_STACK
+	endm
+	
+POP_CALL_STACK_MAC thePtr,ERROR_RETURN
+POP_CALL_STACK movlw (low END_OF_PHYSICAL_MEMORY) + 1
+	subwf thePtr,W
+	btfss STATUS,Z
+	goto $+3
+	movlw CALL_STACK_OVERFLOW
+	goto ERROR_RETURN
+	movf thePtr,W
+	movwf FSR
+	movf INDF,W
+	incf thePtr,F
+	endm
+	
+;uses stack to temporarily store the value to
+;be pushed.
+PUSH_CALL_STACK_MAC thePtr,PUSH_STACK,POP_STACK,ERROR_RETURN,endOfMemory
+PUSH_CALL_STACK call PUSH_STACK
+	incf thePtr,F
+	movlw low endOfMemory
+	subf thePtr,W
+	btfss STATUS,Z
+	goto $+3
+	movlw CALL_STACK_OVERFLOW
+	goto ERROR_RETURN
+	movf thePtr,W
+	movwf FSR
+	call POP_STACK
+	movwf INDF
+	return
+	endm
+	
+
 START_INTERRUPT macro saveW
 	movwf saveW;save w value
 	endm

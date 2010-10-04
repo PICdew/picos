@@ -33,7 +33,8 @@
 END_OF_INTERRUPT nop
 	FINISH_INTERRUPT saveW
 	retfie
-INIT nop
+INIT INIT_KERNEL_MAC errorByte 
+	
 	INIT_MEMORY_MAC endOfMemory;init stack
 	INIT_STACK_MAC stackHead,stackPtr
 	;
