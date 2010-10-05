@@ -33,14 +33,14 @@ INIT_KERNEL_MAC errorByte
 ;the upper byte at the top, because
 ;pics will have address greater than
 ;255
-INIT_CALL_STACK_MAC thePtr,MAIN_LOOP
+INIT_CALL_STACK_MAC macro thePtr,MAIN_LOOP
 	movlw low MAIN_LOOP
 	call PUSH_CALL_STACK
 	movlw high MAIN_LOOP
 	call PUSH_CALL_STACK
 	endm
 	
-POP_CALL_STACK_MAC thePtr,ERROR_RETURN
+POP_CALL_STACK_MAC macro thePtr,ERROR_RETURN
 POP_CALL_STACK movlw (low END_OF_PHYSICAL_MEMORY) + 1
 	subwf thePtr,W
 	btfss STATUS,Z
@@ -55,7 +55,7 @@ POP_CALL_STACK movlw (low END_OF_PHYSICAL_MEMORY) + 1
 	
 ;uses stack to temporarily store the value to
 ;be pushed.
-PUSH_CALL_STACK_MAC thePtr,PUSH_STACK,POP_STACK,ERROR_RETURN,endOfMemory
+PUSH_CALL_STACK_MAC macro thePtr,PUSH_STACK,POP_STACK,ERROR_RETURN,endOfMemory
 PUSH_CALL_STACK call PUSH_STACK
 	incf thePtr,F
 	movlw low endOfMemory
@@ -71,14 +71,41 @@ PUSH_CALL_STACK call PUSH_STACK
 	return
 	endm
 	
+;Reloads programCounter, exchange, accumulator and W from the stack (which are in 
+;that order from top to bottom). Then the routine goto's  RUN_PROGRAM
+RESTART_PROCESS_MAC macro POP_CALL_STACK,accumulator,exchange,programCounter,RUN_PROGRAM
+RESTART_PROCESS call POP_CALL_STACK
+	movwf programCounter
+	call POP_CALL_STACK
+	movwf exchange
+	call POP_CALL_STACK
+	movwf accumulator
+	call POP_CALL_STACK
+	goto RUN_PROGRAM
+	endm
+	
+;Saves the program state.
+SUSPEND_PROCESS_MAC macro PUSH_CALL_STACK,accumulator,exchange,programCounter
+SUSPEND_PROCESS	call PUSH_STACK
+	movf accumulator,W
+	call PUSH_STACK
+	movf exchange,W
+	call PUSH_STACK
+	movf programCounter,W
+	call PUSH_STACK
+	return
+	endm
 
-START_INTERRUPT macro saveW
+
+START_INTERRUPT macro saveW,SUSPEND_PROCESS
 	movwf saveW;save w value
+	call SUSPEND_PROCESS
 	endm
 	
 FINISH_INTERRUPT macro saveW
 	movf saveW,W
 	bcf INTCON,2
+	call RESUME_PROCESS
 	endm
 
 MAIN_PROCESS_MAC macro CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP
