@@ -23,6 +23,7 @@ Help assemblerHelp()
     returnMe["xora"] ="";
     returnMe["rra"] = "";
     returnMe["rla"] = "";
+    returnMe["goto"] = "";
     returnMe["sleepa"] = "";
     returnMe["sett"] = "";
     returnMe["setd"] = "";
@@ -44,12 +45,13 @@ std::map<arg_t,opcode_t> assemblerTable()
     returnMe["Xora"] = opcode++;
     returnMe["rra"] = opcode++;
     returnMe["rla"] = opcode++;
-    returnMe["sleep"] = opcode++;
     returnMe["inca"] = opcode++;
     returnMe["deca"] = opcode++;
     returnMe["bsa"] = opcode++;
     returnMe["bca"] = opcode++;
     returnMe["clra"] = opcode++;
+    returnMe["goto"] = opcode++;
+    returnMe["sleep"] = opcode++;
     returnMe["sett"] = opcode++;
     returnMe["setd"] = opcode++;
     returnMe["seta"] = opcode++;
