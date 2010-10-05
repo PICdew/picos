@@ -73,13 +73,12 @@ PUSH_CALL_STACK call PUSH_STACK
 	endm
 	
 ;Reloads programCounter, exchange, accumulator and W from the stack (which are in 
-;that order from top to bottom). Then the routine goto's  RUN_PROGRAM
-;If zero is on top of the stack, the program goes to MAIN_LOOP
-RESTART_PROCESS_MAC macro POP_CALL_STACK,accumulator,exchange,programCounter,RUN_PROGRAM,MAIN_LOOP,errorByte
+;that order from top to bottom). 
+RESTART_PROCESS_MAC macro POP_CALL_STACK,accumulator,exchange,programCounter,errorByte
 RESTART_PROCESS	movlw 0x0
 	iorf stackPtr,W
 	btfsc STATUS,Z
-	goto MAIN_LOOP
+	return
 	call POP_CALL_STACK
 	movwf programCounter
 	call POP_CALL_STACK
@@ -87,7 +86,7 @@ RESTART_PROCESS	movlw 0x0
 	call POP_CALL_STACK
 	movwf accumulator
 	call POP_CALL_STACK
-	goto RUN_PROGRAM
+	return
 	endm
 	
 ;Saves the program state.
