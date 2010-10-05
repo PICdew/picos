@@ -34,7 +34,6 @@ END_OF_INTERRUPT nop
 	FINISH_INTERRUPT saveW
 	retfie
 INIT INIT_KERNEL_MAC errorByte 
-	
 	INIT_MEMORY_MAC endOfMemory;init stack
 	INIT_STACK_MAC stackHead,stackPtr
 	;
@@ -92,18 +91,7 @@ INIT INIT_KERNEL_MAC errorByte
 	movlw .0
 	movwf counter
 	;
-MAIN_LOOP call SHOW_TIME
-	bcf myStatus,0
-	bcf myStatus,1
-	movlw DEFAULT_DECIMAL_VALUE;light appropriate indicator
-	btfsc myStatus,3
-	movlw LEFT_DECIMAL_VALUE;left most decimalpoint
-	movwf indicator
-	;check for display type
-	btfsc dipControl,DISPLAY_DATE_BIT
-	call SHOW_DATE
-	btfsc dipControl,DISPLAY_ALARM_BIT
-	nop;fill this in
+MAIN_LOOP nop
 	MAIN_PROCESS_MAC CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP;generic process loop from kernel.asm
 	;
 PROGRAM_MODE movlw STACK_HEAD_ADDR
@@ -129,7 +117,20 @@ PROGRAM_MODE movlw STACK_HEAD_ADDR
 	RUN_PROGRAM_MAC stackHead,stackPtr,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
 	RUN_COMMAND_MAC instruction,programCounter,RUN_COMMAND_TABLE
 	;
-	;
+	;clock stuff
+showclock call SHOW_TIME
+	bcf myStatus,0
+	bcf myStatus,1
+	movlw DEFAULT_DECIMAL_VALUE;light appropriate indicator
+	btfsc myStatus,3
+	movlw LEFT_DECIMAL_VALUE;left most decimalpoint
+	movwf indicator
+	;check for display type
+	btfsc dipControl,DISPLAY_DATE_BIT
+	call SHOW_DATE
+	btfsc dipControl,DISPLAY_ALARM_BIT
+	nop;fill this in
+	return
 INC_MINUTES incf minutes,F
 	movlw .60
 	xorwf minutes,W

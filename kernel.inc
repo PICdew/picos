@@ -13,6 +13,7 @@ END_OF_PHYSICAL_MEMORY equ 6fh
 ;Error valules written to errorByte
 #define CALL_STACK_OVERFLOW 1
 #define CALL_STACK_UNDERFLOW 2
+#defien NO_PROCESSES_TO_RUN 3
 
 
 errorByte equ END_OF_PHYSICAL_MEMORY
@@ -73,8 +74,13 @@ PUSH_CALL_STACK call PUSH_STACK
 	
 ;Reloads programCounter, exchange, accumulator and W from the stack (which are in 
 ;that order from top to bottom). Then the routine goto's  RUN_PROGRAM
-RESTART_PROCESS_MAC macro POP_CALL_STACK,accumulator,exchange,programCounter,RUN_PROGRAM
-RESTART_PROCESS call POP_CALL_STACK
+;If zero is on top of the stack, the program goes to MAIN_LOOP
+RESTART_PROCESS_MAC macro POP_CALL_STACK,accumulator,exchange,programCounter,RUN_PROGRAM,MAIN_LOOP,errorByte
+RESTART_PROCESS	movlw 0x0
+	iorf stackPtr,W
+	btfsc STATUS,Z
+	goto MAIN_LOOP
+	call POP_CALL_STACK
 	movwf programCounter
 	call POP_CALL_STACK
 	movwf exchange
