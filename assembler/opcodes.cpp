@@ -28,6 +28,7 @@ Help assemblerHelp()
     returnMe["sett"] = "";
     returnMe["setd"] = "";
     returnMe["seta"] = "";
+	returnMe["showclock"] = "Displays the clock, using time, date or alarm, depending on the input given to the controls.";
     return returnMe;
 }
 
@@ -42,7 +43,7 @@ std::map<arg_t,opcode_t> assemblerTable()
     returnMe["pusha"] = opcode++;
     returnMe["anda"] = opcode++;
     returnMe["ora"] = opcode++;
-    returnMe["Xora"] = opcode++;
+    returnMe["xora"] = opcode++;
     returnMe["rra"] = opcode++;
     returnMe["rla"] = opcode++;
     returnMe["inca"] = opcode++;
@@ -51,10 +52,11 @@ std::map<arg_t,opcode_t> assemblerTable()
     returnMe["bca"] = opcode++;
     returnMe["clra"] = opcode++;
     returnMe["goto"] = opcode++;
-    returnMe["sleep"] = opcode++;
     returnMe["sett"] = opcode++;
     returnMe["setd"] = opcode++;
     returnMe["seta"] = opcode++;
+    returnMe["sleep"] = opcode++;
+	returnMe["showclock"] = opcode++;
     return returnMe;
 }
 
