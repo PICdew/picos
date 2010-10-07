@@ -115,7 +115,7 @@ PROGRAM_MODE INIT_STACK_MAC stackHead,stackPtr
 	READ_EEPROM_MAC stackPtr
 	RUN_PROGRAM_MAC stackHead,stackPtr,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
 	RUN_COMMAND_MAC instruction,programCounter,RUN_COMMAND_TABLE
-	PICLANG_COMMAND_SET_MAC GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM
+	PICLANG_COMMAND_SET_MAC GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,leftDisplay,rightDisplay
 
 	;
 	;clock stuff
