@@ -9,12 +9,13 @@
 #include "CommandWords.h"
 #include "Help.h"
 
+#ifndef DEBUG_PRINT
 #ifdef __DEBUG__
 #define DEBUG_PRINT(x) std::cout << x << std::endl;
 #else
 #define DEBUG_PRINT(x) ;
 #endif
-
+#endif
 
 
 	class Command

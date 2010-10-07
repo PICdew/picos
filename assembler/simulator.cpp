@@ -45,6 +45,10 @@ void Memory::clear()
 std::ostream& operator<<(std::ostream& stream, Memory& mem)
 {
     using std::endl;
+    stream.setf(std::ios::dec,std::ios::basefield);
+    stream << "Time: " << mem.time[0] << ":" << mem.time[1] << std::endl;
+    stream << "Date: " << mem.date[0] << "/" << mem.date[1] << std::endl;
+    stream << "Alarm: " << mem.alarm[0] << ":" << mem.alarm[1] << std::endl;
     stream.setf(std::ios::hex,std::ios::basefield);
     stream << "A: " << mem.accumulator << endl;
     stream << "X: " << mem.exchange << endl;
@@ -149,24 +153,33 @@ bool Program::loadHex(const std::string& fileName)
 
 void Program::simCommand(const mem_t& memval, Memory& mem)
 {
-    switch(memval)
+  std::string command = "";
+  std::map<std::string,mem_t> opcodes = assemblerTable();
+  for(std::map<std::string,mem_t>::const_iterator it = opcodes.begin();
+      it != opcodes.end();it++)
     {
-    case 0:
+      if(it->second == memval)
+	command = it->first;
+    }
+  if(command.size() == 0)
+    return;
+
+  if(command == "lda")
         {
             mem.accumulator = *(++programCounter);
-            break;
+            return;
         }
-    case 1:
+  if(command == "adda")
         {
             mem.accumulator += *(++programCounter);
-            break;
+	    return;
         }
-    case 2:
+  if(command == "suba")
         {
             mem.accumulator -= *(++programCounter);
-            break;
+            return;
         }
-    case 3:
+  if(command == "movaf")
         {
             mem_t val = *(++programCounter);
             if(val >= mem.ram.size())
@@ -175,101 +188,118 @@ void Program::simCommand(const mem_t& memval, Memory& mem)
                 return;
             }
             mem.ram[val] = mem.accumulator;
-            break;
+            return;
         }
-    case 4:
+  if(command == "pusha")
         {
             mem.stack.push_back(*(++programCounter));
-            break;
-        }
-    case 5:
+	    return;
+	}
+  if(command == "popa")
+    {
+      mem.accumulator = mem.stack.at(mem.stack.size() - 1);
+      return;
+    }
+  if(command == "anda")
         {
             mem.accumulator &= *(++programCounter);
-            break;
+            return;
         }
-    case 6:
+  if(command == "ora")
         {
             mem.accumulator |= *(++programCounter);
-            break;
+            return;
         }
-    case 7:
+  if(command == "xora")
         {
             mem.accumulator ^= *(++programCounter);
-            break;
+            return;
         }
-    case 8:
+  if(command == "rra")
         {
             mem.accumulator >> *(++programCounter);
-            break;
+            return;
         }
-    case 9:
+  if(command == "rla")
         {
             mem.accumulator << *(++programCounter);
-            break;
+            return;
         }
-    case 10:
-        {
-            std::cout << "sleeping" << std::endl;
-            int a = 0;
-            for(int i = 0;i<1e9;i++)
-            {
-                a++;
-            }
-            break;
-        }
-    case 11:
+  if(command == "inca")
         {
             mem.accumulator++;
-            break;
+            return;
         }
-    case 12:
+  if(command == "deca")
         {
             mem.accumulator--;
-            break;
+            return;
         }
-    case 13:
+  if(command == "bsa")
         {
             mem_t val = *(++programCounter);
             mem_t bitmask = 1;
             bitmask << val;
             mem.accumulator |= bitmask;
-            break;
+            return;
         }
-    case 14:
+  if(command == "bca")
         {
             mem_t val = *(++programCounter);
             mem_t bitmask = 1;
             bitmask << val;
             bitmask ^= 0xff;
             mem.accumulator &= bitmask;
-            break;
+            return;
         }
-    case 15:
-        {
+  if(command == "clra")
+      {
             mem.accumulator = 0;
-            break;
+            return;
         }
-    case 16:
+  if(command == "goto")
+      {
+	size_t gotoVal = size_t(*(++programCounter));
+	programCounter = this->begin();
+	for(size_t i = 0;i<gotoVal + 1;i++)
+	  programCounter++;
+	return;
+      }
+  if(command == "display")
+      {
+	std::cout << "Displaying: " << mem.stack[0] << " " << mem.stack[1] << std::endl;
+	return;
+      }
+  if(command == "sett")
         {
             mem.time[0] = *(++programCounter);
             mem.time[1] = *(++programCounter);
-            break;
+            return;
         }
-    case 17:
+  if(command == "setd")
         {
             mem.date[0] = *(++programCounter);
             mem.date[1] = *(++programCounter);
-            break;
+            return;
         }
-    case 18:
+  if(command == "seta")
         {
             mem.alarm[0] = *(++programCounter);
             mem.alarm[1] = *(++programCounter);
-            break;
+            return;
         }
-    default:
-        break;
-    }
+  if(command == "sleep")
+      {
+	mem_t sleepVal = *(++programCounter);
+	std::cout << (mem.time[0] += (sleepVal / 60)) << "m " << (mem.time[1] += sleepVal % 60) << "s" << std::endl;
+	return;
+      }
+  if(command == "showclock")
+      {
+	std::cout << "Time: " << mem.time[0] << ":" << mem.time[1] << std::endl;
+	return;
+      }
+  return;
 }
 
 Program::pcl Program::continueProg(Memory& mem, pcl startLoc, pcl endLoc)

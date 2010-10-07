@@ -2,12 +2,6 @@
  * Created By David Coss, 2007
  */
 
-#ifdef __DEBUG__
-#define DEBUG_PRINT(x) std::cout << x << std::endl;
-#else
-#define DEBUG_PRINT(x)
-#endif
-
 #include <map>
 #include <string>
 #include <iostream>
@@ -20,6 +14,10 @@
 #include "Parser.h"
 
 #include "Build.h"
+
+#define GENERAL_ERROR 1
+#define IO_ERROR 2
+#define SYNTAX_ERROR 3
 
 using namespace std;
 ios::fmtflags radix;
@@ -86,6 +84,13 @@ string formatHex(const string& unformatted)
 
 std::string checkAndInsert(const Command& command)
 {
+  //if the command is eop (end of program), load that value
+  if(command.getCommandWord() == "eop")
+    {
+      precompiledCode.push_back(EOP_STR);
+      return "";
+    }
+
 	const args_t& tokens = command.getWords();
 	const string& op = tokens.at(0);
 	ostringstream os;
@@ -139,22 +144,20 @@ void compile(const args_t& precompiled, const string& filename)
 		if(lookupTable.find(*it) != lookupTable.end())
 		{
 			hex = lookupTable.at(*it);
-			cout << *it << ": " <<  formatHex(hex,radix);
 			currLine += formatHex(hex,radix);
 			checksum += hex;
 		}
 		else if(equs.find(*it) != equs.end())
 		{
 			hex = equs.at(*it);
-			cout << *it << ": " <<  formatHex(hex,radix);
 			currLine += formatHex(hex,radix);
 			checksum += hex;
 		}
 		else
 		{
-			cout << *it << ": " <<  formatHex(*it);
+			string _val;
 			currLine += formatHex(*it);
-			string _val = *it;
+			_val = *it;
 			if(_val.substr(0,2) == "0x")
 				_val.erase(0,2);
 			istringstream is(_val);
@@ -162,7 +165,7 @@ void compile(const args_t& precompiled, const string& filename)
 			is >> hex;
 			if(is.fail())
 			{
-				throw DavidException("Invalid variable: " + *it);
+			  throw DavidException("Invalid variable: " + *it);
 			}
 			checksum += hex;
 		}
@@ -170,7 +173,6 @@ void compile(const args_t& precompiled, const string& filename)
 		counter++;
 		if(counter % 8 == 0)
 		{
-			cout << "hex: " << checksum << " eol: " <<  formatHex(checksum,radix);
 			checksum &= 0xff;
 			checksum ^= 0xff;
 			checksum++;
@@ -182,7 +184,6 @@ void compile(const args_t& precompiled, const string& filename)
 	}
 	if(counter % 8 != 0)
 	{
-		cout << "hex: " << checksum << " eol: " <<  formatHex(checksum,radix);
 		checksum &= 0xff;
 		checksum ^= 0xff;
 		checksum++;
@@ -192,6 +193,7 @@ void compile(const args_t& precompiled, const string& filename)
 		currLine = "";
 		checksum = 0;
 	}
+	
 }
 
 std::string print_function(const Command& command)
@@ -217,6 +219,10 @@ std::string print_function(const Command& command)
 		compile(precompiledCode,command.getSecondWord());
 		return "Compiled. Saved as " + command.getSecondWord();
 	}
+	else if(command.getCommandWord() == "eop")
+	  {
+	    return checkAndInsert(command);
+	  }
 	else if(command.getCommandWord() == "radix")
 	  {
 	    if(command.getWords().size() != 2)
@@ -265,6 +271,75 @@ std::string print_function(const Command& command)
     return checkAndInsert(command);
 }
 
+int doCommandLineCompile(const int& argc, char** argv)
+{
+  if(argc < 3)
+    {
+      std::cout << "Usage: " << argv[0] << " [--compile file] [--output outputfile]";
+      return 1;
+    }
+  std::string outFilename = "out.hex";
+  std::string inFilename = "";
+  std::string curr;
+  bool isVerbose = false;
+  if(argc >= 5)
+    {
+      for(size_t i = 1;i<argc;i++)
+	{
+	  curr = argv[i];
+	  if("--output" == curr || "-o" == curr)
+	    {
+	      outFilename = argv[++i];
+	      continue;
+	    }
+	  if("--compile" == curr || "-c" == curr)
+	    {
+	      inFilename = argv[++i];
+	      continue;
+	    }
+	  if("--verbose" == curr)
+	    isVerbose = true;
+	}
+    }
+  std::fstream inFile;
+  inFile.open(inFilename.c_str(),std::ios::in);
+  if(!inFile.is_open())
+    {
+      std::cerr << "Could not open " << inFilename << std::endl;
+      return IO_ERROR;
+    }
+  Parser p;
+  Command *currLine;
+  std::string response;
+  while(!inFile.eof())
+    {
+      std::getline(inFile,curr);
+      currLine = new Command(curr);
+      p.processCommand(*currLine,response);
+      if(response.find("unknown command:") != std::string::npos)
+	{
+	  delete currLine;
+	  std::cerr << "Syntax Error: " << curr << std::endl;
+	  return SYNTAX_ERROR;
+	}
+      if(isVerbose)
+	std::cout << response << std::endl;
+      delete currLine;
+      currLine = 0;
+    }
+  if(currLine != 0)
+    delete currLine;
+
+  currLine = new Command("compile " + outFilename);
+  p.processCommand(*currLine,response);
+  if(isVerbose)
+    std::cout << response << std::endl;
+  delete currLine;
+  currLine = 0;
+  
+  return 0;
+}
+
 int main(int argc, char **argv)
 {
   radix = ios::hex;
@@ -283,6 +358,10 @@ int main(int argc, char **argv)
 		cout << "Last Build: " << Build::getBuild() << endl;
 		return 1;
 	}
+	if(argc > 1 && DString(argv[1]) == "--compile")
+	  {
+	    return doCommandLineCompile(argc,argv);
+	  }
 	if(argc > 1)
 	{
 		try{

@@ -151,7 +151,8 @@ bool Parser::processCommand(Command& command, std::string& whatIsSaid) {
     }
     else
     {
-        std::cout << Command::print(command.getWholeCommandString()) << std::endl;
+      whatIsSaid = Command::print(command.getWholeCommandString());
+      std::cout << whatIsSaid << std::endl;
     }
 
     return wantToQuit; /**/
