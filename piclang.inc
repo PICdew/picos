@@ -248,7 +248,7 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	btfsc STATUS,Z
 	goto RUN_PROGRAM
 	btfss instruction,0	;xxxxxx1 = write A to x in EEPROM 
-	goto $+9		;x will also be placed at the top of the stack.
+	goto WRITE_A		;x will also be placed at the top of the stack.
 	rrf instruction,F
 	movf instruction,W
 	call PUSH_STACK;this call is to keep the address, x, on the stack after this routine is finished.
@@ -256,27 +256,29 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	call PUSH_STACK
 	movf instruction,W
 	call PUSH_STACK
-	call WRITE_EEPROM 	;end of write A to EEPORM
-	goto PROGRAM_LOOP
-	btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
-	goto $+17
-	btfsc instruction,1
-	movlw 0xf0
-	movlw 0xf
-	swapf accumulator,F
-	andwf accumulator,F
-	swapf accumulator,F
-	andwf instruction,W
-	movwf exchange
-	btfsc instruction,1
+	call WRITE_EEPROM 	;end of write A to EEPROM
+	goto PROGRAM_MAIN_FORK
+WRITE_A btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
 	goto WRITE_EOP;xxxx010 = end of program
-	rrf exchange,F
-	rrf exchange,F
-	rrf exchange,F
-	movf exchange,W
+	movlw 0xf
+	movwf exchange
+	btfss instructions,1;exchange will clear parts of A. If 110 clear upper nible. If 100 clear lower.
+	swapf exchange,F
+	movf exchange,F
+	andwf accumulator,W
+	call PUSH_STACK
+	movf instruction,W
+	movwf accumulator;store data to be written in A
+	rrf accumulator,F;get rid of 3 instruction bytes
+	rrf accumulator,F
+	rrf accumulator,F
+	btfsc instruction,1
+	swapf accumulator,F;swap if we are writting to upper nibble
+	call POP_STACK;retrieve old value
 	addwf accumulator,F
 	goto PROGRAM_MAIN_FORK
-	;Writes the end of program code(2-bytes), starting at address at the top
+	;
+;Writes the end of program code(1-byte), starting at address at the top
 ;of the stack.
 WRITE_EOP call POP_STACK
 	movwf instruction
@@ -297,10 +299,9 @@ RUN_PROGRAM_LOOP movf programCounter,W
 	movlw EOP
 	xorf instruction,W
 	btfsc STATUS,Z
-	goto $+3
+	return
 	call RUN_COMMAND;requires piclang.asm
 	goto RUN_PROGRAM_LOOP
-	return
 	endm
 	
 GET_ARG_MAC macro programCounter,READ_EEPROM,PUSH_STACK
