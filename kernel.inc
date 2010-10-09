@@ -11,15 +11,15 @@
 END_OF_PHYSICAL_MEMORY equ 6fh
 
 ;Error valules written to errorByte
-#define CALL_STACK_OVERFLOW 1
-#define CALL_STACK_UNDERFLOW 2
-#defien NO_PROCESSES_TO_RUN 3
+#define CALL_STACK_OVERFLOW 1;tried to push into a full stack
+#define CALL_STACK_UNDERFLOW 2;tried to pop an empty stack
+#define NO_PROCESSES_TO_RUN 3;can be used to say that the call stack is empty
 
 
 errorByte equ END_OF_PHYSICAL_MEMORY
 callStackPtr equ errorByte - 1
 
-INIT_KERNEL_MAC errorByte
+INIT_KERNEL_MAC macro errorByte
 	clrf errorByte
 	endm
 
@@ -60,7 +60,7 @@ PUSH_CALL_STACK_MAC macro thePtr,PUSH_STACK,POP_STACK,ERROR_RETURN,endOfMemory
 PUSH_CALL_STACK call PUSH_STACK
 	incf thePtr,F
 	movlw low endOfMemory
-	subf thePtr,W
+	subwf thePtr,W
 	btfss STATUS,Z
 	goto $+3
 	movlw CALL_STACK_OVERFLOW
@@ -74,9 +74,9 @@ PUSH_CALL_STACK call PUSH_STACK
 	
 ;Reloads programCounter, exchange, accumulator and W from the stack (which are in 
 ;that order from top to bottom). 
-RESTART_PROCESS_MAC macro POP_CALL_STACK,accumulator,exchange,programCounter,errorByte
-RESTART_PROCESS	movlw 0x0
-	iorf stackPtr,W
+RESUME_PROCESS_MAC macro POP_CALL_STACK,accumulator,exchange,programCounter,errorByte
+RESUME_PROCESS	movlw 0x0
+	iorwf stackPtr,W
 	btfsc STATUS,Z
 	return
 	call POP_CALL_STACK
@@ -107,7 +107,7 @@ START_INTERRUPT macro saveW,SUSPEND_PROCESS
 	call SUSPEND_PROCESS
 	endm
 	
-FINISH_INTERRUPT macro saveW
+FINISH_INTERRUPT macro saveW,RESUME_PROCESS
 	movf saveW,W
 	bcf INTCON,2
 	call RESUME_PROCESS

@@ -15,7 +15,7 @@
 	goto INIT
 	;
 	org 0x04
-	START_INTERRUPT saveW
+	START_INTERRUPT saveW,SUSPEND_PROCESS
 	call INC_MINUTES
 	movf resetTMR0,W
 	movwf TMR0;reset timer value
@@ -31,7 +31,7 @@
 	btfsc STATUS,Z
 	bsf controlPort,1
 END_OF_INTERRUPT nop
-	FINISH_INTERRUPT saveW
+	FINISH_INTERRUPT saveW,RESUME_PROCESS
 	retfie
 INIT INIT_KERNEL_MAC errorByte 
 	INIT_MEMORY_MAC endOfMemory;init stack
@@ -99,6 +99,8 @@ PROGRAM_MODE INIT_STACK_MAC stackHead,stackPtr
 	call PUSH_STACK
 	PROGRAM_LOOP_MAC dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
 	;
+ERROR_RETURN nop;not sure what to do in case of error yet
+	return
 	;
 ;Subroutines
 #include "program_subroutines.asm"
@@ -116,7 +118,10 @@ PROGRAM_MODE INIT_STACK_MAC stackHead,stackPtr
 	RUN_PROGRAM_MAC stackHead,stackPtr,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
 	RUN_COMMAND_MAC instruction,programCounter,RUN_COMMAND_TABLE
 	PICLANG_COMMAND_SET_MAC GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,leftDisplay,rightDisplay
-
+	PUSH_CALL_STACK_MAC callStackPtr,PUSH_STACK,POP_STACK,ERROR_RETURN,endOfMemory
+	POP_CALL_STACK_MAC callStackPtr,ERROR_RETURN
+	SUSPEND_PROCESS_MAC PUSH_CALL_STACK,accumulator,exchange,programCounter
+	RESUME_PROCESS_MAC POP_CALL_STACK,accumulator,exchange,programCounter,errorByte
 	;
 	;clock stuff
 showclock call SHOW_TIME
