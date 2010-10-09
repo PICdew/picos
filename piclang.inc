@@ -83,7 +83,7 @@ popa call POP_STACK
      goto END_OF_FUNCTION
 goto_piclang call GET_ARG
 	call POP_STACK
-	movwf programCounter,F
+	movwf programCounter
 	goto END_OF_FUNCTION
 ;Shifts accumulator to the right. Any amount carried over
 ;goes into exchange, as if exchange is to the right of
@@ -262,7 +262,7 @@ WRITE_A btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
 	goto WRITE_EOP;xxxx010 = end of program
 	movlw 0xf
 	movwf exchange
-	btfss instructions,1;exchange will clear parts of A. If 110 clear upper nible. If 100 clear lower.
+	btfss instruction,1;exchange will clear parts of A. If 110 clear upper nible. If 100 clear lower.
 	swapf exchange,F
 	movf exchange,F
 	andwf accumulator,W
@@ -297,7 +297,7 @@ RUN_PROGRAM_LOOP movf programCounter,W
 	call READ_EEPROM
 	movwf instruction
 	movlw EOP
-	xorf instruction,W
+	xorwf instruction,W
 	btfsc STATUS,Z
 	return
 	call RUN_COMMAND;requires piclang.asm
