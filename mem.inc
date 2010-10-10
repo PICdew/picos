@@ -19,8 +19,10 @@ setTimeTmp
 resetTMR0;TMR0's initial value
 hexToOctal;memory spot for bit rotation
 instruction
-lsdMinute:1,msdMinute;7-seg packets for digits
-lsdHour:1,msdHour
+lsdMinute:8
+msdMinute:8;7-seg packets for digits
+lsdHour:8
+msdHour:8
 binaryMinute:1,binaryHours;binary packets
 firstDisplay:1,lastDisplay;7-seg data
 alarmMinutes:1,alarmHours;Alarm Clock! cf myStatus
