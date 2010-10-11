@@ -95,9 +95,7 @@ MAIN_LOOP call showclock
 	MAIN_PROCESS_MAC CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP;generic process loop from kernel.asm
 	;
 PROGRAM_MODE INIT_STACK_MAC stackHead,stackPtr
-	movlw 0x0
-	call PUSH_STACK
-	PROGRAM_LOOP_MAC dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
+	PROGRAM_LOOP_MAC dipControl,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
 	;
 ERROR_RETURN nop;not sure what to do in case of error yet
 	return
@@ -115,7 +113,7 @@ ERROR_RETURN nop;not sure what to do in case of error yet
 	GET_ARG_MAC programCounter,READ_EEPROM,PUSH_STACK
 	WRITE_EEPROM_MAC stackPtr
 	READ_EEPROM_MAC stackPtr
-	RUN_PROGRAM_MAC stackHead,stackPtr,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
+	RUN_PROGRAM_MAC stackHead,stackPtr,POP_STACK,PROGRAM_MAIN_FORK,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
 	RUN_COMMAND_MAC instruction,programCounter,RUN_COMMAND_TABLE
 	PICLANG_COMMAND_SET_MAC GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,leftDisplay,rightDisplay
 	PUSH_CALL_STACK_MAC callStackPtr,PUSH_STACK,POP_STACK,ERROR_RETURN,endOfMemory
