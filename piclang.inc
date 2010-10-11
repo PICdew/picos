@@ -237,7 +237,9 @@ WRITE_EEPROM bcf STATUS,RP0;bank 0
 	return
 	endm
 	
-PROGRAM_LOOP_MAC macro dipControl,INTPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
+;programs EEPROM.
+;Last EEADR used is on the top of the stack.
+PROGRAM_LOOP_MAC macro dipControl,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
 PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	goto $-1
 	movf dipControl,W
@@ -245,9 +247,13 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	bcf instruction,INPUT_BIT
 	movlw 0x0		;0x0 = run program
 	addwf instruction,W
-	btfsc STATUS,Z
+	btfss STATUS,Z
+	goto PARSE_INSTRUCTION
+	INIT_STACK_MAC stackHead,stackPtr;clear the stack before beginning the program
+	movlw 0x0;first EEPROM address of program.
+	call PUSH_STACK
 	goto RUN_PROGRAM
-	btfss instruction,0	;xxxxxx1 = write A to x in EEPROM 
+PARSE_INSTRUCTION btfss instruction,0	;xxxxxx1 = write A to x in EEPROM 
 	goto WRITE_A		;x will also be placed at the top of the stack.
 	rrf instruction,F
 	movf instruction,W
@@ -257,6 +263,8 @@ PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	movf instruction,W
 	call PUSH_STACK
 	call WRITE_EEPROM 	;end of write A to EEPROM
+	movf instruction,W
+	call PUSH_STACK
 	goto PROGRAM_MAIN_FORK
 WRITE_A btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
 	goto WRITE_EOP;xxxx010 = end of program
@@ -284,14 +292,15 @@ WRITE_EOP call POP_STACK
 	movwf instruction
 	movlw EOP
 	call PUSH_STACK
-	movf instruction,F
+	movf instruction,W
 	call PUSH_STACK
-	goto WRITE_EEPROM
+	call WRITE_EEPROM
+	goto PROGRAM_MAIN_FORK
 	endm;PROGRAM_LOOP_MAC
 
-RUN_PROGRAM_MAC macro stackHead,stackPtr,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
+RUN_PROGRAM_MAC macro stackHead,stackPtr,POP_STACK,PROGRAM_MAIN_FORK,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
 RUN_PROGRAM INIT_STACK_MAC stackHead,stackPtr
-	movlw 0x0
+	call POP_STACK
 	movwf programCounter
 RUN_PROGRAM_LOOP movf programCounter,W
 	call READ_EEPROM
@@ -299,7 +308,7 @@ RUN_PROGRAM_LOOP movf programCounter,W
 	movlw EOP
 	xorwf instruction,W
 	btfsc STATUS,Z
-	return
+	goto PROGRAM_MAIN_FORK
 	call RUN_COMMAND;requires piclang.asm
 	goto RUN_PROGRAM_LOOP
 	endm
