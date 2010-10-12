@@ -239,7 +239,7 @@ WRITE_EEPROM bcf STATUS,RP0;bank 0
 	
 ;programs EEPROM.
 ;Last EEADR used is on the top of the stack.
-PROGRAM_LOOP_MAC macro dipControl,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
+PROGRAM_LOOP_MAC macro dipControl,controlPort,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,MAIN_LOOP,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
 PROGRAM_LOOP btfss dipControl,INPUT_BIT
 	goto $-1
 	movf dipControl,W
@@ -265,7 +265,7 @@ PARSE_INSTRUCTION btfss instruction,0	;xxxxxx1 = write A to x in EEPROM
 	call WRITE_EEPROM 	;end of write A to EEPROM
 	movf instruction,W
 	call PUSH_STACK
-	goto PROGRAM_MAIN_FORK
+	goto LEAVE_STAY_PROGRAM_LOOP
 WRITE_A btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
 	goto WRITE_EOP;xxxx010 = end of program
 	movlw 0xf
@@ -284,7 +284,9 @@ WRITE_A btfss instruction,2	;xxxx1?0  = place x on upper or lower nibble of A
 	swapf accumulator,F;swap if we are writting to upper nibble
 	call POP_STACK;retrieve old value
 	addwf accumulator,F
-	goto PROGRAM_MAIN_FORK
+LEAVE_STAY_PROGRAM_LOOP btfsc controlPort,PROGRAM_MODE_BIT
+	goto PROGRAM_LOOP
+	goto MAIN_LOOP ; repeat....
 	;
 ;Writes the end of program code(1-byte), starting at address at the top
 ;of the stack.
