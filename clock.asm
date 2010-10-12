@@ -95,7 +95,7 @@ MAIN_LOOP call showclock
 	MAIN_PROCESS_MAC CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP;generic process loop from kernel.asm
 	;
 PROGRAM_MODE INIT_STACK_MAC stackHead,stackPtr
-	PROGRAM_LOOP_MAC dipControl,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,PROGRAM_MAIN_FORK,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
+	PROGRAM_LOOP_MAC macro dipControl,controlPort,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,MAIN_LOOP,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
 	;
 ERROR_RETURN nop;not sure what to do in case of error yet
 	return
