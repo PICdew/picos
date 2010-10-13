@@ -1,4 +1,4 @@
-;picos kernel 0.0.0
+;picos kernel
 ;author: David Coss
 ;Date: 10/2/10
 ;License: GNU Public License version 3.0 (see http://www.gnu.org)
@@ -6,6 +6,7 @@
 #define KERNEL_MAJOR_VERSION 0
 #define KERNEL_MINOR_VERSION 0
 #define KERNEL_REVISION 0
+#id KERNEL_MAJOR_VERSION,KERNEL_MINOR_VERSION,KERNEL_REVISION,0x42
 
 #define CALL_STACK_LIMIT low endOfMemory
 END_OF_PHYSICAL_MEMORY equ 6fh
@@ -15,9 +16,10 @@ END_OF_PHYSICAL_MEMORY equ 6fh
 #define CALL_STACK_UNDERFLOW 2;tried to pop an empty stack
 #define NO_PROCESSES_TO_RUN 3;can be used to say that the call stack is empty
 
-
-errorByte equ END_OF_PHYSICAL_MEMORY
-callStackPtr equ errorByte - 1
+cblock 0x70
+	errorByte 
+	
+callStackPtr equ END_OF_PHYSICAL_MEMORY
 
 INIT_KERNEL_MAC macro errorByte
 	clrf errorByte
@@ -102,15 +104,13 @@ SUSPEND_PROCESS	call PUSH_STACK
 	endm
 
 
-START_INTERRUPT macro saveW,SUSPEND_PROCESS
+START_INTERRUPT macro saveW
 	movwf saveW;save w value
-	call SUSPEND_PROCESS
 	endm
 	
-FINISH_INTERRUPT macro saveW,RESUME_PROCESS
+FINISH_INTERRUPT macro saveW
 	movf saveW,W
 	bcf INTCON,2
-	call RESUME_PROCESS
 	endm
 
 MAIN_PROCESS_MAC macro CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP

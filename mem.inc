@@ -1,12 +1,24 @@
 #define END_OF_MEMORY low endOfMemory
 #define STACK_LENGTH 0x8
+;important stuff
+;This area is independent of bank selected
+;Range 0x70 to 0x7F
+;0x70 reserved by kernel.
+	cblock 0x71
+tmp
+myStatus
+saveW
+programCounter
+pclTemp
+accumulator
+exchange
+eepromSize
+	endc
+
 ;Memory map for the pic project.
 	cblock 0x20
 output
 counter
-tmp
-myStatus
-saveW
 minutes
 hours
 currSeg
@@ -28,12 +40,7 @@ firstDisplay:1,lastDisplay;7-seg data
 alarmMinutes:1,alarmHours;Alarm Clock! cf myStatus
 leftDisplay:1,rightDisplay;Display place holders to make create display more generic. to show time, load minutes/hours into it.
 indicator;which decimal to light (tells a story)
-programCounter
-pclTemp
 stackTemp
-accumulator
-exchange
-eepromSize
 dateDay:1,dateMonth
 stackHead:STACK_LENGTH
 stackPtr

@@ -15,7 +15,7 @@
 	goto INIT
 	;
 	org 0x04
-	START_INTERRUPT saveW,SUSPEND_PROCESS
+	START_INTERRUPT saveW
 	call INC_MINUTES
 	movf resetTMR0,W
 	movwf TMR0;reset timer value
@@ -31,7 +31,7 @@
 	btfsc STATUS,Z
 	bsf controlPort,1
 END_OF_INTERRUPT nop
-	FINISH_INTERRUPT saveW,RESUME_PROCESS
+	FINISH_INTERRUPT saveW
 	retfie
 INIT INIT_KERNEL_MAC errorByte 
 	INIT_MEMORY_MAC endOfMemory;init stack
