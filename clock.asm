@@ -16,20 +16,7 @@
 	;
 	org 0x04
 	START_INTERRUPT saveW
-	call INC_MINUTES
-	movf resetTMR0,W
-	movwf TMR0;reset timer value
-	bcf controlPort,1
-	btfss myStatus,3
-	goto END_OF_INTERRUPT
-	movf alarmHours,W
-	subwf hours,W
-	btfss STATUS,Z
-	goto END_OF_INTERRUPT
-	movf alarmMinutes,W
-	subwf minutes,W
-	btfsc STATUS,Z
-	bsf controlPort,1
+	INCREMENT_TIME_OF_DAY
 END_OF_INTERRUPT nop
 	FINISH_INTERRUPT saveW
 	retfie
@@ -122,6 +109,22 @@ ERROR_RETURN nop;not sure what to do in case of error yet
 	RESUME_PROCESS_MAC POP_CALL_STACK,accumulator,exchange,programCounter,errorByte
 	;
 	;clock stuff
+ISR_INCREMENT_TIME_OF_DAY goto INC_MINUTES
+ISR_REST_TMR0 movf resetTMR0,W
+	movwf TMR0;reset timer value
+	bcf controlPort,1
+	btfss myStatus,3
+	goto END_OF_INTERRUPT
+	movf alarmHours,W
+	subwf hours,W
+	btfss STATUS,Z
+	goto END_OF_INTERRUPT
+	movf alarmMinutes,W
+	subwf minutes,W
+	btfsc STATUS,Z
+	bsf controlPort,1
+	goto END_OF_INTERRUPT
+	
 showclock call SHOW_TIME
 	bcf myStatus,0
 	bcf myStatus,1
@@ -145,6 +148,8 @@ INC_MINUTES incf minutes,F
 	incf totalMinutesMIDDLE,F
 	btfsc STATUS,C
 	incf totalMinutesHIGH,F
+	btfsc INTCON,2
+	goto ISR_REST_TMR0
 	return
 	;
 INC_HOURS clrf minutes

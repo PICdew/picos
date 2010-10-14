@@ -1,10 +1,11 @@
 #define END_OF_MEMORY low endOfMemory
+#define BEGINNING_OF_MEMORY low beginningOfMemory
 #define STACK_LENGTH 0x8
 ;important stuff
 ;This area is independent of bank selected
 ;Range 0x70 to 0x7F
 ;0x70 reserved by kernel.
-	cblock 0x71
+	cblock 0x72
 tmp
 myStatus
 saveW
@@ -13,6 +14,7 @@ pclTemp
 accumulator
 exchange
 eepromSize
+bankSelection
 	endc
 
 ;Memory map for the pic project.
@@ -44,6 +46,7 @@ stackTemp
 dateDay:1,dateMonth
 stackHead:STACK_LENGTH
 stackPtr
+beginningOfMemory
 endOfMemory
 	endc
 	

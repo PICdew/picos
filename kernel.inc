@@ -17,8 +17,9 @@ END_OF_PHYSICAL_MEMORY equ 6fh
 #define NO_PROCESSES_TO_RUN 3;can be used to say that the call stack is empty
 
 cblock 0x70
-	errorByte 
-	
+	errorByte
+	interruptBankSave
+	endc
 callStackPtr equ END_OF_PHYSICAL_MEMORY
 
 INIT_KERNEL_MAC macro errorByte
@@ -104,12 +105,18 @@ SUSPEND_PROCESS	call PUSH_STACK
 	endm
 
 
-START_INTERRUPT macro saveW
+START_INTERRUPT macro saveW,interruptBankSave,bankSelection,SAVE_BANK
 	movwf saveW;save w value
+	movf bankSelect,W
+	movwf interruptBankSave
+	call SAVE_BANK
 	endm
 	
-FINISH_INTERRUPT macro saveW
+FINISH_INTERRUPT macro saveW,interruptBankSave,bankSelection,RESET_BANK
 	movf saveW,W
+	call RESET_BANK
+	movf interruptBankSave,W
+	movwf bankSelection
 	bcf INTCON,2
 	endm
 
@@ -126,5 +133,17 @@ PROGRAM_MAIN_FORK	btfsc controlPort,PROGRAM_MODE_BIT
 	goto MAIN_LOOP ; repeat....
 	endm
 	
+BANK_MASK_MAC macro bankSelection
+SAVE_BANK clrf bankSelection
+	btfsc STATUS,RP0
+	bsf bankSelection,RPC
+	btfsc STATUS,RP1
+	bcf bankSelection,RP1
+	return
+	
+RESET_BANK movf bankSelection,W
+	iorwf STATUS,F
+	return
+	endm
 	
 	
