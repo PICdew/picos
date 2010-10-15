@@ -300,9 +300,8 @@ WRITE_EOP call POP_STACK
 	goto PROGRAM_MAIN_FORK
 	endm;PROGRAM_LOOP_MAC
 
-RUN_PROGRAM_MAC macro stackHead,stackPtr,POP_STACK,PROGRAM_MAIN_FORK,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
-RUN_PROGRAM INIT_STACK_MAC stackHead,stackPtr
-	call POP_STACK
+RUN_PROGRAM_MAC macro stackPtr,POP_STACK,PROGRAM_MAIN_FORK,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
+RUN_PROGRAM call POP_STACK
 	movwf programCounter
 RUN_PROGRAM_LOOP movf programCounter,W
 	call READ_EEPROM
