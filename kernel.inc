@@ -3,6 +3,12 @@
 ;Date: 10/2/10
 ;License: GNU Public License version 3.0 (see http://www.gnu.org)
 ;
+;Kernel will:
+;	- Reserve memory starting at 70h (see below for length of reserved memory).
+;	- Create a stack that will end at 6fh to be used to store program registers
+;		if a process is suspended. Size is determined by free space, which is equal
+;		to 0x6f - CALL_STACK_LIMIT.
+
 #define KERNEL_MAJOR_VERSION 0
 #define KERNEL_MINOR_VERSION 0
 #define KERNEL_REVISION 0
@@ -19,6 +25,17 @@ END_OF_PHYSICAL_MEMORY equ 6fh
 cblock 0x70
 	errorByte
 	interruptBankSave
+	tmp
+	myStatus
+	saveW
+	programCounter
+	pclTemp
+	accumulator
+	exchange
+	eepromSize
+	bankSelection
+	instruction
+	stackPtr
 	endc
 callStackPtr equ END_OF_PHYSICAL_MEMORY
 

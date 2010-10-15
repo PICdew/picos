@@ -16,7 +16,9 @@
 	;
 	org 0x04
 	START_INTERRUPT saveW
-	INCREMENT_TIME_OF_DAY
+	btfsc INCREMENT_TIME_INTERRUPT
+	goto ISR_INCREMENT_TIME_OF_DAY
+	;more interrupt stuff can go here
 END_OF_INTERRUPT nop
 	FINISH_INTERRUPT saveW
 	retfie
@@ -100,7 +102,7 @@ ERROR_RETURN nop;not sure what to do in case of error yet
 	GET_ARG_MAC programCounter,READ_EEPROM,PUSH_STACK
 	WRITE_EEPROM_MAC stackPtr
 	READ_EEPROM_MAC stackPtr
-	RUN_PROGRAM_MAC stackHead,stackPtr,POP_STACK,PROGRAM_MAIN_FORK,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
+	RUN_PROGRAM_MAC stackPtr,POP_STACK,PROGRAM_MAIN_FORK,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
 	RUN_COMMAND_MAC instruction,programCounter,RUN_COMMAND_TABLE
 	PICLANG_COMMAND_SET_MAC GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,leftDisplay,rightDisplay
 	PUSH_CALL_STACK_MAC callStackPtr,PUSH_STACK,POP_STACK,ERROR_RETURN,endOfMemory

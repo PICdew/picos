@@ -34,3 +34,4 @@
 #define TIMER0_CLK 4
 #define INITIAL_TIMER_VALUE 0xc4
 
+#define INCREMENT_TIME_INTERRUPT ??!?!?!?
