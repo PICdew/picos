@@ -15,12 +15,12 @@
 	goto INIT
 	;
 	org 0x04
-	START_INTERRUPT saveW
+	START_INTERRUPT saveW,interruptBankSave,bankSelection,SAVE_BANK
 	btfsc INCREMENT_TIME_INTERRUPT
 	goto ISR_INCREMENT_TIME_OF_DAY
 	;more interrupt stuff can go here
 END_OF_INTERRUPT nop
-	FINISH_INTERRUPT saveW
+	FINISH_INTERRUPT saveW,interruptBankSave,bankSelection,RESET_BANK
 	retfie
 INIT INIT_KERNEL_MAC errorByte 
 	INIT_MEMORY_MAC endOfMemory;init stack
@@ -84,7 +84,7 @@ MAIN_LOOP call showclock
 	MAIN_PROCESS_MAC CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP;generic process loop from kernel.asm
 	;
 PROGRAM_MODE INIT_STACK_MAC stackHead,stackPtr
-	PROGRAM_LOOP_MAC macro dipControl,controlPort,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,MAIN_LOOP,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
+	PROGRAM_LOOP_MAC dipControl,controlPort,INPUT_BIT,instruction,RUN_PROGRAM,accumulator,exchange,MAIN_LOOP,WRITE_EEPROM,READ_EEPROM,PUSH_STACK,POP_STACK
 	;
 ERROR_RETURN nop;not sure what to do in case of error yet
 	return
@@ -109,6 +109,7 @@ ERROR_RETURN nop;not sure what to do in case of error yet
 	POP_CALL_STACK_MAC callStackPtr,ERROR_RETURN
 	SUSPEND_PROCESS_MAC PUSH_CALL_STACK,accumulator,exchange,programCounter
 	RESUME_PROCESS_MAC POP_CALL_STACK,accumulator,exchange,programCounter,errorByte
+	BANK_MASK_MAC bankSelection
 	;
 	;clock stuff
 ISR_INCREMENT_TIME_OF_DAY goto INC_MINUTES

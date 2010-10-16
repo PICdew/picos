@@ -9,10 +9,9 @@
 ;		if a process is suspended. Size is determined by free space, which is equal
 ;		to 0x6f - CALL_STACK_LIMIT.
 
-#define KERNEL_MAJOR_VERSION 0
-#define KERNEL_MINOR_VERSION 0
-#define KERNEL_REVISION 0
-#id KERNEL_MAJOR_VERSION,KERNEL_MINOR_VERSION,KERNEL_REVISION,0x42
+#define KERNEL_MAJOR_VERSION 0x0
+#define KERNEL_MINOR_VERSION 0x0
+#define KERNEL_REVISION 0x0
 
 #define CALL_STACK_LIMIT low endOfMemory
 END_OF_PHYSICAL_MEMORY equ 6fh
@@ -22,8 +21,9 @@ END_OF_PHYSICAL_MEMORY equ 6fh
 #define CALL_STACK_UNDERFLOW 2;tried to pop an empty stack
 #define NO_PROCESSES_TO_RUN 3;can be used to say that the call stack is empty
 
-cblock 0x70
+	cblock 0x70
 	errorByte
+	bankSelection
 	interruptBankSave
 	tmp
 	myStatus
@@ -33,7 +33,6 @@ cblock 0x70
 	accumulator
 	exchange
 	eepromSize
-	bankSelection
 	instruction
 	stackPtr
 	endc
@@ -122,7 +121,7 @@ SUSPEND_PROCESS	call PUSH_STACK
 	endm
 
 
-START_INTERRUPT macro saveW,interruptBankSave,bankSelection,SAVE_BANK
+START_INTERRUPT macro saveW,interruptBankSave,bankSelect,SAVE_BANK
 	movwf saveW;save w value
 	movf bankSelect,W
 	movwf interruptBankSave
@@ -153,7 +152,7 @@ PROGRAM_MAIN_FORK	btfsc controlPort,PROGRAM_MODE_BIT
 BANK_MASK_MAC macro bankSelection
 SAVE_BANK clrf bankSelection
 	btfsc STATUS,RP0
-	bsf bankSelection,RPC
+	bsf bankSelection,RP0
 	btfsc STATUS,RP1
 	bcf bankSelection,RP1
 	return
