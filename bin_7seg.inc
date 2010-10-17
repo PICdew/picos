@@ -38,7 +38,7 @@ CREATE_DISPLAY bcf myStatus,HOUR_MIN_BIT ;; display minutes
 	call MAKE_PACKET
 	movwf binaryMinute
 	movlw 0x0f
-	btfss controlPort,0
+	btfss myStatus,HEX_OCTAL_BIT
 	movlw b'0111'
 	andwf rightDisplay,W
 	bcf myStatus,BINARY_7SEG_BIT;hex/octal is displayed first

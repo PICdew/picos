@@ -8,7 +8,7 @@ RUN_COMMAND_TABLE nop
 	goto setd
 	goto seta
 	goto sleepa
-	goto showclock
+	goto SHOW_CLOCK
 
 
 
