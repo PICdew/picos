@@ -36,6 +36,7 @@ END_OF_PHYSICAL_MEMORY equ 6fh
 	instruction
 	stackPtr
 	endc
+
 callStackPtr equ END_OF_PHYSICAL_MEMORY
 
 INIT_KERNEL_MAC macro errorByte
