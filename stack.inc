@@ -3,6 +3,7 @@
 ;Date: 10/1/10
 ;License: GPL v3.0 (http://www.gnu.org)
 #define STACK_HEAD_ADDR low stackHead
+
 INIT_STACK_MAC macro headaddr,stackPtr 
 	movlw low headaddr;initialize stack
 	movwf stackPtr
