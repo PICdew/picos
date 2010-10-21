@@ -1,0 +1,3 @@
+Need code to take a byte that represents paged memory and translate it to the physical memory location.
+
+Need code to move through binary code. Processes store the starting point and program counter.

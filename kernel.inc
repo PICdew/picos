@@ -22,7 +22,7 @@
 #define KERNEL_REVISION 0x0
 
 ;Process defines
-#define PROCESS_MEMORY_SPACE 8;amount of bytes to be given to all processes
+#define PROCESS_MEMORY_SPACE 7;amount of bytes to be given to all processes
 #define MAX_PROCESS_COUNT 5
 #define FREE_STORE_LIMIT 0x4C
 #define NEXT_POINTER 0
@@ -30,18 +30,22 @@
 #define PROC_EXCHANGE 2
 #define PROC_A 3
 #define PROC_W 4
-#define MEM_START 5
-#define MEM_LIMIT 6
-#define PROC_STATUS 7
+#define PROC_STATUS 5
+#define PROC_PHYSICAL_BEGINNING 6
 
 ;Process states
 #define PROC_RUNNING 0
 #define PROC_WAITING 1
 #define PROC_ENDED   2
 
+;Page Defines
+#define PAGE_SIZE 5
+#define PAGE_COUNT 5
+
 ;Error valules written to errorByte
 #define SUCCESS 0
 #define NO_PROCESSES_TO_RUN 1;can be used to say that the call stack is empty
+#define INSUFFICIENT_PROCESS_QUEUE_MEMORY 2 ; when a process cannot be put in the queue. It's full.
 
 ;Very important memory locations. Memory above 70h is accessible in any bank
 	cblock 0x70
@@ -66,13 +70,35 @@
 wait_queue_head
 wait_queue_tail
 process_space: PROCESS_MEMORY_SPACE * MAX_PROCESS_COUNT
-free_store: FREE_STORE_LIMIT - PROCESS_MEMORY_SPACE * MAX_PROCESS_COUNT - 2;give remaining space to free store
 	endc
 
-INIT_KERNEL_MAC macro errorByte
+;Page tabe is in bank 2
+      cblock A0h
+page_table: PAGE_COUNT
+      endc
+
+PAGE_BANK_MAC macro 
+PAGE_BANK bsf STATUS,RP1
+	bcf STATUS,RP0
+	return
+	endm
+
+INIT_KERNEL_MAC macro errorByte,PAGE_BANK
 	clrf errorByte
 	clrf wait_queue_head
 	clrf wait_queue_tail
+	call PAGE_BANK
+	movlw low page_table
+	movwf FSR
+	movlw PAGE_COUNT
+	movwf tmp
+	movlw 0x0
+	movwf INDF
+	incf FSR,F
+	decfsz tmp,F
+	goto $-4
+	bcf STATUS,RP0
+	bcf STATUS,RP1
 	endm
 
 SUSPEND_PROCESS_MAC macro process_location,accumulator,exchange,programCounter,errorByte,TERMINATE_PROCESS
@@ -143,6 +169,89 @@ RESUME_PROCESS movf wait_queue_head,W
 	return	
 	endm
 
+;exchange is used as a temporary location for program locations
+;does return.
+TERMINATE_PROCESS_MAC macro process_location,exchange,errorByte,ERROR_RETURN
+TERMINATE_PROCESS movf process_location,W
+	movwf FSR
+	movf INDF,W ; process after the one terminated (null if it is the tail)
+	movwf exchange
+	movf wait_queue_head,W
+	movwf FSR
+	movf process_location,W
+	xorf INDF,W
+	btfss STATUS,Z
+	goto TERMINATE_PROCESS_HAVE_PRECEEDING_PROCESS
+	movf INDF,W
+	movwf FSR
+	goto $-6
+TERMINATE_PROCESS_HAVE_PRECEEDING_PROCESS movf exchange,W ; INDF now points to the process proceeding the terminated process
+	movwf INDF
+	movf process_location,W
+	xorwf wait_queue_tail,W ; if this process is the tail, update tail 
+	btfsc STATUS,Z
+	goto $+3
+	movf INDF,W
+	movwf wait_queue_tail
+	movlw SUCCESS
+	subwf errorByte,W
+	btfsc STATUS,Z
+	return
+	goto ERROR_RETURN
+	endm
+
+;Right now, I don't know what to do upon error. So we'll just pretend nothing happend :-(
+ERROR_RETURN_MACRO macro errorByte
+ERROR_RETURN movlw SUCCESS
+	movwf errorByte
+	return
+	end
+
+;Program binaries start with the amount of memory *pages* they request in free store as the first byte.
+;exchange will temporarily hold the memory location where the program is stored (i.e. the actual binary)
+START_PROCESS_MAC macro exchange,errorByte,ERROR_RETURN
+START_PROCESS movlw PROCESS_MEMORY_SPACE * (MAX_PROCESS_COUNT - 1) ; test to see if there is room at the end of the queue
+	subwf wait_queue_tail,W
+	btfsc STATUS,C
+	goto START_PROCESS_NO_SPACE
+	btfsc STATUS,Z
+	goto START_PROCESS_NO_SPACE
+	movf wait_queue_tail,W
+	movwf FSR
+	movwf INDF
+	movlw PROCESS_MEMORY_SPACE
+	addwf INDF,F ; the pointer of the former tail now points to the new process
+	movf INDF,W
+	movwf wait_tail_queue ; new process is now the tail of the queue
+	movwf FSR ; fill new process space with default values
+	movlw 0x0
+	movwf INDF
+	incf FSR,F
+	movwf INDF
+	movf process_location,W
+	movwf FSR
+	movlw PROC_STATUS
+	addwf FSR,F
+	movlw PROC_WAITING
+	movwf INDF
+	movlw PROC_STATUS
+	subwf FSR,F
+	movlw PROC_PHYSICAL_BEGINNING
+	addwf FSR,F
+	movf exchange,W ; starting point of binary code
+	movwf INDF	
+	call READ_EEPROM ; first byte of binary code is the amount of requested *pages*
+	call REQUEST_MEMORY ; new process is in wait_queue_tail
+	movlw 0x0
+	subwf errorByte ; at least possible to error out because there is no memory available.
+	btfsc STATUS,Z
+	goto ERROR_RETURN
+	return
+START_PROCESS_NO_SPACE movlw INSUFFICIENT_PROCESS_QUEUE_MEMORY
+        movwf errorByte
+	goto ERROR_RETURN
+	endm	
+	
 
 START_INTERRUPT macro saveW,interruptBankSave,bankSelect,SAVE_BANK,SUSPEND_PROCESS
 	movwf saveW;save w value
