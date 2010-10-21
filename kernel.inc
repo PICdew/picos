@@ -46,6 +46,8 @@
 #define SUCCESS 0
 #define NO_PROCESSES_TO_RUN 1;can be used to say that the call stack is empty
 #define INSUFFICIENT_PROCESS_QUEUE_MEMORY 2 ; when a process cannot be put in the queue. It's full.
+#define INSUFFICIENT_MEMORY 3 ; no more memory in free store
+#define INVALID_ADDRESS 4 ; page address is not a valid location
 
 ;Very important memory locations. Memory above 70h is accessible in any bank
 	cblock 0x70
@@ -75,6 +77,7 @@ process_space: PROCESS_MEMORY_SPACE * MAX_PROCESS_COUNT
 ;Page tabe is in bank 2
       cblock A0h
 page_table: PAGE_COUNT
+page_memory: PAGE_SIZE * PAGE_COUNT
       endc
 
 PAGE_BANK_MAC macro 
@@ -296,4 +299,65 @@ RESET_BANK movf bankSelection,W
 	return
 	endm
 	
-	
+
+;process_id equals process_locations.
+;will use errorByte as a temporary variable until the end
+;where it will be filled with an error code (or success)
+TRANSLATE_PAGE_ADDRESS_MAC macro page_addr,process_id,errorByte,temp,PAGE_BANK,ERROR_RETURN
+TRANSLATE_PAGE_ADDRESS movlw PAGE_SIZE
+		       movwf temp
+		       movlw 0x0
+		       subwf temp,F
+		       btfss STATUS,Z
+		       goto $+4
+		       movlw INSUFFICIENT_MEMORY
+		       movwf errorByte
+		       goto ERROR_RETURN
+		       movlw 0xf0
+		       andwf page_addr,W
+		       movwf errorByte
+		       swapf errorByte,F
+		       call PAGE_BANK
+		       movlw low page_table - 1
+		       movwf FSR
+		       incf FSR,F
+		       movlw low page_table + PAGE_COUNT
+		       subwf FSR,W
+		       btfsc STATUS,Z ; check to see if we've gone page the end of the page table.
+		       goto TRANSLATE_PAGE_ADDRESS_ERROR_INVALID_ADDRESS
+		       movf process_id,W
+		       xorwf INDF,W
+		       btfsc STATUS,Z;check to see if the value in the page_table equals process_id
+		       decfsz errorByte,F
+		       goto $-5
+		       movlw 0xf
+		       andwf page_addr,W
+		       movwf errorByte ; errorByte now contains the index of the memory location within the page
+		       movlw low page_table ; FSR now holds (low page_table) plus the page number of the page to which page_addr corresponds
+		       subwf FSR,W ; page number that we need to use for page_addr
+		       addwf errorByte ; page_number + index
+     		       movlw PAGE_SIZE ; we need to multiply page_number + index by the page size. btw PAGE_SIZE is not zero per check at beginning
+		       movwf temp
+		       movlw 0x1
+		       xorwf temp,W
+		       btfsc STATUS,Z
+		       goto TRANSLATE_PAGE_ADDRESS_FINISH
+		       rlf errorByte ; multiply by page size
+		       decsz temp,F
+		       goto $-2
+		       movlw PAGE_SIZE
+		       movwf temp
+		       btfss temp,0
+		       goto TRANSLATE_PAGE_ADDRESS_FINISH
+		       movlw low page_table ; in case page size is odd
+		       subwf FSR,W
+		       addwf errorByte	       
+TRANSLATE_PAGE_ADDRESS_FINISH movf errorByte,W
+			      clrf errorByte
+			      return
+TRANSLATE_PAGE_ADDRESS_ERROR_INVALID_ADDRESS movlw INVALID_ADDRESS
+					     movwf errorByte
+					     goto ERROR_RETURN 
+			      endm
+		       		       
+		       		
