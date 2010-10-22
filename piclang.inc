@@ -300,17 +300,33 @@ WRITE_EOP call POP_STACK
 	goto PROGRAM_MAIN_FORK
 	endm;PROGRAM_LOOP_MAC
 
-RUN_PROGRAM_MAC macro stackPtr,POP_STACK,PROGRAM_MAIN_FORK,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND
-RUN_PROGRAM call POP_STACK
-	movwf programCounter
-RUN_PROGRAM_LOOP movf programCounter,W
+RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,program_address,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING
+RUN_PROGRAM movlw PROC_PHYSICAL_BEGINNING
+		 addwf program_address,W ; lookup start of program binary
+		 movwf FSR
+		 movf INDF,W
+		 movwf temp
+		 incf temp,F
+		 movf temp,W
+		 call READ_EEPROM
+		 movwf temp ; temp holds program size
+RUN_PROGRAM_LOOP movf temp,W
+		 subwf programCounter,W
+		 btfsc STATUS,Z
+		 goto PROGRAM_MAIN_FORK
+		 movf program_address,W
+		 movwf FSR
+		 movlw PROC_PHYSICAL_BEGINNING
+		 movwf FSR ; this should be the first 
+		 movf INDF,W
+		 addwf programCounter,W ; add program counter offset
 	call READ_EEPROM
 	movwf instruction
 	movlw EOP
 	xorwf instruction,W
 	btfsc STATUS,Z
 	goto PROGRAM_MAIN_FORK
-	call RUN_COMMAND;requires piclang.asm
+	call RUN_COMMAND;requires piclang.asm. this routine increments program counter.
 	goto RUN_PROGRAM_LOOP
 	endm
 	
