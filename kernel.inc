@@ -57,8 +57,8 @@
 	tmp
 	myStatus
 	saveW
-	programCounter
-	current_process
+	programCounter 
+	current_process ; memory address of the currently running process's PCB
 	pclTemp
 	accumulator
 	exchange
@@ -87,7 +87,8 @@ PAGE_BANK bsf STATUS,RP1
 	endm
 
 INIT_KERNEL_MAC macro errorByte,PAGE_BANK
-	clrf errorByte
+	movlw SUCCESS
+	movwf errorByte
 	clrf wait_queue_head
 	clrf wait_queue_tail
 	call PAGE_BANK
@@ -141,7 +142,7 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	return
 	endm
 	
-RESUME_PROCESS_MAC macro accumulator,exchange,programCounter,TERMINATE_PROCESS
+RESUME_PROCESS_MAC macro program_location,accumulator,exchange,programCounter,TERMINATE_PROCESS
 RESUME_PROCESS movf wait_queue_head,W
 	movwf program_location
 	movwf FSR
@@ -158,13 +159,13 @@ RESUME_PROCESS movf wait_queue_head,W
 	incf FSR,F
 	movf INDF,W
 	movwf accumulator
-	movf programLocation,W
+	movf program_location,W
 	movwf FSR
 	movlw PROC_STATUS
 	addwf FSR,F
 	movlw PROC_RUNNING
 	movwf INDF
-	movf programLocation,W
+	movf program_location,W
 	movwf FSR
 	movlw PROC_W
 	addwf FSR,F
@@ -353,11 +354,25 @@ TRANSLATE_PAGE_ADDRESS movlw PAGE_SIZE
 		       subwf FSR,W
 		       addwf errorByte	       
 TRANSLATE_PAGE_ADDRESS_FINISH movf errorByte,W
-			      clrf errorByte
+			      movwf temp
+			      movlw SUCCESS
+			      movwf errorByte
+			      movf temp,W
 			      return
 TRANSLATE_PAGE_ADDRESS_ERROR_INVALID_ADDRESS movlw INVALID_ADDRESS
 					     movwf errorByte
 					     goto ERROR_RETURN 
 			      endm
+
+;returns if there is no process in queue
+;if there is a process in the queue, then *goto* RESUME_PROCESS
+DISPATCH_NEXT_PROCESS_MAC macro RESUME_PROCESS
+DISPATCH_NEXT_PROCESS movlw 0x0
+		  subwf wait_queue_head,W
+		  btfsc STATUS,Z
+		  return
+		  goto RESUME_PROCESS
+		  endm
+
 		       		       
 		       		
