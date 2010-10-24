@@ -1,12 +1,8 @@
+	;Hitachi 44780 LCD Driver for pic os
 	;
-	;interface software 0.1
 	;Author: David Coss
-	;Copyright: Free to use with attribution to the Author. 
+	;Copyright: GNU GPL version 3
 	;
-	; See bottom for description of changes per version.
-	
-include <p16F690.inc>
-     __config (_INTRC_OSC_NOCLKOUT & _WDT_OFF & _PWRTE_OFF & _MCLRE_OFF & _CP_OFF & _BOR_OFF & _IESO_OFF & _FCMEN_OFF)
 	
 #define COM PORTA
 #define TRIS_COM TRISA
@@ -32,6 +28,8 @@ LCD_INST_MODE macro
 ;Code to fill a buffer using the MESSAGE lookup table. DOES NOT RETURN
 FILL_BUFFER_MAC macro WriteBuffer,buffer_counter,curr_char,MESSAGE
 	clrf curr_char
+	movlw low WriteBuffer
+	movwf FSR
 	movf curr_char,W
 	incf curr_char,F
 	call MESSAGE
@@ -69,7 +67,7 @@ WRITE_BUFFER call LCD_INST_MODE
 ; beginning of the buffer and buffer_counter to the amount of characters
 ; you want written. ALSO, insure that the LCD is on the correct line before
 ; calling WRITE_LINE
-LCD_WRITE_MAC macro Instruction,instruction_port,command_port,HALF_SEC_DELAY
+LCD_WRITE_MAC macro Instruction,instruction_port,command_port,buffer_counter,HALF_SEC_DELAY
 WRITE_CHAR movwf Instruction
 	swapf Instruction,F
 	movlw 0xf
@@ -102,7 +100,7 @@ WRITE_LINE movf INDF,W
 	
 	;provides a set of delay routines
 	; requires two bytes to store loop counters
-DELAY_MAC macro SecCounter,DelayLoopCounter
+DELAY_MAC macro SecCounter,FourtyMSCounter,DelayLoopCounter
 SEC_DELAY call HALF_SEC_DELAY
 	call HALF_SEC_DELAY
 	return

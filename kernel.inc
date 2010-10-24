@@ -75,7 +75,7 @@ process_space: PROCESS_MEMORY_SPACE * MAX_PROCESS_COUNT
 	endc
 
 ;Page tabe is in bank 2
-      cblock A0h
+      cblock 0xA0
 page_table: PAGE_COUNT
 page_memory: PAGE_SIZE * PAGE_COUNT
       endc
