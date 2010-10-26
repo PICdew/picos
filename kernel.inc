@@ -21,17 +21,18 @@
 #define KERNEL_MINOR_VERSION 0x1
 #define KERNEL_REVISION 0x0
 
-;Process defines
-#define PROCESS_MEMORY_SPACE 7;amount of bytes to be given to all processes
+;Process Control Block (PCB) defines
+#define PROCESS_MEMORY_SPACE 7;amount of bytes to be given to all processes for their PCB
 #define MAX_PROCESS_COUNT 5
 #define FREE_STORE_LIMIT 0x4C
+#define PROGRAM_BINARY_OFFSET 2;position of the first byte of program op codes, i.e. first actual line of the program and not header. this is zero-indexed.
 #define NEXT_POINTER 0
 #define PROGRAM_COUNTER 1
 #define PROC_EXCHANGE 2
 #define PROC_A 3
 #define PROC_W 4
 #define PROC_STATUS 5
-#define PROC_PHYSICAL_BEGINNING 6
+#define PROC_PHYSICAL_BEGINNING 6 ; location of the first byte of the binary in secondary storage.
 
 ;Process states
 #define PROC_RUNNING 0
