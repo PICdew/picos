@@ -304,21 +304,21 @@ RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,program_address,
 RUN_PROGRAM movlw PROC_PHYSICAL_BEGINNING
 		 addwf program_address,W ; lookup start of program binary
 		 movwf FSR
-		 movf INDF,W
+		 movf INDF,W ; value equals the beginning of the binary. First value is the number of free store pages needed. second value is the size of the program binary.
+		 addlw PROGRAM_BINARY_OFFSET
 		 movwf temp
-		 incf temp,F
-		 movf temp,W
 		 call READ_EEPROM
 		 movwf temp ; temp holds program size
-RUN_PROGRAM_LOOP movf temp,W
+RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of bytes of program executable code).
 		 subwf programCounter,W
-		 btfsc STATUS,Z
+		 btfsc STATUS,Z ; check to see if the program has gone to the end of the program.
 		 goto PROGRAM_MAIN_FORK
 		 movf program_address,W
 		 movwf FSR
 		 movlw PROC_PHYSICAL_BEGINNING
 		 movwf FSR ; this should be the first 
 		 movf INDF,W
+		 addlw PROGRAM_BINARY_OFFSET
 		 addwf programCounter,W ; add program counter offset
 	call READ_EEPROM
 	movwf instruction

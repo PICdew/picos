@@ -25,6 +25,7 @@ map<arg_t,int> equs;
 vector<string> precompiledCode;
 
 #include "opcodes.cpp"
+
 Help makeHelp(){return assemblerHelp();}//for tab complete
 const map<arg_t,opcode_t> lookupTable = assemblerTable();
 
@@ -131,6 +132,13 @@ void compile(const args_t& precompiled, const string& filename)
 	int address = 0x4200;
 	int hex;
 	string currLine = "";
+	
+	//calculate the amount of pages needed in free store
+	hex = total_num_pages(precompiled);
+	
+	//calculate the total byte count of the program binary
+	hex = total_binary_byte_count(precompiled);
+	
 	for(args_t::const_iterator it = precompiled.begin();it != precompiled.end();it++)
 	{
 		if(counter % 8 == 0)
