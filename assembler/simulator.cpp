@@ -7,9 +7,6 @@
 #include "Parser.h"
 #include "Help.h"
 
-#define STACK_SIZE 8
-#define EEPROM_SIZE 0x3d
-typedef unsigned short int mem_t;
 
 using namespace std;
 

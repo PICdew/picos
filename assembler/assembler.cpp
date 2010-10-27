@@ -1,5 +1,8 @@
-/** \mainpage Documentation of the LinAl 4
- * Created By David Coss, 2007
+/** \Mainpage Assembler for the compilation of programs
+ * for the PIC microcontroller.
+ *
+ * Created By David Coss, 2010
+ * Free Software under the terms of the GNU Public License version 3.
  */
 
 #include <map>
@@ -14,6 +17,8 @@
 #include "Parser.h"
 
 #include "Build.h"
+#include "opcodes.cpp"
+
 
 #define GENERAL_ERROR 1
 #define IO_ERROR 2
@@ -22,9 +27,8 @@
 using namespace std;
 ios::fmtflags radix;
 map<arg_t,int> equs;
+map<arg_t,addr_t> free_store;//maps variable names to the number of elements in its array. addr_t = 1 for a single variable (instead of array); this is the default.
 vector<string> precompiledCode;
-
-#include "opcodes.cpp"
 
 Help makeHelp(){return assemblerHelp();}//for tab complete
 const map<arg_t,opcode_t> lookupTable = assemblerTable();
@@ -94,6 +98,10 @@ std::string checkAndInsert(const Command& command)
 
 	const args_t& tokens = command.getWords();
 	const string& op = tokens.at(0);
+	
+	if(op == "malloc")//don't use an opcode for malloc it's used by the compiler only.
+	  return "";
+
 	ostringstream os;
 	os << "Incorrect number of arguments for "  << command.getWholeCommandString() << ": " << tokens.size()-1;
 	string errorMessage = os.str();
@@ -111,10 +119,33 @@ std::string checkAndInsert(const Command& command)
 			break;
 		return errorMessage;
 	}
-	}
+	}//end of switch
 	for(args_t::const_iterator it = tokens.begin();it != tokens.end();it++)
 		precompiledCode.push_back(*it);
 	return "";
+}
+
+int total_num_pages(const std::map<arg_t,addr_t>& page_reqs)
+{
+  if(page_reqs.size() == 0)
+    return 0;
+ 
+  //calculate total memory requested (in bytes)
+  int total_memory = 0;
+  std::map<arg_t,addr_t>::const_iterator array;
+  std::cout << "malloc counter: " << std::endl;
+  for(array = page_reqs.begin();array != page_reqs.end();array++)
+    {
+      cout << array->second << endl;
+      total_memory += array->second;
+    }
+  return (int) ceil((float) total_memory/PAGE_SIZE) ;
+}
+	
+//calculate the total byte count of the program binary
+int total_binary_byte_count(const std::vector<std::string>& precompiled)
+{
+  return precompiled.size() + HEADER_SIZE;
 }
 
 void compile(const args_t& precompiled, const string& filename)
@@ -134,10 +165,15 @@ void compile(const args_t& precompiled, const string& filename)
 	string currLine = "";
 	
 	//calculate the amount of pages needed in free store
-	hex = total_num_pages(precompiled);
+	hex = total_num_pages(free_store);
+	std::cout << "Malloc needs " << hex << std::endl;
+	currLine += formatHex(hex,radix);
+	checksum += hex;counter++;
 	
 	//calculate the total byte count of the program binary
 	hex = total_binary_byte_count(precompiled);
+	currLine += formatHex(hex,radix);
+	checksum += hex;counter++;
 	
 	for(args_t::const_iterator it = precompiled.begin();it != precompiled.end();it++)
 	{
@@ -272,6 +308,22 @@ std::string print_function(const Command& command)
 	    for(line = precompiledCode.begin();line < precompiledCode.end();line++)
 	      buff << ++counter << ": " << *line << endl;
 	    return buff.str();
+	  }
+	else if(command.getCommandWord() == "malloc")
+	  {
+	    const args_t& args = command.getWords();
+	    string usage_statement = "Usage: malloc <Variable Name> [size. Default = 1]";
+	    if(args.size() == 1 || args.size() > 3)
+	      return usage_statement;
+	    addr_t array_size = 1;
+	    if(args.size() == 3)
+	      {
+		istringstream size_buff(args[2]);
+		size_buff >> array_size;
+		if(size_buff.fail())
+		  return usage_statement;
+	      }
+	    free_store[args[1]] = array_size;
 	  }
 	else if(lookupTable.find(command.getCommandWord()) == lookupTable.end())
 	  return "unknown command: " + command.getCommandWord();

@@ -5,7 +5,15 @@
 #include "Help.h"
 #include "Command.h"
 
-typedef unsigned short int opcode_t;
+#define PAGE_SIZE 5//in bytes
+#define HEADER_SIZE 2//size of the binary header (in bytes)
+#define STACK_SIZE 8
+#define EEPROM_SIZE 0x3d
+
+typedef unsigned short opcode_t;
+typedef unsigned short addr_t;
+typedef unsigned short mem_t;
+
 
 #define EOP_STR "0xff"
 
