@@ -133,10 +133,8 @@ int total_num_pages(const std::map<arg_t,addr_t>& page_reqs)
   //calculate total memory requested (in bytes)
   int total_memory = 0;
   std::map<arg_t,addr_t>::const_iterator array;
-  std::cout << "malloc counter: " << std::endl;
   for(array = page_reqs.begin();array != page_reqs.end();array++)
     {
-      cout << array->second << endl;
       total_memory += array->second;
     }
   return (int) ceil((float) total_memory/PAGE_SIZE) ;
@@ -166,13 +164,12 @@ void compile(const args_t& precompiled, const string& filename)
 	
 	//calculate the amount of pages needed in free store
 	hex = total_num_pages(free_store);
-	std::cout << "Malloc needs " << hex << std::endl;
-	currLine += formatHex(hex,radix);
+	currLine += formatHex(hex,radix) + "00";
 	checksum += hex;counter++;
 	
 	//calculate the total byte count of the program binary
 	hex = total_binary_byte_count(precompiled);
-	currLine += formatHex(hex,radix);
+	currLine += formatHex(hex,radix) + "00";
 	checksum += hex;counter++;
 	
 	for(args_t::const_iterator it = precompiled.begin();it != precompiled.end();it++)
