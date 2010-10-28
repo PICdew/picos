@@ -1,6 +1,6 @@
 #define LCD_LINE_SIZE 0x8
 
-LCD_ROUTINES_MAC macro count,count1,counta,countb,tmp1,tmp2,templcd,templcd2,MAIN_LOOP
+LCD_ROUTINES_MAC macro count,count1,counta,countb,tmp1,tmp2,templcd,templcd2,pclTemp,MAIN_LOOP
 STARTUP_MESSAGE clrf count			;set counter register to zero
 STARTUP1 movf	count, w		;put counter value in W
 		call	STARTUP_TOP;get a character from the text table
@@ -16,17 +16,26 @@ NEXT_STARTUP_LINE call	LCD_BOTTOM		;move to 2nd row, first column
 	call DISPLAY_VERSION	
 	goto END_OF_DISPLAY
 END_OF_DISPLAY goto MAIN_LOOP
-STARTUP_TOP		addwf	PCL, f
-	dt "PicOS vs",0x0
-STARTUP_BOTTOM		ADDWF   PCL, f
-	dt "READY!!!",0x00
+STARTUP_TOP	movwf pclTemp
+	movlw HIGH STARTUP_TOP_TABLE
+	movwf PCLATH
+	movf pclTemp,W
+	addwf	PCL, f
+STARTUP_TOP_TABLE dt "PicOS vs",0x0
+
+STARTUP_BOTTOM	movwf pclTemp
+	movlw HIGH START_BOTTOM_TABLE
+	movwf PCLATH
+	movf pclTemp,W
+	ADDWF   PCL, f
+START_BOTTOM_TABLE dt "READY!!!",0x00
 
 DISPLAY_VERSION movlw KERNEL_MAJOR_VERSION
 	call HEX_TO_CHAR
 	call WRITE_CHAR
 	movlw '.'
 	call WRITE_CHAR
-	movlw KERNEL_MINOR_VERSION + 1
+	movlw KERNEL_MINOR_VERSION
 	call HEX_TO_CHAR
 	call WRITE_CHAR
 	movlw '.'
@@ -149,8 +158,12 @@ TOGGLE_ENABLE		bsf	CMD_PORT, LCD_E
 
 ;end of LCD routines
 
-HEX_TO_CHAR  	ADDWF   PCL       , f
-            	dt "0123456789ABCDEF"
+HEX_TO_CHAR movwf pclTemp
+	movlw HIGH HEX_TO_CHAR_TABLE
+	movwf PCLATH
+	movf pclTemp,W
+	ADDWF   PCL       , f
+HEX_TO_CHAR_TABLE dt "0123456789ABCDEF"
 	endm
 
 FILL_BUFFER_MAC macro lcd_buffer,templcd,templcd2
@@ -164,7 +177,7 @@ FILL_BUFFER_LOOP movf templcd,W
 	call HEX_TO_CHAR
 	movwf INDF
 	incf FSR,F
-	incf templcd
+	incf templcd,F
 	decfsz templcd2,F
 	goto FILL_BUFFER_LOOP
 	endm

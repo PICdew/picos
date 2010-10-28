@@ -131,13 +131,13 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movwf INDF
 	movf process_location,W
 	movwf FSR
-	movlw FROC_STATUS
+	movlw PROC_STATUS
 	addwf FSR,F
 	movlw PROC_WAITING
 	movwf INDF
 	movf wait_queue_tail,W
 	movwf FSR
-	movf program_location,F
+	movf process_location,F
 	movwf INDF
 	movwf wait_queue_tail
 	return
@@ -184,7 +184,7 @@ TERMINATE_PROCESS movf process_location,W
 	movf wait_queue_head,W
 	movwf FSR
 	movf process_location,W
-	xorf INDF,W
+	xorwf INDF,W
 	btfss STATUS,Z
 	goto TERMINATE_PROCESS_HAVE_PRECEEDING_PROCESS
 	movf INDF,W
@@ -206,11 +206,12 @@ TERMINATE_PROCESS_HAVE_PRECEEDING_PROCESS movf exchange,W ; INDF now points to t
 	endm
 
 ;Right now, I don't know what to do upon error. So we'll just pretend nothing happend :-(
-ERROR_RETURN_MACRO macro errorByte
-ERROR_RETURN movlw SUCCESS
+ERROR_RETURN_MAC macro errorByte,DISPLAY_ERROR_STATUS
+ERROR_RETURN call DISPLAY_ERROR_STATUS
+	movlw SUCCESS
 	movwf errorByte
 	return
-	end
+	endm
 
 ;Program binaries start with the amount of memory *pages* they request in free store as the first byte.
 ;exchange will temporarily hold the memory location where the program is stored (i.e. the actual binary)
@@ -277,11 +278,7 @@ FINISH_INTERRUPT macro saveW,interruptBankSave,bankSelection,RESET_BANK,RESTART_
 
 MAIN_PROCESS_MAC macro CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP
 MAIN_PROCESS call CREATE_DISPLAY
-	movlw 0xff
-	movwf counter
 	call DISPLAY_ME
-	decfsz counter,F
-	goto $-2
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
 PROGRAM_MAIN_FORK	btfsc controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_MODE
