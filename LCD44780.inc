@@ -185,12 +185,17 @@ FILL_BUFFER_LOOP movf templcd,W
 	endm
 
 WRITE_BUFFER_MAC macro lcd_buffer,count,WRITE_CHAR,LCD_TOP,LCD_BOTTOM
-WRITE_BUFFER call LCD_TOP
+WRITE_BUFFER call CLEAR_DISPLAY
+	call LCD_TOP
 	movlw low lcd_buffer
 	movwf FSR
 	movlw 0x8
 	movwf count
-WRITE_BUFFER_LOOP movf INDF,W
+WRITE_BUFFER_LOOP movlw 0
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto $+6
+	movf INDF,W
 	call WRITE_CHAR
 	incf FSR,F
 	decfsz count,F
@@ -198,10 +203,19 @@ WRITE_BUFFER_LOOP movf INDF,W
 	call LCD_BOTTOM
 	movlw 0x8
 	movwf count
-WRITE_BUFFER_LOOP2 movf INDF,W
+	movlw 0x0
+	xorwf INDF,W
+	btfsc STATUS,Z
+	incf FSR,F
+WRITE_BUFFER_LOOP2 movlw 0
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto END_OF_WRITE_BUFFER
+	movf INDF,W
 	call WRITE_CHAR
 	incf FSR,F
 	decfsz count,F
 	goto WRITE_BUFFER_LOOP2
+END_OF_WRITE_BUFFER nop
 	endm
 

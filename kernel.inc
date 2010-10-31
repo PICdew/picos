@@ -68,6 +68,8 @@
 	eepromSize
 	instruction
 	stackPtr
+	stackTemp
+	stackTemp2
 	endc
 
 ;Process space
@@ -157,8 +159,10 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	return
 	endm
 	
-RESUME_PROCESS_MAC macro program_location,accumulator,exchange,programCounter,TERMINATE_PROCESS
-RESUME_PROCESS movf wait_queue_head,W
+RESUME_PROCESS_MAC macro quantum,program_location,accumulator,exchange,programCounter,TERMINATE_PROCESS
+RESUME_PROCESS movlw DEFAULT_QUANTUM
+	movwf quantum
+	movf wait_queue_head,W
 	movwf program_location
 	movwf FSR
 	movf INDF,W
@@ -274,11 +278,13 @@ INIT_PCB_VALUES movf wait_queue_tail,W
 	addlw PROC_PHYSICAL_BEGINNING
 	movwf FSR
 	movf INDF,W
+	call PUSH_STACK
 	call READ_EEPROM ; first byte of binary code is the amount of requested *pages*
+	call POP_STACK
 	call REQUEST_MEMORY ; new process is in wait_queue_tail
-	movlw 0x0
-	subwf errorByte ; at least possible to error out because there is no memory available.
-	btfsc STATUS,Z
+	movlw SUCCESS
+	xorwf errorByte ; at least possible to error out because there is no memory available.
+	btfss STATUS,Z
 	goto ERROR_RETURN
 	return
 START_PROCESS_NO_SPACE movlw INSUFFICIENT_PROCESS_QUEUE_MEMORY
@@ -339,6 +345,10 @@ RESET_BANK movf bankSelection,W
 ;If there are not W values empty,
 REQUEST_MEMORY_MAC macro errorByte,temp,POP_STACK,PUSH_STACK
 REQUEST_MEMORY movwf temp
+	movlw 0 ; check to see if zero bytes were requested. if so return immediately.
+	xorwf temp,W
+	btfsc STATUS,Z
+	return
 	bsf STATUS,RP0
 	bcf STATUS,RP1
 	movlw low page_table
@@ -452,9 +462,9 @@ TRANSLATE_PAGE_ADDRESS_ERROR_INVALID_ADDRESS movlw INVALID_ADDRESS
 
 ;returns if there is no process in queue
 ;if there is a process in the queue, then *goto* RESUME_PROCESS
-DISPATCH_NEXT_PROCESS_MAC macro RESUME_PROCESS
+DISPATCH_NEXT_PROCESS_MAC macro wait_queue_head,RESUME_PROCESS
 DISPATCH_NEXT_PROCESS movlw 0x0
-		  subwf wait_queue_head,W
+		  xorwf wait_queue_head,W
 		  btfsc STATUS,Z
 		  return
 		  goto RESUME_PROCESS
