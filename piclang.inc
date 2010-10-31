@@ -13,11 +13,11 @@
 ;Requires exchange register.
 
 #define EOP 0xff;EOP byte
-
+#define NUM_INSTRUCTIONS (low END_OF_PICLANG_COMMAND_TABLE) - (low PICLANG_COMMAND_TABLE)
 ;PICLANG commands
 	
-PICLANG_COMMAND_TABLE macro
-	goto lda		;0x0
+PICLANG_COMMAND_TABLE_MAC macro
+PICLANG_COMMAND_TABLE	goto lda		;0x0
 	goto adda		;0x1
 	goto suba
 	goto movaf		
@@ -34,10 +34,10 @@ PICLANG_COMMAND_TABLE macro
 	goto bca
 	goto clra
 	goto goto_piclang
-	goto display_piclang
+END_OF_PICLANG_COMMAND_TABLE	goto display_piclang
 	endm
 
-PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,leftDisplay,rightDisplay
+PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,display_piclang_template
 ;Generic set subroutine. Can set current time, alarm time or date.
 ;Input: Stack values from top to bottom: most significant value, 
 ;			least significant value.
@@ -142,29 +142,26 @@ bsa call bsa_bca_setup
 	goto END_OF_FUNCTION
 	;
 bca call bsa_bca_setup
-	movwf tmp
+	movwf temp
 	movlw 0xff
-	xorwf tmp,W
+	xorwf temp,W
 	andwf accumulator,F
 	goto END_OF_FUNCTION
 	;
 bsa_bca_setup call GET_ARG
 	call POP_STACK
-	movwf tmp
-	incf tmp,F;1-indexed makes decfsz work
+	movwf temp
+	incf temp,F;1-indexed makes decfsz work
 	clrf exchange
 	bsf exchange,0
-	decfsz tmp,F	
+	decfsz temp,F	
 	rlf exchange,F
 	movf exchange,W
 	return
 	;
 clra clrf accumulator
 	goto END_OF_FUNCTION
-display_piclang call POP_STACK
-	movwf leftDisplay
-	call PUSH_STACK
-	movwf rightDisplay
+display_piclang goto display_piclang_template
 	endm;PICLANG_COMMAND_SET_MAC
 
 ;Reads data from EEPROM.
@@ -300,26 +297,25 @@ WRITE_EOP call POP_STACK
 	goto PROGRAM_MAIN_FORK
 	endm;PROGRAM_LOOP_MAC
 
-RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,program_address,programCounter,READ_EEPROM,instruction,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING
-RUN_PROGRAM movlw PROC_PHYSICAL_BEGINNING
-		 addwf program_address,W ; lookup start of program binary
-		 movwf FSR
-		 movf INDF,W ; value equals the beginning of the binary. First value is the number of free store pages needed. second value is the size of the program binary.
-		 addlw PROGRAM_BINARY_OFFSET
-		 movwf temp
-		 call READ_EEPROM
-		 movwf temp ; temp holds program size
+RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,current_process,programCounter,READ_EEPROM,instruction,errorByte,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING,ERROR_RETURN
+RUN_PROGRAM movf current_process,W ; lookup start of program binary
+	 addlw PROC_PHYSICAL_BEGINNING
+	 movwf FSR
+	 movf INDF,W ; value equals the beginning of the binary. First value is the number of free store pages needed. second value is the size of the program binary.
+	 call READ_EEPROM
+	 movwf temp ; temp holds program size
 RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of bytes of program executable code).
-		 subwf programCounter,W
-		 btfsc STATUS,Z ; check to see if the program has gone to the end of the program.
-		 goto PROGRAM_MAIN_FORK
-		 movf program_address,W
-		 movwf FSR
-		 movlw PROC_PHYSICAL_BEGINNING
-		 movwf FSR ; this should be the first 
-		 movf INDF,W
-		 addlw PROGRAM_BINARY_OFFSET
-		 addwf programCounter,W ; add program counter offset
+	 subwf programCounter,W
+	 btfsc STATUS,Z ; check to see if the program has gone to the end of the program.
+	 goto PROGRAM_MAIN_FORK
+	 btfsc STATUS,DC
+	 goto BEYOND_PROGRAM_MEMORY_ERR
+	 movf current_process,W
+	 addlw PROC_PHYSICAL_BEGINNING
+	 movwf FSR ; this should be the first 
+	 movf INDF,W
+	 addlw PROGRAM_BINARY_OFFSET
+	 addwf programCounter,W ; add program counter offset
 	call READ_EEPROM
 	movwf instruction
 	movlw EOP
@@ -328,6 +324,9 @@ RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of byt
 	goto PROGRAM_MAIN_FORK
 	call RUN_COMMAND;requires piclang.asm. this routine increments program counter.
 	goto RUN_PROGRAM_LOOP
+BEYOND_PROGRAM_MEMORY_ERR movlw BEYOND_PROGRAM_MEMORY
+	movwf errorByte
+	goto ERROR_RETURN
 	endm
 	
 GET_ARG_MAC macro programCounter,READ_EEPROM,PUSH_STACK
@@ -340,20 +339,23 @@ GET_ARG incf programCounter,F
 ;Runs the command corresponding to the value of "instruction".
 ;The return value is place at the top of the stack (i.e. stack)
 ;SUPPLY RUN_COMMAND_TABLE or suffer the consequences!!!
-RUN_COMMAND_MAC macro instruction,programCounter,RUN_COMMAND_TABLE
-RUN_COMMAND movlw NUM_INSTRUCTIONS
-	local tableLOW
+RUN_COMMAND_MAC macro instruction,programCounter,errorByte,ERROR_RETURN,PICLANG_COMMAND_TABLE,END_OF_PICLANG_COMMAND_TABLE
+RUN_COMMAND movlw low END_OF_PICLANG_COMMAND_TABLE
+	sublw PICLANG_COMMAND_TABLE
+	addlw 1
 	subwf instruction,W
 	btfsc STATUS,DC
-	goto $+3
-	incf instruction,F
+	goto NO_SUCH_COMMAND_ERR
 	return
-	movlw HIGH RUN_COMMAND_TABLE
+	movlw HIGH PICLANG_COMMAND_TABLE
 	movwf PCLATH
-	movlw low RUN_COMMAND_TABLE
+	movlw low PICLANG_COMMAND_TABLE
 	addwf instruction,W
 	addwf PCL,F;USES RUN_COMMAND_TABLE as a lookup table.
 END_OF_FUNCTION incf programCounter,F
 	return
+NO_SUCH_COMMAND_ERR movlw NO_SUCH_COMMAND
+	movwf errorByte
+	goto ERROR_RETURN
 	endm;RUN_COMMAND_MAC
 
