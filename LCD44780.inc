@@ -1,6 +1,6 @@
 #define LCD_LINE_SIZE 0x8
 
-LCD_ROUTINES_MAC macro count,count1,counta,countb,tmp1,tmp2,templcd,templcd2,pclTemp,MAIN_LOOP
+LCD_ROUTINES_MAC macro count,count1,counta,countb,tmp1,tmp2,templcd,templcd2,pclTemp,lcd_pointer,lcd_pointer,MAIN_LOOP
 STARTUP_MESSAGE clrf count			;set counter register to zero
 STARTUP1 movf	count, w		;put counter value in W
 		call	STARTUP_TOP;get a character from the text table
@@ -56,6 +56,8 @@ INIT_LCD movlw	0x20;only use four bits (save the others)
 	movlw	0x0d;Turn display on/off
 	call	LCD_CMD
 	call	CLEAR_DISPLAY			;clear display
+	movlw low lcd_buffer
+	movwf lcd_pointer
 	return
 
 ;Commands

@@ -49,13 +49,15 @@
 #define INSUFFICIENT_PROCESS_QUEUE_MEMORY 2 ; when a process cannot be put in the queue. It's full.
 #define INSUFFICIENT_MEMORY 3 ; no more memory in free store
 #define INVALID_ADDRESS 4 ; page address is not a valid location
+#define NO_SUCH_COMMAND 5
+#define BEYOND_PROGRAM_MEMORY 6
 
 ;Very important memory locations. Memory above 70h is accessible in any bank
 	cblock 0x70
 	errorByte
 	bankSelection
 	interruptBankSave
-	tmp
+	temp
 	myStatus
 	saveW
 	programCounter 
@@ -75,7 +77,7 @@ wait_queue_tail
 process_space: PROCESS_MEMORY_SPACE * MAX_PROCESS_COUNT
 	endc
 
-;Page tabe is in bank 2
+;Page tabe is in bank 1
       cblock 0xA0
 page_table: PAGE_COUNT
 page_memory: PAGE_SIZE * PAGE_COUNT
@@ -96,11 +98,11 @@ INIT_KERNEL_MAC macro errorByte,PAGE_BANK
 	movlw low page_table
 	movwf FSR
 	movlw PAGE_COUNT
-	movwf tmp
+	movwf temp
 	movlw 0x0
 	movwf INDF
 	incf FSR,F
-	decfsz tmp,F
+	decfsz temp,F
 	goto $-4
 	bcf STATUS,RP0
 	bcf STATUS,RP1
@@ -109,11 +111,15 @@ INIT_KERNEL_MAC macro errorByte,PAGE_BANK
 SUSPEND_PROCESS_MAC macro process_location,accumulator,exchange,programCounter,errorByte,TERMINATE_PROCESS
 SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movf process_location,W
+	bsf STATUS,RP0
 	movwf FSR
 	movlw PROC_W
 	addwf FSR,F
+	bcf STATUS,RP0
 	movf saveW,W
+	bsf STATUS,RP0
 	movwf INDF
+	bcf STATUS,RP0
 	movlw SUCCESS ;check to see if the process has errored out
 	xorwf errorByte,W
 	btfsc STATUS,Z
@@ -122,19 +128,27 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movwf FSR
 	incf FSR,F
 	movf programCounter,W
+	bsf STATUS,RP0
 	movwf INDF
 	incf FSR,F
+	bcf STATUS,RP0
 	movf exchange,W
+	bsf STATUS,RP0
 	movwf INDF
 	incf FSR,F
+	bcf STATUS,RP0
 	movf accumulator,W
+	bsf STATUS,RP0
 	movwf INDF
+	bcf STATUS,RP0
 	movf process_location,W
 	movwf FSR
+	bsf STATUS,RP0
 	movlw PROC_STATUS
 	addwf FSR,F
 	movlw PROC_WAITING
 	movwf INDF
+	bcf STATUS,RP0
 	movf wait_queue_tail,W
 	movwf FSR
 	movf process_location,F
@@ -215,27 +229,33 @@ ERROR_RETURN call DISPLAY_ERROR_STATUS
 
 ;Program binaries start with the amount of memory *pages* they request in free store as the first byte.
 ;exchange will temporarily hold the memory location where the program is stored (i.e. the actual binary)
-START_PROCESS_MAC macro exchange,errorByte,ERROR_RETURN
-START_PROCESS movlw PROCESS_MEMORY_SPACE * (MAX_PROCESS_COUNT - 1) ; test to see if there is room at the end of the queue
+START_PROCESS_MAC macro exchange,errorByte,wait_queue_head,wait_queue_tail,PUSH_STACK,REQUEST_MEMORY,ERROR_RETURN
+START_PROCESS bcf STATUS,RP0
+	bcf STATUS,RP1
+	movlw 0
+	xorwf wait_queue_head,W
+	btfsc STATUS,Z
+	goto PUSH_FIRST_PCB
+	movlw PROCESS_MEMORY_SPACE * (MAX_PROCESS_COUNT - 1) ; test to see if there is room at the end of the queue
 	subwf wait_queue_tail,W
 	btfsc STATUS,C
 	goto START_PROCESS_NO_SPACE
 	btfsc STATUS,Z
 	goto START_PROCESS_NO_SPACE
-	movf wait_queue_tail,W
+INIT_PCB_VALUES movf wait_queue_tail,W
+	bsf STATUS,RP0 ;  bank 1
 	movwf FSR
+	addlw PROCESS_MEMORY_SPACE
 	movwf INDF
-	movlw PROCESS_MEMORY_SPACE
-	addwf INDF,F ; the pointer of the former tail now points to the new process
-	movf INDF,W
-	movwf wait_tail_queue ; new process is now the tail of the queue
+	bcf STATUS,RP0
+	movwf wait_queue_tail ; new process is now the tail of the queue
+	bsf STATUS,RP0
 	movwf FSR ; fill new process space with default values
 	movlw 0x0
 	movwf INDF
 	incf FSR,F
 	movwf INDF
-	movf process_location,W
-	movwf FSR
+	decf FSR,F
 	movlw PROC_STATUS
 	addwf FSR,F
 	movlw PROC_WAITING
@@ -244,8 +264,16 @@ START_PROCESS movlw PROCESS_MEMORY_SPACE * (MAX_PROCESS_COUNT - 1) ; test to see
 	subwf FSR,F
 	movlw PROC_PHYSICAL_BEGINNING
 	addwf FSR,F
+	bcf STATUS,RP0
 	movf exchange,W ; starting point of binary code
-	movwf INDF	
+	bsf STATUS,RP0
+	movwf INDF
+	bcf STATUS,RP0
+	movf wait_queue_tail,W
+	call PUSH_STACK ; must be on stack for REQUEST_MEMORY
+	addlw PROC_PHYSICAL_BEGINNING
+	movwf FSR
+	movf INDF,W
 	call READ_EEPROM ; first byte of binary code is the amount of requested *pages*
 	call REQUEST_MEMORY ; new process is in wait_queue_tail
 	movlw 0x0
@@ -254,8 +282,14 @@ START_PROCESS movlw PROCESS_MEMORY_SPACE * (MAX_PROCESS_COUNT - 1) ; test to see
 	goto ERROR_RETURN
 	return
 START_PROCESS_NO_SPACE movlw INSUFFICIENT_PROCESS_QUEUE_MEMORY
-        movwf errorByte
+    movwf errorByte
 	goto ERROR_RETURN
+PUSH_FIRST_PCB movlw low pcb_block
+	movwf wait_queue_head
+	movwf wait_queue_tail
+	movlw PROCESS_MEMORY_SPACE
+	subwf wait_queue_tail,F ; the next step of the routine will be to increment the queue tail by this amount.
+	goto INIT_PCB_VALUES
 	endm	
 	
 
@@ -297,7 +331,61 @@ RESET_BANK movf bankSelection,W
 	iorwf STATUS,F
 	return
 	endm
-	
+
+;Checks to see if there are W empty pages in memory.
+;If there are, the process_id (which should be in the stack when 
+; this routine is called) is placed in page_table
+; in the first W entries where the value is zero.
+;If there are not W values empty,
+REQUEST_MEMORY_MAC macro errorByte,temp,POP_STACK,PUSH_STACK
+REQUEST_MEMORY movwf temp
+	bsf STATUS,RP0
+	bcf STATUS,RP1
+	movlw low page_table
+	movwf FSR
+	movlw 0
+	call PUSH_STACK
+MEMORY_COUNT_LOOP movlw low page_table + PAGE_COUNT
+	xorwf FSR,W
+	btfsc STATUS,Z
+	goto REQUEST_MEMORY_INS_MEM ; check to see if we are at the end of the page table
+	movlw 0
+	xorwf INDF,W
+	btfss STATUS,Z ; check to see if the current entry is equal to zero. if it is increment the counter (on stack).
+	goto MEMORY_COUNT_LOOP_NEXT 
+	call POP_STACK
+	addlw 1
+	call PUSH_STACK
+MEMORY_COUNT_LOOP_NEXT decfsz temp,F
+	goto $+2
+	goto MEMORY_COUNT_LOOP
+	call POP_STACK
+	xorwf temp,W
+	btfsc STATUS,Z
+	goto REQUEST_MEMORY_INS_MEM
+	movlw low page_table
+	movwf FSR
+CLAIM_MEMORY_LOOP movlw 0
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto CLAIM_MEMORY
+	incf FSR,F
+	goto CLAIM_MEMORY_LOOP
+CLAIM_MEMORY call POP_STACK
+	movwf INDF
+	call PUSH_STACK
+	decfsz temp,F
+	goto END_OF_REQUEST_MEMORY
+	incf FSR,F
+	goto CLAIM_MEMORY_LOOP
+REQUEST_MEMORY_INS_MEM movlw INSUFFICIENT_MEMORY
+	movwf errorByte
+END_OF_REQUEST_MEMORY 	call POP_STACK
+	bcf STATUS,RP0
+	bcf STATUS,RP1
+	return
+	endm
+
 
 ;process_id equals process_locations.
 ;will use errorByte as a temporary variable until the end
@@ -335,7 +423,7 @@ TRANSLATE_PAGE_ADDRESS movlw PAGE_SIZE
 		       movlw low page_table ; FSR now holds (low page_table) plus the page number of the page to which page_addr corresponds
 		       subwf FSR,W ; page number that we need to use for page_addr
 		       addwf errorByte ; page_number + index
-     		       movlw PAGE_SIZE ; we need to multiply page_number + index by the page size. btw PAGE_SIZE is not zero per check at beginning
+     		   movlw PAGE_SIZE ; we need to multiply page_number + index by the page size. btw PAGE_SIZE is not zero per check at beginning
 		       movwf temp
 		       movlw 0x1
 		       xorwf temp,W
