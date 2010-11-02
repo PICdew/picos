@@ -18,7 +18,7 @@
 ;		to 0x6f - CALL_STACK_LIMIT.
 
 #define KERNEL_MAJOR_VERSION 0x0
-#define KERNEL_MINOR_VERSION 0x1
+#define KERNEL_MINOR_VERSION 0x2
 #define KERNEL_REVISION 0x0
 
 ;Process Control Block (PCB) defines
@@ -91,7 +91,7 @@ PAGE_BANK bsf STATUS,RP1
 	return
 	endm
 
-INIT_KERNEL_MAC macro errorByte,PAGE_BANK
+INIT_KERNEL_MAC macro errorByte,current_process,PAGE_BANK
 	movlw SUCCESS
 	movwf errorByte
 	clrf wait_queue_head
@@ -108,6 +108,7 @@ INIT_KERNEL_MAC macro errorByte,PAGE_BANK
 	goto $-4
 	bcf STATUS,RP0
 	bcf STATUS,RP1
+	clrf current_process
 	endm
 
 SUSPEND_PROCESS_MAC macro process_location,accumulator,exchange,programCounter,errorByte,TERMINATE_PROCESS
@@ -156,6 +157,7 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movf process_location,F
 	movwf INDF
 	movwf wait_queue_tail
+	clrf process_location
 	return
 	endm
 	
@@ -167,6 +169,10 @@ RESUME_PROCESS movlw DEFAULT_QUANTUM
 	movwf FSR
 	movf INDF,W
 	movwf wait_queue_head
+	movlw 0
+	xorwf wait_queue_head,W
+	btfsc STATUS,Z
+	movwf wait_queue_tail
 	movf program_location,W
 	movwf FSR
 	incf FSR,F
@@ -464,11 +470,13 @@ TRANSLATE_PAGE_ADDRESS_ERROR_INVALID_ADDRESS movlw INVALID_ADDRESS
 ;if there is a process in the queue, then *goto* RESUME_PROCESS
 DISPATCH_NEXT_PROCESS_MAC macro wait_queue_head,RESUME_PROCESS
 DISPATCH_NEXT_PROCESS movlw 0x0
-		  xorwf wait_queue_head,W
-		  btfsc STATUS,Z
-		  return
-		  goto RESUME_PROCESS
-		  endm
-
+	xorwf wait_queue_head,W
+	btfss STATUS,Z
+	goto RESUME_PROCESS
+	movlw NO_PROCESSES_TO_RUN
+	movwf errorByte
+	return
+	endm
+	
 		       		       
 		       		

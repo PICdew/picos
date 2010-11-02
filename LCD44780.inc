@@ -13,7 +13,12 @@ STARTUP1 movf	count, w		;put counter value in W
 		goto	STARTUP1
 
 NEXT_STARTUP_LINE call	LCD_BOTTOM		;move to 2nd row, first column
-	call DISPLAY_VERSION	
+	call DISPLAY_VERSION
+	movlw 4
+	movwf templcd
+	call Delay255
+	decfsz templcd,F
+	goto $-2	
 	goto END_OF_DISPLAY
 END_OF_DISPLAY goto MAIN_LOOP
 STARTUP_TOP	movwf pclTemp
@@ -22,13 +27,6 @@ STARTUP_TOP	movwf pclTemp
 	movf pclTemp,W
 	addwf	PCL, f
 STARTUP_TOP_TABLE dt "PicOS vs",0x0
-
-STARTUP_BOTTOM	movwf pclTemp
-	movlw HIGH START_BOTTOM_TABLE
-	movwf PCLATH
-	movf pclTemp,W
-	ADDWF   PCL, f
-START_BOTTOM_TABLE dt "READY!!!",0x00
 
 DISPLAY_VERSION movlw KERNEL_MAJOR_VERSION
 	call HEX_TO_CHAR
@@ -182,6 +180,19 @@ FILL_BUFFER_LOOP movf templcd,W
 	incf templcd,F
 	decfsz templcd2,F
 	goto FILL_BUFFER_LOOP
+	endm
+
+CLEAR_LCD_BUFFER_MAC macro lcd_buffer,templcd
+CLEAR_LCD_BUFFER movlw low lcd_buffer
+	movwf FSR
+	movlw LCD_LINE_SIZE * 2
+	movwf templcd
+	movlw ' '
+	movwf INDF
+	incf FSR,F
+	decfsz templcd,F
+	goto $-3
+	return
 	endm
 
 WRITE_BUFFER_MAC macro lcd_buffer,count,WRITE_CHAR,LCD_TOP,LCD_BOTTOM

@@ -1,20 +1,9 @@
 
-ISR_INCREMENT_TIME_OF_DAY_MAC macro reset_tmr_val,timer_reg,controlPort,myStatus,alarmHours,hours,alarmMinutes,minutes,INC_MINUTES,END_OF_INTERRUPT
+ISR_INCREMENT_TIME_OF_DAY_MAC macro timer_reg,myStatus,alarmHours,hours,alarmMinutes,minutes,INC_MINUTES,END_OF_INTERRUPT
 ISR_INCREMENT_TIME_OF_DAY goto INC_MINUTES
-ISR_REST_TMR movf reset_tmr_val,W
+ISR_REST_TMR movlw RESET_CLOCK_VALUE
 	movwf timer_reg;reset timer value
-	bcf controlPort,1
-	btfss myStatus,3
-	goto END_OF_INTERRUPT
-	movf alarmHours,W
-	subwf hours,W
-	btfss STATUS,Z
-	goto END_OF_INTERRUPT
-	movf alarmMinutes,W
-	subwf minutes,W
-	btfsc STATUS,Z
-	bsf controlPort,1
-	goto END_OF_INTERRUPT
+	bcf CLOCK_TIMER_FLAG
 	endm
 
 ;Provides SHOW_CLOCK, SHOW_TIME, SHOW_DATE
@@ -60,18 +49,13 @@ SHOW_TIME movlw 0x88
 	endm
 
 ;Provides INC_MINUTES, INC_HOURS, INC_DAYS, INC_MONTH
-INCREMENT_TIME_MAC macro dateDay,dateMonth,minutes,hours,totalMinutesLOW,totalMinutesMIDDLE,totalMinutesHIGH,ISR_REST_TMR,NUMBER_OF_DAYS
+INCREMENT_TIME_MAC macro dateDay,dateMonth,minutes,hours,ISR_REST_TMR,NUMBER_OF_DAYS
 INC_MINUTES incf minutes,F
 	movlw .60
 	xorwf minutes,W
 	btfsc STATUS,Z
 	call INC_HOURS
-	incf totalMinutesLOW,F
-	btfsc STATUS,C
-	incf totalMinutesMIDDLE,F
-	btfsc STATUS,C
-	incf totalMinutesHIGH,F
-	btfsc INTCON,2
+	btfsc CLOCK_TIMER_FLAG
 	goto ISR_REST_TMR
 	return
 	;
