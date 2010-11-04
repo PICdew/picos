@@ -192,6 +192,8 @@ CLEAR_LCD_BUFFER movlw low lcd_buffer
 	incf FSR,F
 	decfsz templcd,F
 	goto $-3
+	movlw low lcd_buffer
+	movwf lcd_pointer
 	return
 	endm
 
