@@ -58,8 +58,8 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
+/* Define if you have libreadline */
+#define USE_READLINE 1
+
 /* Version number of package */
 #define VERSION "0.1"
-
-/* Define if you have libreadline */
-#define __USE_READLINE__ 1

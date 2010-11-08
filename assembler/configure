@@ -3996,7 +3996,7 @@ if test "x$ac_cv_lib_readline_main" = x""yes; then :
   LIBREADLINE="-lreadline -lncurses"
 
 
-$as_echo "#define __USE_READLINE__ 1" >>confdefs.h
+$as_echo "#define USE_READLINE 1" >>confdefs.h
 
 
 else

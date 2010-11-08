@@ -12,10 +12,7 @@
 #include "CommandWords.h"
 #include "Help.h"
 
-#include "libdnstd/Double.h"
-#include "libdnstd/DavidException.h"
-
-#ifdef __USE_READLINE__
+#ifdef USE_READLINE
 #ifdef _READLINE_H_
 #  include "posixstat.h"
 #  include "readline.h"
@@ -25,7 +22,7 @@
 #  include <readline/readline.h>
 #  include <readline/history.h>
 #endif
-#endif /**__USE_READLINE__**/
+#endif /**USE_READLINE**/
 
   class Parser
   {

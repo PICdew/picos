@@ -3,8 +3,7 @@
 
 #include <string>
 #include <vector>
-
-#include "libdnstd/DString.h"
+#include "DString.h"
 
 typedef std::string arg_t;
 typedef std::vector<arg_t> args_t;

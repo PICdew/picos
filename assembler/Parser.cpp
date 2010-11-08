@@ -1,7 +1,7 @@
 #include "Parser.h"
 
 Parser::Parser() {
-#ifdef __USE_READLINE__
+#ifdef USE_READLINE
     rl_bind_key('\t', Parser::tab_complete);
 #endif
     commands = new CommandWords();
@@ -62,22 +62,22 @@ void Parser::main(args_t& args) {
 
 Command * Parser::getCommand() {
     using namespace std;
-    char inputLine[256]; // will hold the full input line
 
     try {
-#ifndef _READLINE_H_
+#ifndef USE_READLINE
+    char inputLine[256]; // will hold the full input line
         cout << "> "; // print prompt
         cin.get(inputLine, 256);
+        cin.ignore(255, '\n');
 #else
-        strcpy(inputLine, readline("> "));
+	char *inputLine = readline("> ");
         add_history(inputLine);
 #endif
     } catch (...) {
-        throw DavidException("Input error");
+        throw GoodException("Input error");
     }
     cout.flush();
-    cin.ignore(255, '\n');
-
+    
     return new Command(inputLine);
 
 }
@@ -108,8 +108,8 @@ void Parser::start() {
             finished = processCommand(*command);
             delete command;
             command = 0;
-        } catch (DavidException e) {
-            std::cout << "Process Error: " << e.getMessage() << std::endl;
+        } catch (GoodException e) {
+            std::cout << "Process Error: " << e.what() << std::endl;
         }
     }
     std::cout << "Thank you.  Good bye." << std::endl;
@@ -161,16 +161,19 @@ bool Parser::processCommand(Command& command, std::string& whatIsSaid) {
 arg_t Parser::getHistoryValue(Command& command) const {
 
     size_t historyCount = history->size() - 1;
+    std::istringstream int_buff(command.getCommandWord().substr(1));
+    
     if (command.getCommandWord().substr(0, 2) != "!!")
-        historyCount = (int) Double(command.getCommandWord().substr(1)).doubleValue();
-
-    if (historyCount < 0)
-        throw DavidException("I need a positive number for the place in history");
+    {
+	    int_buff >> historyCount;
+    	if(int_buff.fail() || historyCount < 0)
+        	throw GoodException("I need a positive number for the place in history");
+    }
 
     if (historyCount >= history->size())
-        throw DavidException("Ummm, that is in the future.");
+        throw GoodException("Ummm, that is in the future.");
 
-    DString newCommand = history->at(historyCount);
+    std::string newCommand = history->at(historyCount);
     args_t words = command.getWords();
     for (size_t i = 1; i < words.size(); i++)
         newCommand += " " + words.at(i);
@@ -184,7 +187,7 @@ void Parser::setHelp(const Help& newHelp)
   h = new Help(newHelp);
 }
 
-#ifdef __USE_READLINE__
+#ifdef USE_READLINE
 extern Help makeHelp();
 int Parser::tab_complete(int a, int b) {
     Parser p;

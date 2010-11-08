@@ -29,7 +29,7 @@ AC_ARG_WITH([readline],
           AS_IF([test "x$with_readline" != xno],
             [AC_CHECK_LIB([readline], [main],
               [AC_SUBST([LIBREADLINE], ["-lreadline -lncurses"])
-               AC_DEFINE([__USE_READLINE__], [1],
+               AC_DEFINE([USE_READLINE], [1],
                          [Define if you have libreadline])
               ],
               [AC_MSG_FAILURE(

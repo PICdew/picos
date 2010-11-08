@@ -5,7 +5,7 @@
 #include <fstream>
 #include <vector>
 
-#include "libdnstd/StringTokenizer.h"
+#include "StringTokenizer.h"
 #include "CommandWords.h"
 #include "Help.h"
 

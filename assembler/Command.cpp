@@ -13,7 +13,7 @@
 	  
 	  if(words.size() != 0)
 	    {
-	      utils::StringTokenizer toke = utils::StringTokenizer(_words);
+	      StringTokenizer toke(_words);
 	      	while(toke.hasMoreTokens())
 			{
 			  std::string currString = toke.nextToken();
@@ -73,7 +73,7 @@
 	    }
 	}
       else
-	throw DavidException("Could not open: " + fileName);
+	throw GoodException("Could not open: " + fileName);
 
       return returnMe;
       

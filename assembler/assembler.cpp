@@ -9,11 +9,11 @@
 #include <string>
 #include <iostream>
 #include <strstream>
+#include <cmath>
 
 //this prevents the GUI from being used.
 #define GUI_CPP 1
-#include "libdnstd/Double.h"
-#include "libdnstd/StringTokenizer.h"
+#include "StringTokenizer.h"
 #include "Parser.h"
 
 #include "Build.h"
@@ -82,7 +82,7 @@ string formatHex(const string& unformatted)
   is >> val;
   
   if(is.fail())
-    throw DavidException("Could not compile: " + unformatted);
+    throw GoodException("Could not compile: " + unformatted);
   
   return formatHex(val,ios::hex);
 }
@@ -206,7 +206,7 @@ void compile(const args_t& precompiled, const string& filename)
 			is >> hex;
 			if(is.fail())
 			{
-			  throw DavidException("Invalid variable: " + *it);
+			  throw GoodException("Invalid variable: " + *it);
 			}
 			checksum += hex;
 		}
@@ -427,10 +427,10 @@ int main(int argc, char **argv)
 		  p.main(argc,argv);
 		  return 0;
 		}
-		catch(DavidException de)
+		catch(GoodException de)
 		{
-			de.stdOut();
-			return de.getCode();
+			std::cout << de << std::endl;
+			return de.getErrType();
 		}
 	}
 	else{
@@ -440,10 +440,10 @@ int main(int argc, char **argv)
 			p.main();
 			return 0;
 		}
-		catch(DavidException de)
+		catch(GoodException de)
 		{
-			de.stdOut();
-			return de.getCode();
+			std::cout << de << std::endl;
+			return de.getErrType();
 		}
 	}
 
