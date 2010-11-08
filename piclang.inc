@@ -33,8 +33,11 @@ PICLANG_COMMAND_TABLE	goto lda		;0x0
 	goto bsa
 	goto bca
 	goto clra
-	goto goto_piclang
-END_OF_PICLANG_COMMAND_TABLE	goto display_piclang
+	goto goto_piclang ; 0x10
+	goto display_piclang
+	goto clear_display_piclang
+	goto piclang_display_time
+END_OF_PICLANG_COMMAND_TABLE goto sett
 	endm
 
 PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,display_piclang_template
@@ -162,6 +165,15 @@ bsa_bca_setup call GET_ARG
 clra clrf accumulator
 	goto END_OF_FUNCTION
 display_piclang goto display_piclang_template
+clear_display_piclang goto clear_display_piclang_template
+piclang_display_time goto display_time_template
+sett call GET_ARG
+	call GET_ARG
+	call POP_STACK
+	movwf minutes
+	call POP_STACK
+	movwf hours
+	goto END_OF_FUNCTION
 	endm;PICLANG_COMMAND_SET_MAC
 
 ;Reads data from EEPROM.
@@ -297,12 +309,17 @@ WRITE_EOP call POP_STACK
 	goto PROGRAM_MAIN_FORK
 	endm;PROGRAM_LOOP_MAC
 
+;Runs through program. If there is an error, errorByte is written
+;At the end the progress does *goto* PROGRAM_MAIN_FORK
 RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,current_process,programCounter,READ_EEPROM,instruction,errorByte,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING,ERROR_RETURN
 RUN_PROGRAM movf current_process,W ; lookup start of program binary
 	 addlw PROC_PHYSICAL_BEGINNING
 	 movwf FSR
 	 movf INDF,W ; value equals the beginning of the binary. First value is the number of free store pages needed. second value is the size of the program binary.
+	 addlw 1 ; second value of binary is the size of the program binary in bytes
+	 call PUSH_STACK
 	 call READ_EEPROM
+	 call POP_STACK
 	 movwf temp ; temp holds program size
 RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of bytes of program executable code).
 	 subwf programCounter,W
@@ -316,7 +333,9 @@ RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of byt
 	 movf INDF,W
 	 addlw PROGRAM_BINARY_OFFSET
 	 addwf programCounter,W ; add program counter offset
+	call PUSH_STACK
 	call READ_EEPROM
+	call POP_STACK
 	movwf instruction
 	movlw EOP
 	xorwf instruction,W
@@ -326,32 +345,36 @@ RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of byt
 	goto RUN_PROGRAM_LOOP
 BEYOND_PROGRAM_MEMORY_ERR movlw BEYOND_PROGRAM_MEMORY
 	movwf errorByte
-	goto ERROR_RETURN
+	goto PROGRAM_MAIN_FORK
 	endm
 	
-GET_ARG_MAC macro programCounter,READ_EEPROM,PUSH_STACK
-GET_ARG incf programCounter,F
+GET_ARG_MAC macro current_process,programCounter,READ_EEPROM,PUSH_STACK
+GET_ARG movf current_process,W
+	addlw PROC_PHYSICAL_BEGINNING
+	movwf FSR
+	incf programCounter,F
 	movf programCounter,W
-	call READ_EEPROM
-	goto PUSH_STACK
+	addlw PROGRAM_BINARY_OFFSET
+	addwf INDF,W
+	call PUSH_STACK
+	goto READ_EEPROM
 	endm
 	
 ;Runs the command corresponding to the value of "instruction".
 ;The return value is place at the top of the stack (i.e. stack)
 ;SUPPLY RUN_COMMAND_TABLE or suffer the consequences!!!
 RUN_COMMAND_MAC macro instruction,programCounter,errorByte,ERROR_RETURN,PICLANG_COMMAND_TABLE,END_OF_PICLANG_COMMAND_TABLE
-RUN_COMMAND movlw low END_OF_PICLANG_COMMAND_TABLE
-	sublw PICLANG_COMMAND_TABLE
+RUN_COMMAND movlw low PICLANG_COMMAND_TABLE
+	sublw low END_OF_PICLANG_COMMAND_TABLE
 	addlw 1
 	subwf instruction,W
 	btfsc STATUS,DC
 	goto NO_SUCH_COMMAND_ERR
-	return
 	movlw HIGH PICLANG_COMMAND_TABLE
 	movwf PCLATH
 	movlw low PICLANG_COMMAND_TABLE
 	addwf instruction,W
-	addwf PCL,F;USES RUN_COMMAND_TABLE as a lookup table.
+	movwf PCL;USES RUN_COMMAND_TABLE as a lookup table.
 END_OF_FUNCTION incf programCounter,F
 	return
 NO_SUCH_COMMAND_ERR movlw NO_SUCH_COMMAND
