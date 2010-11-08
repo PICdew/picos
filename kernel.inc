@@ -250,11 +250,12 @@ START_PROCESS bcf STATUS,RP0
 	goto START_PROCESS_NO_SPACE
 	btfsc STATUS,Z
 	goto START_PROCESS_NO_SPACE
-INIT_PCB_VALUES movf wait_queue_tail,W
+ADJUST_QUEUE_HEAD movf wait_queue_tail
 	movwf FSR
 	addlw PROCESS_MEMORY_SPACE
 	movwf INDF
-	movwf wait_queue_tail ; new process is now the tail of the queue
+	movwf wait_queue_tail
+INIT_PCB_VALUES movf wait_queue_tail,W ; new process is now the tail of the queue
 	movwf FSR ; fill new process space with default values
 	movlw 0x0
 	movwf INDF
@@ -294,7 +295,6 @@ PUSH_FIRST_PCB movlw low pcb_block
 	movwf wait_queue_head
 	movwf wait_queue_tail
 	movlw PROCESS_MEMORY_SPACE
-	subwf wait_queue_tail,F ; the next step of the routine will be to increment the queue tail by this amount.
 	goto INIT_PCB_VALUES
 	endm	
 	
