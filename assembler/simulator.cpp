@@ -378,6 +378,7 @@ Help makeHelp()
     returnMe["print"] = "Prints memory.";
     return returnMe;
 }
+Help readline_help_function(){return makeHelp();}
 
 opcode_t getMemoryVal(const arg_t& arg, int& state)
 {

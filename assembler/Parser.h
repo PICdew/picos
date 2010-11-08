@@ -34,7 +34,6 @@
     Parser();
     ~Parser();
     static std::string getVersion(){return Build::getVersion();}
-    static int tab_complete(int a, int b);
     /**
      * Starts the parser.
      */

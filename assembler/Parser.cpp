@@ -1,8 +1,12 @@
 #include "Parser.h"
 
+#ifdef USE_READLINE
+#include "readline_functions.cpp"
+#endif
+
 Parser::Parser() {
 #ifdef USE_READLINE
-    rl_bind_key('\t', Parser::tab_complete);
+  init_readline();
 #endif
     commands = new CommandWords();
     h = new Help();
@@ -69,16 +73,17 @@ Command * Parser::getCommand() {
         cout << "> "; // print prompt
         cin.get(inputLine, 256);
         cin.ignore(255, '\n');
+	cout.flush();
+	return new Command(inputLine);
 #else
 	char *inputLine = readline("> ");
         add_history(inputLine);
+	return new Command(inputLine);
 #endif
     } catch (...) {
         throw GoodException("Input error");
     }
-    cout.flush();
     
-    return new Command(inputLine);
 
 }
 
@@ -187,14 +192,3 @@ void Parser::setHelp(const Help& newHelp)
   h = new Help(newHelp);
 }
 
-#ifdef USE_READLINE
-extern Help makeHelp();
-int Parser::tab_complete(int a, int b) {
-    Parser p;
-    p.setHelp(makeHelp());
-    arg_t blah = "";
-    p.printHelp(blah);
-    std::cout << blah << std::endl;
-    return 0;
-}
-#endif

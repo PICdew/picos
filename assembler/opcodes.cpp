@@ -22,7 +22,6 @@ const int opcodeVersion[] = {1,3,0};
 Help assemblerHelp()
 {
     using namespace std;
-    cerr << "assemberhelp()" << endl;
     Help returnMe;
     returnMe["lda"] = "loads the value to the accumulator";
     returnMe["adda"] = "";
