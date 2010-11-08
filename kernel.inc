@@ -19,7 +19,7 @@
 
 #define KERNEL_MAJOR_VERSION 0x0
 #define KERNEL_MINOR_VERSION 0x2
-#define KERNEL_REVISION 0x0
+#define KERNEL_REVISION 0x1
 
 ;Process Control Block (PCB) defines
 #define PROCESS_MEMORY_SPACE 7;amount of bytes to be given to all processes for their PCB
@@ -52,6 +52,10 @@
 #define NO_SUCH_COMMAND 5
 #define BEYOND_PROGRAM_MEMORY 6
 
+;myStatus defines
+#define ALARM_FLAG 0
+#define UPDATED_TIME 1
+
 ;Very important memory locations. Memory above 70h is accessible in any bank
 	cblock 0x70
 	errorByte
@@ -76,13 +80,14 @@
 	cblock 0x20
 wait_queue_head
 wait_queue_tail
-process_space: PROCESS_MEMORY_SPACE * MAX_PROCESS_COUNT
+pcb_block: PROCESS_MEMORY_SPACE * MAX_PROCESS_COUNT
 	endc
 
 ;Page tabe is in bank 1
       cblock 0xA0
 page_table: PAGE_COUNT
 page_memory: PAGE_SIZE * PAGE_COUNT
+free_page_count 
       endc
 
 PAGE_BANK_MAC macro 
@@ -91,7 +96,7 @@ PAGE_BANK bsf STATUS,RP1
 	return
 	endm
 
-INIT_KERNEL_MAC macro errorByte,current_process,PAGE_BANK
+INIT_KERNEL_MAC macro errorByte,free_page_count,current_process,PAGE_BANK
 	movlw SUCCESS
 	movwf errorByte
 	clrf wait_queue_head
@@ -101,11 +106,14 @@ INIT_KERNEL_MAC macro errorByte,current_process,PAGE_BANK
 	movwf FSR
 	movlw PAGE_COUNT
 	movwf temp
-	movlw 0x0
-	movwf INDF
+	clrf INDF
 	incf FSR,F
 	decfsz temp,F
-	goto $-4
+	goto $-3
+	movlw free_page_count
+	movwf FSR
+	movlw PAGE_COUNT
+	movwf INDF
 	bcf STATUS,RP0
 	bcf STATUS,RP1
 	clrf current_process
@@ -114,24 +122,25 @@ INIT_KERNEL_MAC macro errorByte,current_process,PAGE_BANK
 SUSPEND_PROCESS_MAC macro process_location,accumulator,exchange,programCounter,errorByte,TERMINATE_PROCESS
 SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movf process_location,W
-	bsf STATUS,RP0
+	xorlw 0
+	btfsc STATUS,Z
+	return
 	movwf FSR
 	movlw PROC_W
 	addwf FSR,F
-	bcf STATUS,RP0
 	movf saveW,W
-	bsf STATUS,RP0
 	movwf INDF
-	bcf STATUS,RP0
 	movlw SUCCESS ;check to see if the process has errored out
+	banksel errorByte
 	xorwf errorByte,W
 	btfsc STATUS,Z
 	goto TERMINATE_PROCESS
+	nop
 	movf process_location,W ;no errors; save state
 	movwf FSR
 	incf FSR,F
+	banksel programCounter
 	movf programCounter,W
-	bsf STATUS,RP0
 	movwf INDF
 	incf FSR,F
 	bcf STATUS,RP0
@@ -158,6 +167,8 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movwf INDF
 	movwf wait_queue_tail
 	clrf process_location
+	bcf STATUS,RP0
+	bcf STATUS,RP1
 	return
 	endm
 	
@@ -168,6 +179,7 @@ RESUME_PROCESS movlw DEFAULT_QUANTUM
 	movwf program_location
 	movwf FSR
 	movf INDF,W
+	banksel wait_queue_head
 	movwf wait_queue_head
 	movlw 0
 	xorwf wait_queue_head,W
@@ -195,35 +207,21 @@ RESUME_PROCESS movlw DEFAULT_QUANTUM
 	movlw PROC_W
 	addwf FSR,F
 	movf INDF,W
+	bcf STATUS,RP0
+	bcf STATUS,RP1
 	return	
 	endm
 
-;exchange is used as a temporary location for program locations
-;does return.
-TERMINATE_PROCESS_MAC macro process_location,exchange,errorByte,ERROR_RETURN
+;Terminate needs to free paged memory. When a program is RESUMED
+;it leaves the wait queue. So TERMINATE_PROCESS does not have to
+;do anything to the queue. The schedule will start the next process (if any).
+TERMINATE_PROCESS_MAC macro process_location,errorByte,ERROR_RETURN,FREE_PAGES
 TERMINATE_PROCESS movf process_location,W
-	movwf FSR
-	movf INDF,W ; process after the one terminated (null if it is the tail)
-	movwf exchange
-	movf wait_queue_head,W
-	movwf FSR
+	call FREE_PAGES
 	movf process_location,W
-	xorwf INDF,W
-	btfss STATUS,Z
-	goto TERMINATE_PROCESS_HAVE_PRECEEDING_PROCESS
-	movf INDF,W
 	movwf FSR
-	goto $-6
-TERMINATE_PROCESS_HAVE_PRECEEDING_PROCESS movf exchange,W ; INDF now points to the process proceeding the terminated process
-	movwf INDF
-	movf process_location,W
-	xorwf wait_queue_tail,W ; if this process is the tail, update tail 
-	btfsc STATUS,Z
-	goto $+3
-	movf INDF,W
-	movwf wait_queue_tail
-	movlw SUCCESS
-	subwf errorByte,W
+	movlw SUCCESS ; See if the program errored. If so goto error return.
+	xorwf FSR,W
 	btfsc STATUS,Z
 	return
 	goto ERROR_RETURN
@@ -239,27 +237,24 @@ ERROR_RETURN call DISPLAY_ERROR_STATUS
 
 ;Program binaries start with the amount of memory *pages* they request in free store as the first byte.
 ;exchange will temporarily hold the memory location where the program is stored (i.e. the actual binary)
-START_PROCESS_MAC macro exchange,errorByte,wait_queue_head,wait_queue_tail,PUSH_STACK,REQUEST_MEMORY,ERROR_RETURN
+START_PROCESS_MAC macro errorByte,wait_queue_head,wait_queue_tail,PUSH_STACK,POP_STACK,REQUEST_MEMORY,ERROR_RETURN
 START_PROCESS bcf STATUS,RP0
 	bcf STATUS,RP1
 	movlw 0
 	xorwf wait_queue_head,W
 	btfsc STATUS,Z
 	goto PUSH_FIRST_PCB
-	movlw PROCESS_MEMORY_SPACE * (MAX_PROCESS_COUNT - 1) ; test to see if there is room at the end of the queue
+	movlw (low pcb_block) + PROCESS_MEMORY_SPACE * (MAX_PROCESS_COUNT - 1) ; test to see if there is room at the end of the queue
 	subwf wait_queue_tail,W
 	btfsc STATUS,C
 	goto START_PROCESS_NO_SPACE
 	btfsc STATUS,Z
 	goto START_PROCESS_NO_SPACE
 INIT_PCB_VALUES movf wait_queue_tail,W
-	bsf STATUS,RP0 ;  bank 1
 	movwf FSR
 	addlw PROCESS_MEMORY_SPACE
 	movwf INDF
-	bcf STATUS,RP0
 	movwf wait_queue_tail ; new process is now the tail of the queue
-	bsf STATUS,RP0
 	movwf FSR ; fill new process space with default values
 	movlw 0x0
 	movwf INDF
@@ -274,8 +269,7 @@ INIT_PCB_VALUES movf wait_queue_tail,W
 	subwf FSR,F
 	movlw PROC_PHYSICAL_BEGINNING
 	addwf FSR,F
-	bcf STATUS,RP0
-	movf exchange,W ; starting point of binary code
+	call POP_STACK ; starting point of binary code
 	bsf STATUS,RP0
 	movwf INDF
 	bcf STATUS,RP0
@@ -305,21 +299,19 @@ PUSH_FIRST_PCB movlw low pcb_block
 	endm	
 	
 
-START_INTERRUPT macro saveW,interruptBankSave,bankSelect,SAVE_BANK,SUSPEND_PROCESS
+START_INTERRUPT macro saveW,interruptBankSave,bankSelect,SAVE_BANK
 	movwf saveW;save w value
 	movf bankSelect,W
 	movwf interruptBankSave
 	call SAVE_BANK
-	call SUSPEND_PROCESS
 	endm
 	
-FINISH_INTERRUPT macro saveW,interruptBankSave,bankSelection,RESET_BANK,RESTART_PROCESS
-	movf saveW,W
+FINISH_INTERRUPT macro saveW,interruptBankSave,bankSelection,RESET_BANK
 	call RESET_BANK
 	movf interruptBankSave,W
 	movwf bankSelection
-	bcf INTCON,2
-	call RESTART_PROCESS	
+	movf saveW,W
+	bcf INTCON,GIE
 	endm
 
 MAIN_PROCESS_MAC macro CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP
@@ -349,36 +341,18 @@ RESET_BANK movf bankSelection,W
 ; this routine is called) is placed in page_table
 ; in the first W entries where the value is zero.
 ;If there are not W values empty,
-REQUEST_MEMORY_MAC macro errorByte,temp,POP_STACK,PUSH_STACK
-REQUEST_MEMORY movwf temp
-	movlw 0 ; check to see if zero bytes were requested. if so return immediately.
-	xorwf temp,W
-	btfsc STATUS,Z
-	return
-	bsf STATUS,RP0
+REQUEST_MEMORY_MAC macro errorByte,free_page_count,temp,POP_STACK,PUSH_STACK
+REQUEST_MEMORY call PUSH_STACK
+	banksel free_page_count
+	subwf free_page_count,W
+	bcf STATUS,RP0
 	bcf STATUS,RP1
-	movlw low page_table
-	movwf FSR
-	movlw 0
-	call PUSH_STACK
-MEMORY_COUNT_LOOP movlw low page_table + PAGE_COUNT
-	xorwf FSR,W
-	btfsc STATUS,Z
-	goto REQUEST_MEMORY_INS_MEM ; check to see if we are at the end of the page table
-	movlw 0
-	xorwf INDF,W
-	btfss STATUS,Z ; check to see if the current entry is equal to zero. if it is increment the counter (on stack).
-	goto MEMORY_COUNT_LOOP_NEXT 
-	call POP_STACK
-	addlw 1
-	call PUSH_STACK
-MEMORY_COUNT_LOOP_NEXT decfsz temp,F
-	goto $+2
-	goto MEMORY_COUNT_LOOP
-	call POP_STACK
-	xorwf temp,W
 	btfsc STATUS,Z
 	goto REQUEST_MEMORY_INS_MEM
+	btfss STATUS,C
+	goto REQUEST_MEMORY_INS_MEM
+	call POP_STACK
+	movwf temp
 	movlw low page_table
 	movwf FSR
 CLAIM_MEMORY_LOOP movlw 0
@@ -393,12 +367,13 @@ CLAIM_MEMORY call POP_STACK
 	decfsz temp,F
 	goto END_OF_REQUEST_MEMORY
 	incf FSR,F
+	bsf STATUS,RP0
+	decf free_page_count,F
+	bcf STATUS,RP0
 	goto CLAIM_MEMORY_LOOP
 REQUEST_MEMORY_INS_MEM movlw INSUFFICIENT_MEMORY
 	movwf errorByte
 END_OF_REQUEST_MEMORY 	call POP_STACK
-	bcf STATUS,RP0
-	bcf STATUS,RP1
 	return
 	endm
 
@@ -417,7 +392,9 @@ TRANSLATE_PAGE_ADDRESS movlw PAGE_SIZE
 		       movwf errorByte
 		       goto ERROR_RETURN
 		       movlw 0xf0
+			   bsf STATUS,RP0
 		       andwf page_addr,W
+			   bcf STATUS,RP0
 		       movwf errorByte
 		       swapf errorByte,F
 		       call PAGE_BANK
@@ -464,7 +441,29 @@ TRANSLATE_PAGE_ADDRESS_FINISH movf errorByte,W
 TRANSLATE_PAGE_ADDRESS_ERROR_INVALID_ADDRESS movlw INVALID_ADDRESS
 					     movwf errorByte
 					     goto ERROR_RETURN 
-			      endm
+	endm
+
+;Moves through the processes and removes pages whos owners
+;equal the value initially in W
+FREE_PAGES_MAC macro page_table_addr,free_page_count,count,temp
+FREE_PAGES movwf temp
+	movlw low page_table_addr
+	movwf FSR
+	movlw PAGE_COUNT
+	movwf count
+FREE_PAGES_LOOP movf temp,W ; move through page table. see if the owner is the value passed to W-reg
+	xorwf INDF,W
+	btfss STATUS,Z
+	goto $+6
+	clrf INDF
+	bsf STATUS,RP0
+	incf free_page_count,F
+	bcf STATUS,RP0
+	incf FSR,F
+	decfsz count,F
+	goto FREE_PAGES_LOOP
+	return
+    endm
 
 ;returns if there is no process in queue
 ;if there is a process in the queue, then *goto* RESUME_PROCESS

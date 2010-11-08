@@ -54,17 +54,15 @@ INC_MINUTES incf minutes,F
 	movlw .60
 	xorwf minutes,W
 	btfsc STATUS,Z
-	call INC_HOURS
-	btfsc CLOCK_TIMER_FLAG
+	goto INC_HOURS
 	goto ISR_REST_TMR
-	return
 	;
 INC_HOURS clrf minutes
 	incf hours,F
 	movlw .24
 	xorwf hours,W
 	btfss STATUS,Z
-	return
+	goto ISR_REST_TMR
 	clrf hours
 	goto INC_DAYS
 	;
@@ -74,7 +72,7 @@ INC_DAYS movf dateMonth,W
 	btfsc STATUS,Z
 	goto INC_MONTH
 	incf dateDay,F
-	return
+	goto ISR_REST_TMR
 	;
 INC_MONTH movlw .1
 	movwf dateDay
@@ -82,9 +80,10 @@ INC_MONTH movlw .1
 	movlw .13
 	xorwf dateMonth,W
 	btfss STATUS,Z
-	return
+	goto ISR_REST_TMR
 	movlw .1
 	movwf dateMonth
+	goto ISR_REST_TMR
 	;
 	endm
 

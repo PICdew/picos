@@ -182,8 +182,9 @@ FILL_BUFFER_LOOP movf templcd,W
 	goto FILL_BUFFER_LOOP
 	endm
 
-CLEAR_LCD_BUFFER_MAC macro lcd_buffer,templcd
+CLEAR_LCD_BUFFER_MAC macro lcd_buffer,lcd_pointer,templcd
 CLEAR_LCD_BUFFER movlw low lcd_buffer
+	movwf lcd_pointer
 	movwf FSR
 	movlw LCD_LINE_SIZE * 2
 	movwf templcd
@@ -192,8 +193,6 @@ CLEAR_LCD_BUFFER movlw low lcd_buffer
 	incf FSR,F
 	decfsz templcd,F
 	goto $-3
-	movlw low lcd_buffer
-	movwf lcd_pointer
 	return
 	endm
 
