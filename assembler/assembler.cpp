@@ -9,51 +9,8 @@
 #include <string>
 #include <iostream>
 #include <strstream>
+#include <stdlib.h>
 #include <cmath>
-
-#include <argp.h>
-static char doc[] = "assembler -- compiles source code for piclang, a functional language for PIC microcontrollers.";
-static args_doc[] = "<SOURCE FILE>";
-static struct argp_option options[] = {
-  {"todo",'t',0,0,"Prints a list of things that need to be done to improve this program."},
-  {"version",'v',0,0,"Printer the current version"},
-  {"compile",'c',"FILE",0,"Compiles a specific file."},
-  {"output",'o',"FILE",0,"Name of the output file (HEX format)."},
-  {0}  
-};
-
-struct assembler_arguments
-{
-  std::string source_filename,output_filename;  
-};
-
-static error_t parse_opt(int key, char* arg, struct argp_state* state)
-{
-	struct assembler_arguments * args = (struct assembler_arguments*) state->input;
-
-	switch(key)
-	{
-	case 't':
-	  cout << Build::todo << endl;
-	  argp_usage(state);
-	case 'v':
-	  cout << "assembler version: " << Build::getVersion() << endl;
-	  cout << "opcode version: " << opcodeVersion[0] << "." << opcodeVersion[1] << "." << opcodeVersion[2] << endl;
-	  cout << "Last Build: " << Build::getBuild() << endl;
-	  argp_usage(state);
-	case 'c':
-	  args->source_filename = arg;
-	  break;
-	case 'o':
-	  args->output_filename = arg;
-	  break;
-	default:
-	  return ARGP_ERR_UNKNOWN;
-	}
-	return 0;
-}
-
-static struct argp argp = {options,parse_opt, args_doc, doc};
 
 #include "opcodes.cpp"
 
@@ -64,6 +21,7 @@ static struct argp argp = {options,parse_opt, args_doc, doc};
 
 #include "Build.h"
 
+#include "args_parser.cpp"
 
 #define GENERAL_ERROR 1
 #define IO_ERROR 2
@@ -453,7 +411,7 @@ int main((int argc, char **argv)
   args.source_filename = "";
   args.output_filename = "a.hex";
 
-  argp_parse(&argp,argc,argv,0,0,&args);
+  pargse_args(&argp,argc,argv,0,0,&args);
 
   if(argc > 1)
 	{
