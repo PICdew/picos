@@ -56,6 +56,8 @@
 #define ALARM_FLAG 0
 #define UPDATED_TIME 1
 #define USART_BUSY_FLAG 2
+#define SSP_READ_BUSY_FLAG 3
+#define SSP_WRITE_BUSY_FLAG 4
 
 ;Very important memory locations. Memory above 70h is accessible in any bank
 	cblock 0x70

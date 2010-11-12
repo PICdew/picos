@@ -1,6 +1,8 @@
 #define USART_READ_FLAG PIR1,RCIF
 #define USART_WRITE_FLAG PIR1,TXIF
 
+#define SSP_STAT_FLAG SSPSTAT, BF
+
 
 ;Code for copying to and from the usart_addr location.
 ;Does not return. Instead it goest to RETURN_ADDR upon completion.
@@ -46,3 +48,33 @@ WRITE_USART movlw 0
 	goto RETURN_ADDR
 	
 	endm
+	
+;Copies the SSPBUF to the desired memory location and then copies the next
+;transmit location to SSPBUF, in effect syncronizing the read/write process
+;between user mode processes and the SSP process.
+;
+;Does not return. Instead goes to RETURN_ADDR after completion.
+;Returns in bank 0
+SYNC_SSP_MAC macro rx_addr,tx_addr,PUSH_STACK,POP_STACK,RETURN_ADDR
+SYNC_SSP movf FSR,W
+	call PUSH_STACK
+	banksel rx_addr
+	movlw 0
+	xorwf rx_addr,W
+	btfsc STATUS,Z
+	goto SYNC_TRANSMIT_SSP
+	movwf FSR
+	banksel SSPBUF
+	movf SSPBUF,W
+	movwf INDF
+SYNC_TRANSMIT_SSP movlw 0
+	banksel tx_addr
+	xorwf tx_addr,W
+	btfsc STATUS,Z
+	goto END_SYNC_SSP
+	movwf FSR
+	banksel SSPBUF
+	movf INDF,W
+	movwf SSPBUF
+	bcf myStatus,SSP_WRITE_BUSY_FLAG
+END_SYNC_SSP goto RETURN_ADDR
