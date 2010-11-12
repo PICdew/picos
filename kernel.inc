@@ -55,6 +55,7 @@
 ;myStatus defines
 #define ALARM_FLAG 0
 #define UPDATED_TIME 1
+#define USART_BUSY_FLAG 2
 
 ;Very important memory locations. Memory above 70h is accessible in any bank
 	cblock 0x70
