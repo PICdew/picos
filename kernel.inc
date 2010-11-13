@@ -51,6 +51,7 @@
 #define INVALID_ADDRESS 4 ; page address is not a valid location
 #define NO_SUCH_COMMAND 5
 #define BEYOND_PROGRAM_MEMORY 6
+#define USART_ERROR 7
 
 ;myStatus defines
 #define ALARM_FLAG 0
@@ -253,7 +254,7 @@ START_PROCESS bcf STATUS,RP0
 	goto START_PROCESS_NO_SPACE
 	btfsc STATUS,Z
 	goto START_PROCESS_NO_SPACE
-ADJUST_QUEUE_HEAD movf wait_queue_tail
+ADJUST_QUEUE_HEAD movf wait_queue_tail,W
 	movwf FSR
 	addlw PROCESS_MEMORY_SPACE
 	movwf INDF
