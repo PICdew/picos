@@ -37,8 +37,10 @@ PICLANG_COMMAND_TABLE	goto lda		;0x0
 	goto display_piclang
 	goto clear_display_piclang
 	goto piclang_display_time
-END_OF_PICLANG_COMMAND_TABLE goto sett
+	goto sett
+END_OF_PICLANG_COMMAND_TABLE goto setd
 	endm
+#define NUMBER_OF_COMMANDS 0x16
 
 PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,display_piclang_template
 ;Generic set subroutine. Can set current time, alarm time or date.
@@ -173,6 +175,13 @@ sett call GET_ARG
 	movwf minutes
 	call POP_STACK
 	movwf hours
+	goto END_OF_FUNCTION
+setd call GET_ARG
+	call GET_ARG
+	call POP_STACK
+	movwf dateDay
+	call POP_STACK
+	movwf dateMonth
 	goto END_OF_FUNCTION
 	endm;PICLANG_COMMAND_SET_MAC
 
@@ -364,9 +373,7 @@ GET_ARG movf current_process,W
 ;The return value is place at the top of the stack (i.e. stack)
 ;SUPPLY RUN_COMMAND_TABLE or suffer the consequences!!!
 RUN_COMMAND_MAC macro instruction,programCounter,errorByte,ERROR_RETURN,PICLANG_COMMAND_TABLE,END_OF_PICLANG_COMMAND_TABLE
-RUN_COMMAND movlw low PICLANG_COMMAND_TABLE
-	sublw low END_OF_PICLANG_COMMAND_TABLE
-	addlw 1
+RUN_COMMAND movlw NUMBER_OF_COMMANDS
 	subwf instruction,W
 	btfsc STATUS,DC
 	goto NO_SUCH_COMMAND_ERR
@@ -374,6 +381,8 @@ RUN_COMMAND movlw low PICLANG_COMMAND_TABLE
 	movwf PCLATH
 	movlw low PICLANG_COMMAND_TABLE
 	addwf instruction,W
+	btfsc STATUS,C
+	incf PCLATH,F ; long program o.O
 	movwf PCL;USES RUN_COMMAND_TABLE as a lookup table.
 END_OF_FUNCTION incf programCounter,F
 	return
