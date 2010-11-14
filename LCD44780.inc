@@ -25,7 +25,10 @@ STARTUP_TOP	movwf pclTemp
 	movlw HIGH STARTUP_TOP_TABLE
 	movwf PCLATH
 	movf pclTemp,W
-	addwf	PCL, f
+	addlw low STARTUP_TOP_TABLE
+	btfsc STATUS,C
+	incf PCLATH,F
+	movwf PCL
 STARTUP_TOP_TABLE dt "PicOS vs",0x0
 
 DISPLAY_VERSION movlw KERNEL_MAJOR_VERSION
@@ -196,8 +199,35 @@ CLEAR_LCD_BUFFER movlw low lcd_buffer
 	return
 	endm
 
-WRITE_BUFFER_MAC macro lcd_buffer,count,WRITE_CHAR,LCD_TOP,LCD_BOTTOM
-WRITE_BUFFER call CLEAR_DISPLAY
+;writes the buffer. The requester's address(UID) (first PCB byte) must be 
+;at the top of the stack. If that value is null, the owner
+;is assumed to be a kernel process. If the requester's id is
+;not equal to the owner's id, the routine returns with a 
+;LCD_REQUEST_DENIED error
+WRITE_BUFFER_MAC macro lcd_buffer,count,lcd_owner,errorByte,WRITE_CHAR,LCD_TOP,LCD_BOTTOM,POP_STACK,SAVE_BANK,RESET_BANK
+CAN_UPDATE_DISPLAY call SAVE_BANK
+	call POP_STACK
+	banksel lcd_owner
+	xorwf lcd_owner,W ; does the UID equal the owner? If so, return 0
+	btfsc STATUS,Z
+	retlw 0
+	movlw 0
+	xorwf lcd_owner,W ; if the UID does not equal the owner. Is the owner null? If so, give the display to the UID
+	call RESET_BANK
+	btfss STATUS,Z
+	retlw LCD_REQUEST_DENIED
+	retlw 0
+
+WRITE_BUFFER call POP_STACK
+	call PUSH_STACK
+	call PUSH_STACK
+	call CAN_UPDATE_DISPLAY
+	xorlw 0
+	btfss STATUS,Z
+	goto WB_LCD_REQUEST_DENIED
+	DO_WRITE_BUFFER nop
+	banksel lcd_buffer
+	call CLEAR_DISPLAY
 	call LCD_TOP
 	movlw low lcd_buffer
 	movwf FSR
@@ -228,6 +258,15 @@ WRITE_BUFFER_LOOP2 movlw 0
 	incf FSR,F
 	decfsz count,F
 	goto WRITE_BUFFER_LOOP2
-END_OF_WRITE_BUFFER nop
+	goto END_OF_WRITE_BUFFER
+WB_LCD_REQUEST_DENIED bcf STATUS,RP0
+	bcf STATUS,RP1
+	movlw LCD_REQUEST_DENIED
+	movwf errorByte
+END_OF_WRITE_BUFFER call POP_STACK
+	banksel lcd_owner
+	movwf lcd_owner
+	banksel lcd_buffer
+	return
 	endm
 

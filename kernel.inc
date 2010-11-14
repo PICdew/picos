@@ -52,6 +52,7 @@
 #define NO_SUCH_COMMAND 5
 #define BEYOND_PROGRAM_MEMORY 6
 #define USART_ERROR 7
+#define LCD_REQUEST_DENIED 8
 
 ;myStatus defines
 #define ALARM_FLAG 0
@@ -59,6 +60,9 @@
 #define USART_BUSY_FLAG 2
 #define SSP_READ_BUSY_FLAG 3
 #define SSP_WRITE_BUSY_FLAG 4
+
+;Display status bits
+#define FLUSH_BUFFER 0
 
 ;Very important memory locations. Memory above 70h is accessible in any bank
 	cblock 0x70
@@ -118,6 +122,8 @@ INIT_KERNEL_MAC macro errorByte,free_page_count,current_process,PAGE_BANK
 	movwf FSR
 	movlw PAGE_COUNT
 	movwf INDF
+	banksel lcd_owner
+	clrf lcd_owner
 	bcf STATUS,RP0
 	bcf STATUS,RP1
 	clrf current_process
@@ -219,13 +225,20 @@ RESUME_PROCESS movlw DEFAULT_QUANTUM
 ;Terminate needs to free paged memory. When a program is RESUMED
 ;it leaves the wait queue. So TERMINATE_PROCESS does not have to
 ;do anything to the queue. The schedule will start the next process (if any).
+;
+;It is terminate process's job to release resources, such as the
+;Display.
 TERMINATE_PROCESS_MAC macro process_location,errorByte,ERROR_RETURN,FREE_PAGES
 TERMINATE_PROCESS movf process_location,W
 	call FREE_PAGES
 	movf process_location,W
-	movwf FSR
+	banksel lcd_owner
+	xorwf lcd_owner,W
+	btfsc STATUS,Z
+	clrf lcd_owner
+	banksel process_location
 	movlw SUCCESS ; See if the program errored. If so goto error return.
-	xorwf FSR,W
+	xorwf errorByte,W
 	btfsc STATUS,Z
 	return
 	goto ERROR_RETURN
@@ -332,11 +345,15 @@ SAVE_BANK clrf bankSelection
 	btfsc STATUS,RP0
 	bsf bankSelection,RP0
 	btfsc STATUS,RP1
-	bcf bankSelection,RP1
+	bsf bankSelection,RP1
 	return
 	
-RESET_BANK movf bankSelection,W
-	iorwf STATUS,F
+RESET_BANK bcf STATUS,RP0
+	bcf STATUS,RP1
+	btfsc bankSelection,RP0
+	bsf STATUS,RP0
+	btfsc bankSelection,RP1
+	bsf STATUS,RP1
 	return
 	endm
 
@@ -346,7 +363,10 @@ RESET_BANK movf bankSelection,W
 ; in the first W entries where the value is zero.
 ;If there are not W values empty,
 REQUEST_MEMORY_MAC macro errorByte,free_page_count,temp,POP_STACK,PUSH_STACK
-REQUEST_MEMORY call PUSH_STACK
+REQUEST_MEMORY xorlw 0 ; if we request zero memory, leave
+	btfsc STATUS,Z
+	return
+	call PUSH_STACK
 	banksel free_page_count
 	subwf free_page_count,W
 	bcf STATUS,RP0
@@ -364,17 +384,17 @@ CLAIM_MEMORY_LOOP movlw 0
 	btfsc STATUS,Z
 	goto CLAIM_MEMORY
 	incf FSR,F
+CLAIM_MEMORY_LOOP_NEXT decfsz temp,F
 	goto CLAIM_MEMORY_LOOP
+	goto END_OF_REQUEST_MEMORY
 CLAIM_MEMORY call POP_STACK
 	movwf INDF
 	call PUSH_STACK
-	decfsz temp,F
-	goto END_OF_REQUEST_MEMORY
 	incf FSR,F
 	bsf STATUS,RP0
 	decf free_page_count,F
 	bcf STATUS,RP0
-	goto CLAIM_MEMORY_LOOP
+	goto CLAIM_MEMORY_LOOP_NEXT
 REQUEST_MEMORY_INS_MEM movlw INSUFFICIENT_MEMORY
 	movwf errorByte
 END_OF_REQUEST_MEMORY 	call POP_STACK
@@ -471,13 +491,14 @@ FREE_PAGES_LOOP movf temp,W ; move through page table. see if the owner is the v
 
 ;returns if there is no process in queue
 ;if there is a process in the queue, then *goto* RESUME_PROCESS
-DISPATCH_NEXT_PROCESS_MAC macro wait_queue_head,RESUME_PROCESS
+DISPATCH_NEXT_PROCESS_MAC macro wait_queue_head,current_process,RESUME_PROCESS
 DISPATCH_NEXT_PROCESS movlw 0x0
 	xorwf wait_queue_head,W
 	btfss STATUS,Z
 	goto RESUME_PROCESS
 	movlw NO_PROCESSES_TO_RUN
 	movwf errorByte
+	clrf current_process
 	return
 	endm
 	
