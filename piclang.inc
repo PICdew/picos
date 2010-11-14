@@ -349,11 +349,17 @@ RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of byt
 	movlw EOP
 	xorwf instruction,W
 	btfsc STATUS,Z
-	goto PROGRAM_MAIN_FORK
+	goto END_OF_PROGRAM
 	call RUN_COMMAND;requires piclang.asm. this routine increments program counter.
 	goto RUN_PROGRAM_LOOP
 BEYOND_PROGRAM_MEMORY_ERR movlw BEYOND_PROGRAM_MEMORY
 	movwf errorByte
+	goto END_OF_PROGRAM
+END_OF_PROGRAM movf current_process,W
+	addlw PROC_STATUS
+	movwf FSR
+	movlw PROC_ENDED
+	movwf INDF
 	goto PROGRAM_MAIN_FORK
 	endm
 	
