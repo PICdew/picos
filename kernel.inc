@@ -122,7 +122,9 @@ INIT_KERNEL_MAC macro errorByte,free_page_count,current_process,PAGE_BANK
 	bcf STATUS,RP1
 	clrf current_process
 	endm
-
+;If the process is not marked as PROC_ENDED,
+;Suspend_PROCESS takes the process and moves it to the back of the wait queue.
+;If the process is marked as PROC_ENDED, the routine does *goto* TERMINATE_PROCESS
 SUSPEND_PROCESS_MAC macro process_location,accumulator,exchange,programCounter,errorByte,TERMINATE_PROCESS
 SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movf process_location,W
@@ -134,12 +136,13 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	addwf FSR,F
 	movf saveW,W
 	movwf INDF
-	movlw SUCCESS ;check to see if the process has errored out
-	banksel errorByte
-	xorwf errorByte,W
+	movf process_location,W ; test to see if the process ended, either with or without sucess
+	addlw PROC_STATUS
+	movwf FSR
+	movlw PROC_ENDED
+	xorwf INDF,W
 	btfsc STATUS,Z
 	goto TERMINATE_PROCESS
-	nop
 	movf process_location,W ;no errors; save state
 	movwf FSR
 	incf FSR,F
@@ -160,16 +163,26 @@ SUSPEND_PROCESS movwf saveW;save the process's W-reg
 	movf process_location,W
 	movwf FSR
 	bsf STATUS,RP0
-	movlw PROC_STATUS
+	movlw PROC_STATUS ; check to see if we set the status externally. If not, set it to waiting.
 	addwf FSR,F
+	movlw PROC_RUNNING
+	xorwf INDF,W
+	btfss STATUS,Z
+	goto $+3
 	movlw PROC_WAITING
 	movwf INDF
-	bcf STATUS,RP0
+	banksel wait_queue_tail
 	movf wait_queue_tail,W
 	movwf FSR
 	movf process_location,F
 	movwf INDF
 	movwf wait_queue_tail
+	movlw 0 		;check to see if the queue was empty. If it was, put this process to the head of the queue.
+	xorwf wait_queue_head,W
+	btfss STATUS,Z
+	goto $+3
+	movf process_location,W
+	movwf wait_queue_head
 	clrf process_location
 	bcf STATUS,RP0
 	bcf STATUS,RP1
