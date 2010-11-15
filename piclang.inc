@@ -320,8 +320,15 @@ WRITE_EOP call POP_STACK
 
 ;Runs through program. If there is an error, errorByte is written
 ;At the end the progress does *goto* PROGRAM_MAIN_FORK
-RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,current_process,programCounter,READ_EEPROM,instruction,errorByte,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING,ERROR_RETURN
-RUN_PROGRAM movf current_process,W ; lookup start of program binary
+;After every command is executed, the quantum is decremented once. If quantum ever
+;equals zero, either before or during the process, the program is suspended. This
+;allows multitasking.
+RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,current_process,programCounter,quantum,READ_EEPROM,instruction,errorByte,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING,ERROR_RETURN
+RUN_PROGRAM movlw 0
+	xorwf quantum,W
+	btfsc STATUS,Z
+	goto PROGRAM_EXPIRED_QUANTUM
+	 movf current_process,W ; lookup start of program binary
 	 addlw PROC_PHYSICAL_BEGINNING
 	 movwf FSR
 	 movf INDF,W ; value equals the beginning of the binary. First value is the number of free store pages needed. second value is the size of the program binary.
@@ -351,10 +358,18 @@ RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of byt
 	btfsc STATUS,Z
 	goto PROGRAM_MAIN_FORK
 	call RUN_COMMAND;requires piclang.asm. this routine increments program counter.
+	decfsz quantum,F
 	goto RUN_PROGRAM_LOOP
+	goto PROGRAM_EXPIRED_QUANTUM
 BEYOND_PROGRAM_MEMORY_ERR movlw BEYOND_PROGRAM_MEMORY
 	movwf errorByte
 	goto PROGRAM_MAIN_FORK
+PROGRAM_EXPIRED_QUANTUM movf current_process,W
+	addlw PROC_STATUS
+	movwf FSR
+	movlw PROC_WAITING
+	movwf INDF
+	goto SUSPEND_PROCESS
 	endm
 	
 GET_ARG_MAC macro current_process,programCounter,READ_EEPROM,PUSH_STACK
