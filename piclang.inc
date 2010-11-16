@@ -17,8 +17,8 @@
 ;PICLANG commands
 	
 PICLANG_COMMAND_TABLE_MAC macro
-PICLANG_COMMAND_TABLE	goto lda		;0x0
-	goto adda		;0x1
+PICLANG_COMMAND_TABLE	goto lda		;loads the value to the accumulator
+	goto adda		
 	goto suba
 	goto movaf		
 	goto pusha
@@ -33,14 +33,15 @@ PICLANG_COMMAND_TABLE	goto lda		;0x0
 	goto bsa
 	goto bca
 	goto clra
-	goto goto_piclang ; 0x10
-	goto display_piclang
+	goto goto_piclang ; Goes to a specific program line. 
+	goto display_piclang ; Displays the next two arguments
 	goto clear_display_piclang
-	goto piclang_display_time
+	goto piclang_display_time ; Displays the clock, using time, date or alarm, depending on the input given to the controls.
 	goto sett
-END_OF_PICLANG_COMMAND_TABLE goto setd
+	goto setd
+END_OF_PICLANG_COMMAND_TABLE goto btn_pressed
 	endm
-#define NUMBER_OF_COMMANDS 0x16
+#define NUMBER_OF_COMMANDS 0x17
 
 PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,display_piclang_template
 ;Generic set subroutine. Can set current time, alarm time or date.
@@ -207,6 +208,22 @@ READ_EEPROM bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1;bank 0
 	movwf INDF
 	return
+
+;xor's the argument with btn_state. If they are equal,
+;the program continues. Otherwise it waits.
+btn_pressed call GET_ARG
+	banksel btn_state
+	call POP_STACK
+	xorwf btn_state,W
+	btfsc STATUS,Z
+	goto END_OF_FUNCTION
+	baksel current_process
+	movf current_process,W
+	addlw PROC_STATUS
+	movwf FSR
+	movlw PROC_WAITING
+	movwf INDF
+	goto SUSPEND_PROCESS
 	endm
 	
 ;Writes data to EEPROM

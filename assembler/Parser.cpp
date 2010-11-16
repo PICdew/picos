@@ -12,6 +12,7 @@ Parser::Parser() {
     h = new Help();
     inputBuffer = new arg_t("");
     history = new args_t();
+    program_name = "";
 }
 
 Parser::~Parser() {
@@ -28,6 +29,7 @@ void Parser::main() {
 
 void Parser::main(int argc, char **args) {
     args_t arrargs;
+    this->program_name = args[0];
     for (int i = 1; i < argc; i++) {
         arrargs.push_back(args[i]);
     }
@@ -44,18 +46,9 @@ void Parser::main(args_t& args) {
     }
 
     if (args.size() >= 1 && (args.at(0) == "--help" || args.at(0) == "--usage")) {
-        std::cout << DString("LinAl ") <<  Build::getVersion() << std::endl;
-        std::cout << DString("Last built on: ") << Build::getBuild() << std::endl;
-        std::cout << "Symbolic Calculator"<< std::endl;
-        std::cout << "Usage: linal [options]"<< std::endl;
-        std::cout << "Options:"<< std::endl;
-        std::cout << "--build, Shows the build number and versions of all classes"<< std::endl;
-        std::cout << "--calc <expression>, Calculates the given expression"<< std::endl;
-        std::cout << "--version, Shows the version"<< std::endl;
-        std::cout << "--gui, Starts LinAl graphically"<< std::endl;
-        std::cout << "--console, Start LinAll within a console."<< std::endl;
-        std::cout << "--help, this"<< std::endl;
-        return;
+        std::cout << this->program_name <<  Build::getVersion() << std::endl;
+        std::cout << "Last built on: " << Build::getBuild() << std::endl;
+	args_usage();
     } else if (args.size() >= 1 && args.at(0) == "--console") {
         start();
     } else {
@@ -102,7 +95,7 @@ void Parser::printHelp(arg_t& whatIsSaid) {
 }
 
 void Parser::start() {
-    std::cout << DString("Welcome to linal, version:") << getVersion() << "\nFor help with the program, enter help" << std::endl;
+  std::cout << "Welcome to " << this->program_name << ", version:" << getVersion() << "\nFor help with the program, enter help" << std::endl;
     // Enter the main command loop.  Here we repeatedly read commands and
     // execute them until the game is over.
 

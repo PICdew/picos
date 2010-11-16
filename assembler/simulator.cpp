@@ -3,6 +3,12 @@
 #include <vector>
 #include <map>
 
+void args_usage()
+{
+  std::cout << "usage not defined yet." << std::endl;
+  exit(0);
+}
+
 #include "opcodes.cpp"
 #include "Parser.h"
 #include "Help.h"
@@ -12,6 +18,13 @@ using namespace std;
 
 Parser gParser;
 
+std::string display_type;
+std::string display_content;
+
+const std::string& update_display()
+{
+  return display_content;//customize with other displays
+}
 
 class Memory{
 public:
@@ -111,6 +124,9 @@ bool Program::loadHex(const std::string& fileName)
 	gProg.reset();
 	std::string currLine;
 	std::fstream file;
+	bool start_of_program = true;
+	size_t program_size,page_size;
+	program_size = page_size = 0;
 	file.open(fileName.c_str(),std::ios::in);
 	if(!file.is_open())
 	{
@@ -128,6 +144,18 @@ bool Program::loadHex(const std::string& fileName)
 		if(recordType != "00")
 			continue;
 		currLine.erase(currLine.size()-2,2);
+		
+		if(start_of_program)
+		  {
+		    std::string strProgram_size = currLine.substr(0,2);
+		    std::string strPage_size = currLine.substr(4,2);
+		    std::istringstream size_buff(strProgram_size);
+		    size_buff >> program_size;
+		    size_buff.clear();size_buff.str("");
+		    size_buff >> page_size;
+		    start_of_program = false;
+		    currLine.erase(0,8);
+		  }
 		while(currLine.size() > 0)
 		{
 			std::string word = currLine.substr(0,2);
@@ -264,7 +292,10 @@ void Program::simCommand(const mem_t& memval, Memory& mem)
       }
   if(command == "display")
       {
-	std::cout << "Displaying: " << mem.stack[0] << " " << mem.stack[1] << std::endl;
+	std::ostringstream display_buff;
+	display_buff << mem.accumulator << std::endl << std::endl;
+	display_content = display_buff.str();
+	std::cout << "Displaying: " << mem.accumulator  << std::endl;
 	return;
       }
   if(command == "sett")
@@ -335,6 +366,8 @@ string print_function(const Command& command)
 	{
 	  ostringstream buff;
 	  buff.setf(ios_base::hex,ios_base::basefield);
+	  buff << "Display:" << std::endl;
+	  buff << update_display() << std::endl;
 	  buff << gMemory;
 	  return buff.str();
 	}
@@ -354,6 +387,8 @@ string print_function(const Command& command)
 				Program::pcl placeHolder = gProg.programCounter;
 				gProg.restart();
 				int lineCounter = 0;
+				std::cout << "Paged Memory size: ??" << std::endl;
+				std::cout << lineCounter++ << ": "<< *(gProg.first()) << std::endl;
 				while(gProg.programCounter != gProg.eop())
 					std::cout << lineCounter++ << ": " <<  gProg.next() << std::endl;
 			}
@@ -376,6 +411,10 @@ Help makeHelp()
     returnMe["load"] = "Loads hex file.\nUsage: load <filename>";
     returnMe["run"] = "Runs the program.";
     returnMe["print"] = "Prints memory.";
+    returnMe["step"] = "Run the next instruction";
+    returnMe["dump"] = "Prints the contents of a specific part of memory. Possible arguments: Program, ";
+    returnMe["clear"] = "Restarts the program and clears memory.";
+    returnMe["help"] = "Gives help for a specific command. Type help <command>.";
     return returnMe;
 }
 Help readline_help_function(){return makeHelp();}
@@ -396,6 +435,8 @@ opcode_t getMemoryVal(const arg_t& arg, int& state)
 
 int main(int argc, char** argv)
 {
+  display_type = "lcd";
+  display_content = "";
     gParser.setHelp(makeHelp());
         gParser.main(argc,argv);
 	return 0;

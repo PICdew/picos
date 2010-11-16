@@ -164,7 +164,12 @@ void compile(const args_t& precompiled, const string& filename)
 	int counter = 0;
 	int address = 0x4200;
 	int hex;
-	string currLine = "";
+	string currLine;
+
+	currLine = formatHex(address,std::ios_base::hex);
+	currLine += "00";
+	checksum += (address & 0xff);
+	checksum += ((address >> 8) & 0xff);
 	
 	//calculate the amount of pages needed in free store
 	hex = total_num_pages(free_store);
@@ -332,36 +337,12 @@ std::string print_function(const Command& command)
     return checkAndInsert(command);
 }
 
-int doCommandLineCompile(const int& argc, char** argv)
+int doCommandLineCompile(struct assembler_arguments& args)
 {
-  if(argc < 3)
-    {
-      std::cout << "Usage: " << argv[0] << " [--compile file] [--output outputfile]";
-      return 1;
-    }
-  std::string outFilename = "out.hex";
-  std::string inFilename = "";
+  std::string& outFilename = args.output_filename;
+  std::string& inFilename = args.source_filename;
   std::string curr;
-  bool isVerbose = false;
-  if(argc >= 5)
-    {
-      for(size_t i = 1;i<argc;i++)
-	{
-	  curr = argv[i];
-	  if("--output" == curr || "-o" == curr)
-	    {
-	      outFilename = argv[++i];
-	      continue;
-	    }
-	  if("--compile" == curr || "-c" == curr)
-	    {
-	      inFilename = argv[++i];
-	      continue;
-	    }
-	  if("--verbose" == curr)
-	    isVerbose = true;
-	}
-    }
+
   std::fstream inFile;
   inFile.open(inFilename.c_str(),std::ios::in);
   if(!inFile.is_open())
@@ -383,7 +364,7 @@ int doCommandLineCompile(const int& argc, char** argv)
 	  std::cerr << "Syntax Error: " << curr << std::endl;
 	  return SYNTAX_ERROR;
 	}
-      if(isVerbose)
+      if(args.verbosity > 0)
 	std::cout << response << std::endl;
       delete currLine;
       currLine = 0;
@@ -393,7 +374,7 @@ int doCommandLineCompile(const int& argc, char** argv)
 
   currLine = new Command("compile " + outFilename);
   p.processCommand(*currLine,response);
-  if(isVerbose)
+  if(args.verbosity > 0)
     std::cout << response << std::endl;
   delete currLine;
   currLine = 0;
@@ -401,7 +382,7 @@ int doCommandLineCompile(const int& argc, char** argv)
   return 0;
 }
 
-int main((int argc, char **argv)
+int main(int argc, char **argv)
 {
   radix = ios::hex;
   //so that there aren't multiple main's
@@ -411,7 +392,10 @@ int main((int argc, char **argv)
   args.source_filename = "";
   args.output_filename = "a.hex";
 
-  pargse_args(&argp,argc,argv,0,0,&args);
+  parse_args(argc,argv,args);
+
+  if(args.source_filename.size() > 0)
+    return doCommandLineCompile(args);
 
   if(argc > 1)
 	{
