@@ -217,7 +217,7 @@ btn_pressed call GET_ARG
 	xorwf btn_state,W
 	btfsc STATUS,Z
 	goto END_OF_FUNCTION
-	baksel current_process
+	banksel current_process
 	movf current_process,W
 	addlw PROC_STATUS
 	movwf FSR
