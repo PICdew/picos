@@ -24,6 +24,8 @@
 #endif
 #endif /**USE_READLINE**/
 
+extern void args_usage();
+
   class Parser
   {
   public:
@@ -52,6 +54,7 @@
     arg_t getHistoryValue(Command& command) const;
 
   private:
+    std::string program_name;
     CommandWords * commands;  // holds all valid command words
     Help*  h;
     arg_t* inputBuffer;

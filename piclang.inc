@@ -17,8 +17,8 @@
 ;PICLANG commands
 	
 PICLANG_COMMAND_TABLE_MAC macro
-PICLANG_COMMAND_TABLE	goto lda		;0x0
-	goto adda		;0x1
+PICLANG_COMMAND_TABLE	goto lda		;loads the value to the accumulator
+	goto adda		
 	goto suba
 	goto movaf		
 	goto pusha
@@ -33,14 +33,15 @@ PICLANG_COMMAND_TABLE	goto lda		;0x0
 	goto bsa
 	goto bca
 	goto clra
-	goto goto_piclang ; 0x10
-	goto display_piclang
+	goto goto_piclang ; Goes to a specific program line. 
+	goto display_piclang ; Displays the next two arguments
 	goto clear_display_piclang
-	goto piclang_display_time
+	goto piclang_display_time ; Displays the clock, using time, date or alarm, depending on the input given to the controls.
 	goto sett
-END_OF_PICLANG_COMMAND_TABLE goto setd
+	goto setd
+END_OF_PICLANG_COMMAND_TABLE goto btn_pressed
 	endm
-#define NUMBER_OF_COMMANDS 0x16
+#define NUMBER_OF_COMMANDS 0x17
 
 PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,display_piclang_template
 ;Generic set subroutine. Can set current time, alarm time or date.
@@ -207,6 +208,22 @@ READ_EEPROM bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1;bank 0
 	movwf INDF
 	return
+
+;xor's the argument with btn_state. If they are equal,
+;the program continues. Otherwise it waits.
+btn_pressed call GET_ARG
+	banksel btn_state
+	call POP_STACK
+	xorwf btn_state,W
+	btfsc STATUS,Z
+	goto END_OF_FUNCTION
+	baksel current_process
+	movf current_process,W
+	addlw PROC_STATUS
+	movwf FSR
+	movlw PROC_WAITING
+	movwf INDF
+	goto SUSPEND_PROCESS
 	endm
 	
 ;Writes data to EEPROM
@@ -320,8 +337,15 @@ WRITE_EOP call POP_STACK
 
 ;Runs through program. If there is an error, errorByte is written
 ;At the end the progress does *goto* PROGRAM_MAIN_FORK
-RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,current_process,programCounter,READ_EEPROM,instruction,errorByte,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING,ERROR_RETURN
-RUN_PROGRAM movf current_process,W ; lookup start of program binary
+;After every command is executed, the quantum is decremented once. If quantum ever
+;equals zero, either before or during the process, the program is suspended. This
+;allows multitasking.
+RUN_PROGRAM_MAC macro stackPtr,temp,POP_STACK,PROGRAM_MAIN_FORK,current_process,programCounter,quantum,READ_EEPROM,instruction,errorByte,EOP,RUN_COMMAND,PROC_PHYSICAL_BEGINNING,ERROR_RETURN
+RUN_PROGRAM movlw 0
+	xorwf quantum,W
+	btfsc STATUS,Z
+	goto PROGRAM_EXPIRED_QUANTUM
+	 movf current_process,W ; lookup start of program binary
 	 addlw PROC_PHYSICAL_BEGINNING
 	 movwf FSR
 	 movf INDF,W ; value equals the beginning of the binary. First value is the number of free store pages needed. second value is the size of the program binary.
@@ -351,7 +375,9 @@ RUN_PROGRAM_LOOP movf temp,W ; program size (not binary size, just number of byt
 	btfsc STATUS,Z
 	goto END_OF_PROGRAM
 	call RUN_COMMAND;requires piclang.asm. this routine increments program counter.
+	decfsz quantum,F
 	goto RUN_PROGRAM_LOOP
+	goto PROGRAM_EXPIRED_QUANTUM
 BEYOND_PROGRAM_MEMORY_ERR movlw BEYOND_PROGRAM_MEMORY
 	movwf errorByte
 	goto END_OF_PROGRAM
@@ -361,6 +387,12 @@ END_OF_PROGRAM movf current_process,W
 	movlw PROC_ENDED
 	movwf INDF
 	goto PROGRAM_MAIN_FORK
+PROGRAM_EXPIRED_QUANTUM movf current_process,W
+	addlw PROC_STATUS
+	movwf FSR
+	movlw PROC_WAITING
+	movwf INDF
+	goto SUSPEND_PROCESS
 	endm
 	
 GET_ARG_MAC macro current_process,programCounter,READ_EEPROM,PUSH_STACK
