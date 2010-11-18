@@ -23,6 +23,16 @@ POP_STACK movf FSR,W ;save the FSR value before popping
 	decf stackPtr,F
 	return
 	endm
+
+;Returns with the value at the top of the stack in w-reg.
+;Unlike pop, peek leaves the data in the stack.
+PEEK_STACK_MAC macro stackTemp,stackTemp2,stackPtr
+PEEK_STACK call POP_STACK
+	incf stackPtr,F
+	return
+	endm
+
+
 	;
 ;push W-reg onto the stack
 PUSH_STACK_MAC macro stackTemp,stackTemp2,stackPtr 
