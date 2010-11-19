@@ -9,10 +9,13 @@
 
 
 #define KERNEL_MAJOR_VERSION 0x0
-#define KERNEL_MINOR_VERSION 0x3
+#define KERNEL_MINOR_VERSION 0x4
 #define KERNEL_REVISION 0x0
 
-
+; 0.4.0 - Added the beginnings of math routines, including int and float
+;	  math.
+; 	- Created a SWAP function for the stack, which will switch W-reg
+;	  value for the top of the stack.
 ; 0.3.0 - Created a version include.
 ;	- Stack now can peek, giving the value at the top of the stack
 ;	  without popping it.

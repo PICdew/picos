@@ -317,7 +317,9 @@ END_OF_REQUEST_MEMORY 	call POP_STACK
 	return
 	endm
 
-
+;The <BANK:INDEX> value for the byte in page memory
+;requested should be loaded into page_addr before calling 
+;TRANSLATE_PAGE_ADDRESS
 ;process_id equals process_locations.
 ;will use errorByte as a temporary variable until the end
 ;where it will be filled with an error code (or success)
@@ -332,9 +334,9 @@ TRANSLATE_PAGE_ADDRESS movlw PAGE_SIZE
 		       movwf errorByte
 		       goto ERROR_RETURN
 		       movlw 0xf0
-			   bsf STATUS,RP0
+			bsf STATUS,RP0
 		       andwf page_addr,W
-			   bcf STATUS,RP0
+		 	bcf STATUS,RP0
 		       movwf errorByte
 		       swapf errorByte,F
 		       call PAGE_BANK

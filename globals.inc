@@ -30,6 +30,7 @@
 #define BEYOND_PROGRAM_MEMORY 6
 #define USART_ERROR 7
 #define LCD_REQUEST_DENIED 8
+#define INTEGER_OVERFLOW 9
 
 ;myStatus defines
 #define ALARM_FLAG 0

@@ -1,3 +1,4 @@
+;for a list of changes see bottom of file.
 #define LCD_LINE_SIZE 0x8
 
 LCD_ROUTINES_MAC macro count,count1,counta,countb,tmp1,tmp2,templcd,templcd2,pclTemp,lcd_pointer,lcd_pointer,MAIN_LOOP
@@ -161,7 +162,9 @@ TOGGLE_ENABLE		bsf	CMD_PORT, LCD_E
 
 ;end of LCD routines
 
-HEX_TO_CHAR movwf pclTemp
+;Ignores upper nibble
+HEX_TO_CHAR andlw 0xf
+	movwf pclTemp
 	movlw HIGH HEX_TO_CHAR_TABLE
 	movwf PCLATH
 	movf pclTemp,W
@@ -270,3 +273,5 @@ END_OF_WRITE_BUFFER call POP_STACK
 	return
 	endm
 
+;11/19/2010 -- Made HEX_TO_CHAR ignore the upper nibble. This will allow number to be sent to HEX_TO_CHAR without 
+;		going to pass the end of the lookup table if the value is > 15
