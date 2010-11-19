@@ -39,7 +39,10 @@ PICLANG_COMMAND_TABLE	goto lda		;loads the value to the accumulator
 	goto piclang_display_time ; Displays the clock, using time, date or alarm, depending on the input given to the controls.
 	goto sett
 	goto setd
-END_OF_PICLANG_COMMAND_TABLE goto btn_pressed
+	goto btn_pressed
+	goto memset ; Usage: memset x val  --- sets the memory at x equal to val	goto store ; Usage: store d  --- moves the accumulator to the d location in page memory.
+	goto load ; Usage: load d  --- loads the page memory data, d, into the accumulator
+END_OF_PICLANG_COMMAND_TABLE goto memcpy ; Usage: memcpy d s --- copies the data in page memory, s, to page memory, d.
 	endm
 #define NUMBER_OF_COMMANDS 0x17
 
@@ -184,6 +187,65 @@ setd call GET_ARG
 	call POP_STACK
 	movwf dateMonth
 	goto END_OF_FUNCTION
+store call GET_ARG
+	call SAVE_BANK
+	call POP_STACK
+	banksel page_addr
+	movwf page_addr
+	call RESET_BANK
+	call TRANSLATE_PAGE_ADDRESS
+	movwf FSR
+	movf accumulator,W
+	movwf INDF
+	goto END_OF_FUNCTION
+load call GET_ARG
+	call SAVE_BANK
+	call POP_STACK
+	banksel page_addr
+	movwf page_addr
+	call RESET_BANK
+	call TRANSLATE_PAGE_ADDRESS
+	movwf FSR
+	movf INDF,W 
+	movwf accumulator
+	goto END_OF_FUNCTION
+
+memset call GET_ARG ; page_addr
+	call GET_ARG ; data value
+	call POP_STACK
+	call SWAP_STACK
+	banksel page_addr
+	movwf page_addr
+	bcf STATUS,RP0
+	bcf STATUS,R1
+	call TRANSLATE_PAGE_ADDRESS;this routine will goto ERROR_RETURN upon error. So there is no need to check for errors in this particular code section
+	movwf FSR
+	call POP_STACK
+	movwf INDF
+	goto END_OF_FUNCTION
+
+memcpy call GET_ARG ; destination
+	call GET_ARG ; source
+	call POP_STACK
+	call SWAP_STACK ; source in w-reg
+	banksel page_addr
+	movwf page_addr
+	bcf STATUS,RP0
+	bcf STATUS,R1
+	call TRANSLATE_PAGE_ADDRES
+	movwf FSR
+	movf INDF,W
+	call SWAP_STACK
+	banksel page_addr
+	movwf page_addr
+	bcf STATUS,RP0
+	bcf STATUS,R1
+	call TRANSLATE_PAGE_ADDRES
+	movwf FSR
+	call POP_STACK
+	movwf INDF
+	goto END_OF_FUNCTION
+
 	endm;PICLANG_COMMAND_SET_MAC
 
 ;Reads data from EEPROM.
@@ -208,22 +270,6 @@ READ_EEPROM bcf STATUS,RP0;bank 0
 	bcf STATUS,RP1;bank 0
 	movwf INDF
 	return
-
-;xor's the argument with btn_state. If they are equal,
-;the program continues. Otherwise it waits.
-btn_pressed call GET_ARG
-	banksel btn_state
-	call POP_STACK
-	xorwf btn_state,W
-	btfsc STATUS,Z
-	goto END_OF_FUNCTION
-	banksel current_process
-	movf current_process,W
-	addlw PROC_STATUS
-	movwf FSR
-	movlw PROC_WAITING
-	movwf INDF
-	goto SUSPEND_PROCESS
 	endm
 	
 ;Writes data to EEPROM

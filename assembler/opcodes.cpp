@@ -46,6 +46,9 @@ returnMe["display_time"] = " Displays the clock, using time, date or alarm, depe
 returnMe["sett"] = "";
 returnMe["setd"] = "";
 returnMe["btn_pressed"] = "";
+returnMe["memset"] = " Usage: memset x val  --- sets the memory at x equal to val	goto store ; Usage: store d  --- moves the accumulator to the d location in page memory.";
+returnMe["load"] = " Usage: load d  --- loads the page memory data, d, into the accumulator";
+returnMe["memcpy"] = " Usage: memcpy d s --- copies the data in page memory, s, to page memory, d.";
     return returnMe;
 }
 
@@ -75,7 +78,32 @@ returnMe["clear_display"] = opcode++;
 returnMe["display_time"] = opcode++;
 returnMe["sett"] = opcode++;
 returnMe["setd"] = opcode++;
+returnMe["btn_pressed"] = opcode++;
+returnMe["memset"] = opcode++;
+returnMe["load"] = opcode++;
+returnMe["memcpy"] = opcode++;
     return returnMe;
 }
 
-
+/**
+ * Converts the int to a two-byte two's compliment picos
+ * integer.
+ * If the number exceeds 16-bits, an exception is thrown
+ */
+std::vector<mem_t> cast_int(const int& num) throw (GoodException)
+{
+  std::vector<mem_t> returnMe;
+  if(num > 0x7fff || num < -0x7fff)
+    throw GoodException("cast_int: integers can only use 16-bits.",DATA_FORMAT_ERROR);
+  
+  int the_byte = (num & 0xff00) >> 8;
+  returnMe.push_back(the_byte);
+  the_byte = num & 0xff;
+  returnMe.push_back(the_byte);
+ 
+  return returnMe;
+}
+std::vector<mem_t> cast_int(const float& num) throw (GoodException)
+{
+  return cast_int((int) num);
+}

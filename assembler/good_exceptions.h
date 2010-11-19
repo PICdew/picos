@@ -17,8 +17,9 @@ enum GoodErrorTypes {UNKNOWN_ERROR = 1, /*<Avoid, as this is vague.*/
     INVALID_PRMTOP_DATA,/*<Data which was loaded into an array is incorrect based on what is expected.*/
     DATA_FORMAT_ERROR,/*<Use this error, when data *within* the program no long matches what it should due to formatting problems.*/
     INVALID_ARRAY_SIZE,
-    UNEXPECTED_EOF,
-    COMMAND_LINE_ERROR,/*<Program supplied an invalid argument in the command line.*/
+		     UNEXPECTED_EOF,
+		     COMMAND_LINE_ERROR,/*<Program supplied an invalid argument in the command line.*/
+		     UNDECLARED_VARIABLE,/*<Doing an operation on a varible that was not declared.*/
     BAD_XML_TAG
     };
 

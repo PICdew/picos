@@ -33,7 +33,11 @@ map<arg_t,int> equs;
 map<arg_t,addr_t> free_store;//maps variable names to the number of elements in its array. addr_t = 1 for a single variable (instead of array); this is the default.
 vector<string> precompiledCode;
 
-Help makeHelp(){return assemblerHelp();}//for tab complete
+Help makeHelp(){
+  Help returnMe = assemblerHelp();
+  returnMe["malloc"] = "Allocates memory for the specified type. Can optionally supply a number of variable spaces to allocate. Default type: ushort\n Possible Types: int (2bytes), float (2bytes), char(1byte), ushort(1byte)";
+  return returnMe;
+}//for tab complete
 Help readline_help_function(){return assemblerHelp();}
 const map<arg_t,opcode_t> lookupTable = assemblerTable();
 
@@ -119,11 +123,30 @@ std::string checkAndInsert(const Command& command)
 	}
 	case 2:
 	{
-		if(op == "sett" || op == "setd" || op == "seta")
+		if(op == "sett" || op == "setd" || op == "seta" || op == "memset" || op == "memcpy")
 			break;
 		return errorMessage;
 	}
 	}//end of switch
+
+	if(op == "memset")
+	  {
+	    precompiledCode.push_back(tokens[0]);
+	    precompiledCode.push_back(tokens[1]);
+	    int val;
+	    std::ostringstream buff;
+	    std::istringstream int_buff(tokens[2]);
+	    int_buff >> val;
+	    if(int_buff.fail())
+	      throw GoodException("check_and_insert: Invalid data value "+tokens[2],DATA_FORMAT_ERROR);
+	    vector<mem_t> two_bytes = cast_int(val);
+	    buff << hex << two_bytes.at(0);
+	    precompiledCode.push_back(buff.str());buff.str("");
+	    buff << hex << two_bytes.at(1);
+	    precompiledCode.push_back(buff.str());
+	    return "";
+	  }
+
 	for(args_t::const_iterator it = tokens.begin();it != tokens.end();it++)
 		precompiledCode.push_back(*it);
 	return "";
@@ -150,6 +173,43 @@ int total_binary_byte_count(const std::vector<std::string>& precompiled)
   return precompiled.size() + HEADER_SIZE;
 }
 
+addr_t free_store_resolve(const std::string& addr)
+{
+  addr_t memory_loc = 0;
+  std::string variable = addr;
+  std::istringstream buff;
+  addr_t offset = 0;
+  if(variable.find('[') != std::string::npos && variable.find('[') != variable.size() - 1)
+    {
+      if(variable.find(']') != std::string::npos)
+	variable.erase(variable.find(']'),1);
+      buff.str(variable.substr(variable.find('[')+1));
+      variable = variable.substr(0,variable.find('['));
+      buff >> offset;
+      if(buff.fail())
+	throw GoodException("free_store_resolve: " + addr + " does not represent a proper variable.",DATA_FORMAT_ERROR);
+    }
+  if(free_store.find(variable) == free_store.end())
+    throw GoodException("free_store_resolve: " + addr + " was not declared.",UNDECLARED_VARIABLE);
+
+  map<arg_t,addr_t>::const_iterator array;
+  for(array = free_store.begin(); array != free_store.end();array++)
+    {
+      if(array->first == variable)
+	{
+	  if(offset >= array->second)
+	    throw GoodException("free_store_resolve: The index " + addr + " exceeeded the bounds of the array.");
+	  memory_loc += offset;//location of the byte if the free store was one long vector. Now convert to <BLOCK:INDEX> format.
+	  offset = memory_loc;
+	  memory_loc = ((addr_t)offset/PAGE_SIZE) << 4;
+	  memory_loc += offset % PAGE_SIZE;
+	  break;
+	}
+      memory_loc += array->second;
+    }
+  return memory_loc;
+}
+
 void compile(const args_t& precompiled, const string& filename)
 {
 	fstream file(filename.c_str(),std::ios::out);
@@ -173,6 +233,7 @@ void compile(const args_t& precompiled, const string& filename)
 	
 	//calculate the amount of pages needed in free store
 	hex = total_num_pages(free_store);
+	std::cout << "requesting " << hex << " page blocks." << std::endl;
 	currLine += formatHex(hex,radix) + "00";
 	checksum += hex;counter++;
 	
@@ -203,6 +264,12 @@ void compile(const args_t& precompiled, const string& filename)
 			currLine += formatHex(hex,radix);
 			checksum += hex;
 		}
+		else if(free_store.find(*it) != free_store.end() || it->find('[') != std::string::npos)
+		  {
+		    hex = free_store_resolve(*it);
+		    currLine += formatHex(hex,radix);
+		    checksum += hex;
+		  }
 		else
 		{
 			string _val;
@@ -318,18 +385,23 @@ std::string print_function(const Command& command)
 	else if(command.getCommandWord() == "malloc")
 	  {
 	    const args_t& args = command.getWords();
-	    string usage_statement = "Usage: malloc <Variable Name> [size. Default = 1]";
-	    if(args.size() == 1 || args.size() > 3)
+	    string usage_statement = "Usage: malloc <Variable Type> <Variable Name> [size. Default = 1]";
+	    if(args.size() < 3 || args.size() > 4)
 	      return usage_statement;
 	    addr_t array_size = 1;
-	    if(args.size() == 3)
+	    size_t variable_size = 1;
+	    std::string variable_type = args[1],variable_name = args[2];
+	    if(variable_type == "int" || variable_type == "float")
+	      variable_size = 2;
+	    
+	    if(args.size() == 4)
 	      {
-		istringstream size_buff(args[2]);
+		istringstream size_buff(args[3]);
 		size_buff >> array_size;
 		if(size_buff.fail())
 		  return usage_statement;
 	      }
-	    free_store[args[1]] = array_size;
+	    free_store[variable_name] = array_size*variable_size;
 	  }
 	else if(lookupTable.find(command.getCommandWord()) == lookupTable.end())
 	  return "unknown command: " + command.getCommandWord();
@@ -393,14 +465,22 @@ int main(int argc, char **argv)
   args.output_filename = "a.hex";
 
   parse_args(argc,argv,args);
-
-  if(args.source_filename.size() > 0)
-    return doCommandLineCompile(args);
+  
+  try{
+    if(args.source_filename.size() > 0)
+      return doCommandLineCompile(args);
+  }
+  catch(GoodException de)
+    {
+      std::cout << de << std::endl;
+      return de.getErrType();
+    }
 
   if(argc > 1)
 	{
 		try{
 		  Parser p;
+		  p.program_name = argv[0];
                   p.setHelp(makeHelp());
 		  p.main(argc,argv);
 		  return 0;
@@ -414,6 +494,7 @@ int main(int argc, char **argv)
 	else{
 		try{
 			Parser p;
+			p.program_name = argv[0];
 			p.setHelp(assemblerHelp());
 			p.main();
 			return 0;

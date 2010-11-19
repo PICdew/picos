@@ -53,8 +53,9 @@ extern void args_usage();
     bool processCommand(Command& command, std::string& whatIsSaid);
     arg_t getHistoryValue(Command& command) const;
 
-  private:
     std::string program_name;
+
+  private:
     CommandWords * commands;  // holds all valid command words
     Help*  h;
     arg_t* inputBuffer;
