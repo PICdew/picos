@@ -46,7 +46,7 @@ END_OF_PICLANG_COMMAND_TABLE goto memcpy ; Usage: memcpy d s --- copies the data
 	endm
 #define NUMBER_OF_COMMANDS 0x17
 
-PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,display_piclang_template
+PICLANG_COMMAND_SET_MAC macro GET_ARG,POP_STACK,PUSH_STACK,accumulator,exchange,instruction,END_OF_FUNCTION,WRITE_EEPROM,display_piclang_template,TRANSLATE_PAGE_ADDRESS
 ;Generic set subroutine. Can set current time, alarm time or date.
 ;Input: Stack values from top to bottom: most significant value, 
 ;			least significant value.
@@ -188,22 +188,12 @@ setd call GET_ARG
 	movwf dateMonth
 	goto END_OF_FUNCTION
 store call GET_ARG
-	call SAVE_BANK
-	call POP_STACK
-	banksel page_addr
-	movwf page_addr
-	call RESET_BANK
 	call TRANSLATE_PAGE_ADDRESS
 	movwf FSR
 	movf accumulator,W
 	movwf INDF
 	goto END_OF_FUNCTION
 load call GET_ARG
-	call SAVE_BANK
-	call POP_STACK
-	banksel page_addr
-	movwf page_addr
-	call RESET_BANK
 	call TRANSLATE_PAGE_ADDRESS
 	movwf FSR
 	movf INDF,W 
@@ -214,10 +204,7 @@ memset call GET_ARG ; page_addr
 	call GET_ARG ; data value
 	call POP_STACK
 	call SWAP_STACK
-	banksel page_addr
-	movwf page_addr
-	bcf STATUS,RP0
-	bcf STATUS,R1
+	call PUSH_STACK
 	call TRANSLATE_PAGE_ADDRESS;this routine will goto ERROR_RETURN upon error. So there is no need to check for errors in this particular code section
 	movwf FSR
 	call POP_STACK
@@ -228,24 +215,37 @@ memcpy call GET_ARG ; destination
 	call GET_ARG ; source
 	call POP_STACK
 	call SWAP_STACK ; source in w-reg
-	banksel page_addr
-	movwf page_addr
-	bcf STATUS,RP0
-	bcf STATUS,R1
-	call TRANSLATE_PAGE_ADDRES
+	call PUSH_STACK
+	call TRANSLATE_PAGE_ADDRESS
 	movwf FSR
 	movf INDF,W
 	call SWAP_STACK
-	banksel page_addr
-	movwf page_addr
-	bcf STATUS,RP0
-	bcf STATUS,R1
-	call TRANSLATE_PAGE_ADDRES
+	call PUSH_STACK
+	call TRANSLATE_PAGE_ADDRESS
 	movwf FSR
 	call POP_STACK
 	movwf INDF
 	goto END_OF_FUNCTION
 
+;Argument: btn mask corresponding to btn_pressed bits
+;Returns: in accumulator, argument == btn_pressed
+;use a button owner???
+BTN_QUERY call GET_ARG
+	call PEEK_STACK ;Stack: btn#,... W-reg: btn#
+	banksel btn_pressed
+	xorwf btn_pressed,W
+	btfsc STATUS,Z
+	goto BTN_QUERY_TRUE
+	goto BTN_QUERY_FALSE
+BTN_QUERY_TRUE movlw TRUE
+	movwf accumulator
+	call POP_STACK
+	xorwf btn_pressed,F ; clear the pressed flags, since we've queried them
+	goto END_OF_FUNCTION
+BTN_QUERY_FALSE movlw FALSE
+	movwf accumulator
+	call POP_STACK
+	goto END_OF_FUNCTION
 	endm;PICLANG_COMMAND_SET_MAC
 
 ;Reads data from EEPROM.
