@@ -10,7 +10,7 @@ INIT_STACK_MAC macro headaddr,stackPtr
 	endm
 
 ;pops the stack onto W-reg
-POP_STACK_MAC macro stackTemp,stackTemp2,stackPtr
+STACK_MAC macro stackTemp,stackTemp2,stackPtr
 POP_STACK movf FSR,W ;save the FSR value before popping
 	movwf stackTemp
 	movf stackPtr,W
@@ -22,22 +22,15 @@ POP_STACK movf FSR,W ;save the FSR value before popping
 	movf stackTemp2,W ; popped value is now in w-reg
 	decf stackPtr,F
 	return
-	endm
-
-
 
 ;Returns with the value at the top of the stack in w-reg.
 ;Unlike pop, peek leaves the data in the stack.
-PEEK_STACK_MAC macro stackTemp,stackTemp2,stackPtr
 PEEK_STACK call POP_STACK
 	incf stackPtr,F
 	return
-	endm
-
 
 	;
 ;push W-reg onto the stack
-PUSH_STACK_MAC macro stackTemp,stackTemp2,stackPtr 
 PUSH_STACK movwf stackTemp 
 	movf FSR,W
 	movwf stackTemp2
@@ -50,10 +43,8 @@ PUSH_STACK movwf stackTemp
 	movwf FSR
 	movf stackTemp,W
 	return
-	endm
 	
 ;push W-reg onto the stack
-SWAP_STACK_MAC macro stackTemp,stackTemp2,stackPtr 
 SWAP_STACK movwf stackTemp 
 	movf FSR,W
 	movwf stackTemp2
