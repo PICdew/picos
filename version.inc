@@ -10,8 +10,11 @@
 
 #define KERNEL_MAJOR_VERSION 0x0
 #define KERNEL_MINOR_VERSION 0x4
-#define KERNEL_REVISION 0x0
+#define KERNEL_REVISION 0x1
 
+; 0.4.1 - Moved page code to its own include file. Made a new translate
+;		 page memory address routine (which needs to be tested).
+;
 ; 0.4.0 - Added the beginnings of math routines, including int and float
 ;	  math.
 ; 	- Created a SWAP function for the stack, which will switch W-reg

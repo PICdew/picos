@@ -1,9 +1,3 @@
-PAGE_BANK_MAC macro 
-PAGE_BANK bsf STATUS,RP1
-	bcf STATUS,RP0
-	return
-	endm
-
 INIT_KERNEL_MAC macro errorByte,free_page_count,current_process,PAGE_BANK
 	movlw SUCCESS
 	movwf errorByte
@@ -28,6 +22,7 @@ INIT_KERNEL_MAC macro errorByte,free_page_count,current_process,PAGE_BANK
 	bcf STATUS,RP1
 	clrf current_process
 	endm
+	
 ;If the process is not marked as PROC_ENDED,
 ;Suspend_PROCESS takes the process and moves it to the back of the wait queue.
 ;If the process is marked as PROC_ENDED, the routine does *goto* TERMINATE_PROCESS
@@ -313,38 +308,6 @@ REQUEST_MEMORY_INS_MEM movlw INSUFFICIENT_MEMORY
 END_OF_REQUEST_MEMORY 	call POP_STACK
 	return
 	endm
-
-;The <BANK:INDEX> value for the byte in page memory
-;requested should be loaded into page_addr before calling 
-;THIS FUNCTION NEEDS TO BE IMPLEMENTED!!!
-TRANSLATE_PAGE_ADDRESS_MAC macro process_id,errorByte,PAGE_BANK,POP_STACK
-TRANSLATE_PAGE_ADDRESS call POP_STACK
-TRANSLATE_PAGE_ADDRESS_ERROR_INVALID_ADDRESS movlw INVALID_ADDRESS
-					     movwf errorByte
-					     goto ERROR_RETURN 
-	endm
-
-;Moves through the processes and removes pages whos owners
-;equal the value initially in W
-FREE_PAGES_MAC macro page_table_addr,free_page_count,count,temp
-FREE_PAGES movwf temp
-	movlw low page_table_addr
-	movwf FSR
-	movlw PAGE_COUNT
-	movwf count
-FREE_PAGES_LOOP movf temp,W ; move through page table. see if the owner is the value passed to W-reg
-	xorwf INDF,W
-	btfss STATUS,Z
-	goto $+6
-	clrf INDF
-	bsf STATUS,RP0
-	incf free_page_count,F
-	bcf STATUS,RP0
-	incf FSR,F
-	decfsz count,F
-	goto FREE_PAGES_LOOP
-	return
-    endm
 
 ;returns if there is no process in queue
 ;if there is a process in the queue, then *goto* RESUME_PROCESS
