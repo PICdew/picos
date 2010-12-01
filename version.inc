@@ -12,6 +12,8 @@
 #define KERNEL_MINOR_VERSION 0x4
 #define KERNEL_REVISION 0x0
 
+; 0.5.0 - started a shell, which runs when no one owns the LCD.
+;
 ; 0.4.0 - Added the beginnings of math routines, including int and float
 ;	  math.
 ; 	- Created a SWAP function for the stack, which will switch W-reg
