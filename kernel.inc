@@ -1,9 +1,8 @@
-INIT_KERNEL_MAC macro errorByte,free_page_count,current_process,PAGE_BANK
+INIT_KERNEL_MAC macro errorByte,current_process,page_table,free_page_count
 	movlw SUCCESS
 	movwf errorByte
 	clrf wait_queue_head
 	clrf wait_queue_tail
-	call PAGE_BANK
 	movlw low page_table
 	movwf FSR
 	movlw PAGE_COUNT
@@ -12,7 +11,7 @@ INIT_KERNEL_MAC macro errorByte,free_page_count,current_process,PAGE_BANK
 	incf FSR,F
 	decfsz temp,F
 	goto $-3
-	movlw free_page_count
+	movlw low free_page_count
 	movwf FSR
 	movlw PAGE_COUNT
 	movwf INDF
@@ -244,7 +243,7 @@ FINISH_INTERRUPT macro saveW,interruptBankSave,bankSelection,RESET_BANK
 ;Shell: Displays '?' and loops while input is being performed.
 ;	Requires: INPUT_METHOD (must return)
 ;
-MAIN_PROCESS_MAC macro CLEAR_DISPLAY,CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP,INPUT_METHOD
+MAIN_PROCESS_MAC macro CLEAR_DISPLAY,CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP,INPUT_METHOD,READ_COMMAND,SHELL
 MAIN_PROCESS call CREATE_DISPLAY
 	call DISPLAY_ME
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
@@ -254,27 +253,9 @@ MAIN_PROCESS call CREATE_DISPLAY
 	bcf STATUS,RP1
 	btfsc STATUS,Z ; if no one is using the display, run the shell.
 	call SHELL
-PROGRAM_MAIN_FORK	btfsc controlPort,PROGRAM_MODE_BIT
+PROGRAM_MAIN_FORK btfsc controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_MODE
 	goto MAIN_LOOP ; repeat....
-
-SHELL call CLEAR_DISPLAY
-	movf lcd_pointer,W
-	btfsc STATUS,Z
-	movlw low lcd_buffer
-	movwf FSR
-	movlw '?'
-	movwf INDF
-	incf FSR,W
-	movwf lcd_pointer
-SHELL_LOOP movf lcd_pointer,W
-	movwf FSR
-	movlw 0x0a;LF
-	xorwf INDF,W ; need to add LF to MORSE_TABLE!!! Possibly RTN without dit or dat???
-	btfsc STATUS,Z
-	goto READ_COMMAND
-	call INPUT_METHOD
-	goto SHELL_LOOP
 	endm
 	
 BANK_MASK_MAC macro bankSelection
@@ -353,6 +334,7 @@ DISPATCH_NEXT_PROCESS movlw 0x0
 	
 CALCULATE_CRC_MAC macro crc,POP_STACK
 CALCULATE_CRC call POP_STACK
+	banksel crc
 	xorwf crc,F
 	movlw 0x3b
 	btfsc crc,0
@@ -372,6 +354,8 @@ CALCULATE_CRC call POP_STACK
 	btfsc crc,7
 	xorlw 0x26
 	movwf crc
+	bcf STATUS,RP0
+	bcf STATUS,RP1
 	return
 	endm
 

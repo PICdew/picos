@@ -31,7 +31,9 @@
 #define USART_ERROR 7
 #define LCD_REQUEST_DENIED 8
 #define INTEGER_OVERFLOW 9
-#define INVALID_INPUT_REQUEST .10 ; For example waiting for a button that does not exist.
+#define INVALID_INPUT_REQUEST 0xA ; For example waiting for a button that does not exist.
+#define NO_SUCH_PAGE_ADDRESS 0xB ; Bad page memory address.
+
 
 ;myStatus defines
 #define ALARM_FLAG 0

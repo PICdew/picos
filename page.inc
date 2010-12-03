@@ -1,7 +1,3 @@
-PAGE_BANK_MAC macro 
-PAGE_BANK banksel page_head
-	endm
-
 ;Using the first page address (page_head)
 ;Arguments: on stack, page index of form <BANK:INDEX>
 ;Returns: in w-reg, ram address of the corresponding page
@@ -48,8 +44,7 @@ FIND_BANK_LOOP incf FSR,F
 TPA_NO_SUCH_ADDRESS movlw NO_SUCH_PAGE_ADDRESS
 	movwf errorByte
 	goto ERROR_RETURN
-	endm
-
+	
 ;Multiples 2 byte sized twos compliment integers
 ;Arguments: on stack, X and Y twos-compliment ints
 ;Returns: in w-reg, (possibly left-truncated) product X*Y
@@ -73,7 +68,8 @@ MULTIPLY_BYTE_LOOP movf stackPtr,W
 	call POP_STACK ; Y(or what's left of it :-/ )
 	movf temp,W
 	return
-	
+	endm
+
 ;Moves through the processes and removes pages whos owners
 ;equal the value initially in W
 FREE_PAGES_MAC macro page_table_addr,free_page_count,count,temp
