@@ -239,13 +239,42 @@ FINISH_INTERRUPT macro saveW,interruptBankSave,bankSelection,RESET_BANK
 	bcf INTCON,GIE
 	endm
 
-MAIN_PROCESS_MAC macro CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP
+;Runs Kernel Processes.
+;
+;Shell: Displays '?' and loops while input is being performed.
+;	Requires: INPUT_METHOD (must return)
+;
+MAIN_PROCESS_MAC macro CLEAR_DISPLAY,CREATE_DISPLAY,DISPLAY_ME,controlPort,PROGRAM_MODE,MAIN_LOOP,INPUT_METHOD
 MAIN_PROCESS call CREATE_DISPLAY
 	call DISPLAY_ME
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
+	banksel lcd_owner
+	movf lcd_owner,W
+	bcf STATUS,RP0
+	bcf STATUS,RP1
+	btfsc STATUS,Z ; if no one is using the display, run the shell.
+	call SHELL
 PROGRAM_MAIN_FORK	btfsc controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_MODE
 	goto MAIN_LOOP ; repeat....
+
+SHELL call CLEAR_DISPLAY
+	movf lcd_pointer,W
+	btfsc STATUS,Z
+	movlw low lcd_buffer
+	movwf FSR
+	movlw '?'
+	movwf INDF
+	incf FSR,W
+	movwf lcd_pointer
+SHELL_LOOP movf lcd_pointer,W
+	movwf FSR
+	movlw 0x0a;LF
+	xorwf INDF,W ; need to add LF to MORSE_TABLE!!! Possibly RTN without dit or dat???
+	btfsc STATUS,Z
+	goto READ_COMMAND
+	call INPUT_METHOD
+	goto SHELL_LOOP
 	endm
 	
 BANK_MASK_MAC macro bankSelection

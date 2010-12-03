@@ -25,6 +25,22 @@ INIT_USART macro usart_addr
 	movwf	PIE1
 	endm
 
+USART_ISR_MAC macro NEXT_ISR
+	banksel PIR1
+	btfss USART_READ_FLAG
+	goto CHECK_WRITE_USART
+	banksel PIE1
+	btfsc PIE1,RCIE
+	goto READ_USART
+CHECK_WRITE_USART bcf STATUS,RP0
+	bcf STATUS,RP1
+	btfss USART_WRITE_FLAG
+	goto NEXT_ISR
+	banksel PIE1
+	btfsc PIE1,TXIE
+	goto WRITE_USART
+	endm
+
 ;Code for copying to and from the usart_addr location.
 ;Does not return. Instead it goest to RETURN_ADDR upon completion.
 ;This is done to be gental to the call stack during an interrupt.

@@ -12,13 +12,15 @@
 #define KERNEL_MINOR_VERSION 0x4
 #define KERNEL_REVISION 0x1
 
+; 0.5.0 - started a shell, which runs when no one owns the LCD.
+;
 ; 0.4.1 - Moved page code to its own include file. Made a new translate
 ;		 page memory address routine (which needs to be tested).
-;
 ; 0.4.0 - Added the beginnings of math routines, including int and float
 ;	  math.
 ; 	- Created a SWAP function for the stack, which will switch W-reg
 ;	  value for the top of the stack.
+;
 ; 0.3.0 - Created a version include.
 ;	- Stack now can peek, giving the value at the top of the stack
 ;	  without popping it.
