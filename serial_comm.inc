@@ -14,7 +14,7 @@ INIT_USART macro usart_addr
 	movwf	SPBRG
 	movlw	0x24		;enable transmission and high baud rate
 	movwf	TXSTA
-	Bank0			;select bank0
+Bank0			;select bank0
 	movlw	0x90		;enable serial port and reception
 	movwf	RCSTA
 
