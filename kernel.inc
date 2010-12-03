@@ -322,5 +322,29 @@ DISPATCH_NEXT_PROCESS movlw 0x0
 	return
 	endm
 	
+CALCULATE_CRC_MAC macro crc,POP_STACK
+CALCULATE_CRC call POP_STACK
+	xorwf crc,F
+	movlw 0x3b
+	btfsc crc,0
+	xorlw 0x1d
+	btfsc crc,1
+	xorlw 0x3a
+	btfsc crc,2
+	xorlw 0x74
+	btfsc crc,3
+	xorlw 0xe8
+	btfsc crc,4
+	xorlw 0xcd
+	btfsc crc,5
+	xorlw 0x87
+	btfsc crc,6
+	xorlw 0x13
+	btfsc crc,7
+	xorlw 0x26
+	movwf crc
+	return
+	endm
+
 		       		       
 		       		
