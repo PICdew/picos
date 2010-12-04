@@ -14,15 +14,16 @@ INIT_USART macro usart_addr
 	movwf	SPBRG
 	movlw	0x24		;enable transmission and high baud rate
 	movwf	TXSTA
-Bank0			;select bank0
+	bcf STATUS,RP0
+	bcf STATUS,RP1			;select bank0
 	movlw	0x90		;enable serial port and reception
 	movwf	RCSTA
 
 	movlw	0xc0		;enable global and peripheral ints
 	movwf	INTCON
-	Bank1			;select bank1
-	movlw	0x30		;enable TX and RX interrupts
-	movwf	PIE1
+	bsf STATUS,RP0			;select bank1
+	bsf PIE1,RCIE
+	bcf STATUS,RP0
 	endm
 
 USART_ISR_MAC macro NEXT_ISR
@@ -83,7 +84,7 @@ ERROR_FRAME	movf RCREG,W
 WRITE_USART movlw 0
 	xorwf usart_addr,W
 	btfsc STATUS,Z
-	goto RETURN_ADDR
+	goto END_WRITE_USART
 	movf FSR,W
 	call PUSH_STACK
 	banksel usart_addr
@@ -94,6 +95,11 @@ WRITE_USART movlw 0
 	movwf TXREG
 	call POP_STACK
 	movwf FSR
+END_WRITE_USART nop
+	banksel PIE1
+	bcf PIE1,TXIE
+	bcf STATUS,RP0
+	bcf STATUS,RP1
 	goto RETURN_ADDR
 	
 	endm
