@@ -6,23 +6,27 @@
 INIT_USART macro usart_addr
 	banksel usart_addr
 	clrf usart_addr
+	banksel ANSELH
+	clrf ANSELH
 	bcf STATUS,RP1
 	bsf STATUS,RP0
-	movlw	b'1010000'		;set tris bits for TX and RX
+	movlw	0xA0 ; set the 
 	iorwf	TRISB,F
-	movlw	.5	;set baud rate
+	bcf OPTION_REG,7
+	movlw	.25	;set baud rate
 	movwf	SPBRG
 	movlw	0x24		;enable transmission and high baud rate
 	movwf	TXSTA
-	bcf STATUS,RP0
-	bcf STATUS,RP1			;select bank0
-	movlw	0x90		;enable serial port and reception
+	banksel RCSTA
+	movlw	0x80		;enable serial port and reception
 	movwf	RCSTA
 
 	movlw	0xc0		;enable global and peripheral ints
-	movwf	INTCON
-	bsf STATUS,RP0			;select bank1
-	bsf PIE1,RCIE
+	iorwf	INTCON,F
+	bsf RCSTA,CREN
+	banksel PIE1
+	bsf PIE1,RCIE ; enable only Receive
+	bcf STATUS,RP0			;select bank0
 	bcf STATUS,RP0
 	endm
 
@@ -51,9 +55,13 @@ USART_COPY_MAC macro myStatus,usart_addr,errorByte,PUSH_STACK,POP_STACK,RETURN_A
 ;If usart_adder is null, nothing happens.
 ;Leaves in bank 0
 READ_USART movlw 0
+	banksel PIE1
+	bcf PIE1,RCIE ; clear interrupt during the read process
+	banksel usart_addr
 	xorwf usart_addr,W
 	btfsc STATUS,Z
-	goto RETURN_ADDR
+	goto END_READ_USART
+	banksel RCSTA
 	btfsc	RCSTA,OERR	;check overrun error flag
 	goto	ERROR_OVRRUN		
 	btfsc	RCSTA,FERR	;test framing error flag
@@ -68,15 +76,20 @@ READ_USART movlw 0
 	movwf INDF
 	call POP_STACK
 	movwf FSR
-	goto RETURN_ADDR
+	goto END_READ_USART
 ERROR_OVRRUN bcf RCSTA,CREN
 	bsf RCSTA,CREN
 	movlw USART_ERROR
 	movwf errorByte
-	goto RETURN_ADDR
+	goto END_READ_USART
 ERROR_FRAME	movf RCREG,W
 	movlw USART_ERROR
 	movwf errorByte
+END_READ_USART nop
+	banksel PIE1
+	bsf PIE1,RCIE ; re-enable rx interrupt
+	bcf STATUS,RP0
+	bcf STATUS,RP1
 	goto RETURN_ADDR
 ;Copies the data in the address stored in usart_addr to TXREG.
 ;If usart_addr is null, nothing happens.

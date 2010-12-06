@@ -16,12 +16,14 @@ SHELL call CLEAR_LCD_BUFFER
 	movwf INDF
 	incf FSR,W
 	movwf lcd_pointer
-SHELL_LOOP call WRITE_BUFFER
-	movf lcd_pointer,W
+	call WRITE_BUFFER
+SHELL_LOOP movf lcd_pointer,W
 	movwf FSR
+	movlw ' '
+	xorwf INDF,W
+	btfss STATUS,Z ; if the buffer value differs from space, it has changed; thus, update the display.
+	goto SHELL_DISPLAY_UPDATE
 	banksel usart_addr
-	movf usart_addr,W
-	btfsc STATUS,Z
 	movf FSR,W
 	movwf usart_addr
 	banksel lcd_pointer
@@ -31,6 +33,10 @@ SHELL_LOOP call WRITE_BUFFER
 	goto READ_COMMAND
 	call INPUT_METHOD
 	goto SHELL_LOOP
+SHELL_DISPLAY_UPDATE call WRITE_BUFFER
+	incf lcd_pointer,F
+	goto SHELL_LOOP
+	
 
 READ_COMMAND movlw low lcd_buffer ; plus one for the ?character
 	addlw 1
