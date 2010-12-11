@@ -14,12 +14,19 @@ SHELL call CLEAR_LCD_BUFFER
 	movwf FSR
 	movlw '?'
 	movwf INDF
-	incf FSR,W
+	incf FSR,F
+	clrf INDF
+	movf FSR,W
 	movwf lcd_pointer
+	banksel usart_addr
+	movwf usart_addr
+	banksel lcd_buffer
+	movlw 0
+	call PUSH_STACK
 	call WRITE_BUFFER
 SHELL_LOOP movf lcd_pointer,W
 	movwf FSR
-	movlw ' '
+	movlw 0
 	xorwf INDF,W
 	btfss STATUS,Z ; if the buffer value differs from space, it has changed; thus, update the display.
 	goto SHELL_DISPLAY_UPDATE
@@ -31,10 +38,15 @@ SHELL_LOOP movf lcd_pointer,W
 	xorwf INDF,W ; need to add LF to MORSE_TABLE!!! Possibly RTN without dit or dat???
 	btfsc STATUS,Z
 	goto READ_COMMAND
-	call INPUT_METHOD
 	goto SHELL_LOOP
-SHELL_DISPLAY_UPDATE call WRITE_BUFFER
+SHELL_DISPLAY_UPDATE movlw 0
+	call PUSH_STACK
+	call WRITE_BUFFER
+	banksel lcd_pointer
 	incf lcd_pointer,F
+	movf lcd_pointer,W
+	movwf FSR
+	clrf INDF
 	goto SHELL_LOOP
 	
 

@@ -13,8 +13,10 @@ INIT_USART macro usart_addr
 	movlw	0xA0 ; set the 
 	iorwf	TRISB,F
 	bcf OPTION_REG,7
-	movlw	.25	;set baud rate
+	movlw	.24	;set baud rate
 	movwf	SPBRG
+	movlw 1 ; 10417
+	movwf SPBRGH
 	movlw	0x24		;enable transmission and high baud rate
 	movwf	TXSTA
 	banksel RCSTA

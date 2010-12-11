@@ -207,28 +207,28 @@ CLEAR_LCD_BUFFER movlw low lcd_buffer
 ;is assumed to be a kernel process. If the requester's id is
 ;not equal to the owner's id, the routine returns with a 
 ;LCD_REQUEST_DENIED error
-WRITE_BUFFER_MAC macro lcd_buffer,count,lcd_owner,errorByte,WRITE_CHAR,LCD_TOP,LCD_BOTTOM,POP_STACK,SAVE_BANK,RESET_BANK
+WRITE_BUFFER_MAC macro lcd_buffer,count,lcd_owner,errorByte,WRITE_CHAR,LCD_TOP,LCD_BOTTOM,POP_STACK,SAVE_BANK,RESET_BANK,SERIAL_OUT,PEEK_STACK
 CAN_UPDATE_DISPLAY call SAVE_BANK
 	call POP_STACK
 	banksel lcd_owner
 	xorwf lcd_owner,W ; does the UID equal the owner? If so, return 0
 	btfsc STATUS,Z
-	retlw 0
-	movlw 0
-	xorwf lcd_owner,W ; if the UID does not equal the owner. Is the owner null? If so, give the display to the UID
-	call RESET_BANK
-	btfss STATUS,Z
+	goto ALLOW_UPDATE_DISPLAY
+	movf lcd_owner,W ; if the UID does not equal the owner. Is the owner null? If so, give the display to the UID
+	btfsc STATUS,Z
+	goto ALLOW_UPDATE_DISPLAY
+DENY_UPDATE_DISPLAY call RESET_BANK
 	retlw LCD_REQUEST_DENIED
+ALLOW_UPDATE_DISPLAY call RESET_BANK
 	retlw 0
 
-WRITE_BUFFER call POP_STACK
-	call PUSH_STACK
+WRITE_BUFFER call PEEK_STACK
 	call PUSH_STACK
 	call CAN_UPDATE_DISPLAY
 	xorlw 0
 	btfss STATUS,Z
 	goto WB_LCD_REQUEST_DENIED
-	DO_WRITE_BUFFER nop
+DO_WRITE_BUFFER nop
 	banksel lcd_buffer
 	call CLEAR_DISPLAY
 	call LCD_TOP
@@ -236,16 +236,16 @@ WRITE_BUFFER call POP_STACK
 	movwf FSR
 	movlw 0x8
 	movwf count
-WRITE_BUFFER_LOOP movlw 0
-	xorwf INDF,W
+WRITE_BUFFER_LOOP movf INDF,W
 	btfsc STATUS,Z
-	goto $+6
+	goto WB_NEXT_LINE
 	movf INDF,W
 	call WRITE_CHAR
+	call SERIAL_OUT
 	incf FSR,F
 	decfsz count,F
 	goto WRITE_BUFFER_LOOP
-	call LCD_BOTTOM
+WB_NEXT_LINE call LCD_BOTTOM
 	movlw 0x8
 	movwf count
 	movlw 0x0
@@ -258,6 +258,7 @@ WRITE_BUFFER_LOOP2 movlw 0
 	goto END_OF_WRITE_BUFFER
 	movf INDF,W
 	call WRITE_CHAR
+	call SERIAL_OUT
 	incf FSR,F
 	decfsz count,F
 	goto WRITE_BUFFER_LOOP2
