@@ -6,8 +6,9 @@
 ;return_btn, dit and dat should be of the bit number within
 ;btn_pressed for the corresponding button
 MORSE_CODE_TREE_MAC macro return_btn,dit,dat,result_addr,btn_pressed,PUSH_STACK
-MORSE_CODE_TREE movlw '?'
-	movwf result_addr
+MORSE_CODE_TREE movlw low result_addr
+	movwf FSR
+	movlw '?'
 	movlw 0
 	call PUSH_STACK
 MC_LOOP	btfsc btn_pressed,return_btn
