@@ -1,5 +1,5 @@
 ;Macros for 16-bit math (int and float)
-ARITHMETIC_MAC macro math_temp,errorByte,PUSH_STACK,POP_STACK,SWAP_STACK,PEEK_STACK,HEX_TO_CHAR
+ARITHMETIC_MAC macro math_temp,math_temp2,errorByte,PUSH_STACK,POP_STACK,SWAP_STACK,PEEK_STACK,HEX_TO_CHAR
 
 ;If X is on the stack with the MSB on top, then
 ;X is popped and -X is pushed onto the stack.
@@ -67,38 +67,87 @@ END_OF_ADD_INT bcf STATUS,RP0
 	bcf STATUS,RP1
 	return
 
-;Adds to floating point numbers. Expects them on the stack one 
-;NOTE: assumes like signs. For unlike signs, the user should
-;	make like signs and subtract. (this should be integrate
-;	later)
-;
-;after the other with the sign/exponent byte on top.
+;Adds to floating point numbers.
 ADD_FLOAT call POP_STACK
-	banksel math_temp
 	movwf math_temp
-	call POP_STACK
-	call SWAP_STACK ; now the sign/exponent byte of the first operand is on math_temp, the same byte of the second operand on top of the stack. Below that are the lsb's of the first and second operands respectively.
 	call PEEK_STACK
 	subwf math_temp,W
-	btfsc STATUS,Z
-	goto ADD_FLOAT_SUBROUTINE
 	btfsc STATUS,C
-	goto STACK_BIGGER_AF
-	call POP_STACK ; if we're here, the first operand has the bigger exponent. So we need to adjust (and possible truncate) the second mantissa
+	goto ADD_FLOAT_EXP_BORROW
+	movwf math_temp
+	movlw 1
+	movwf math_temp2
+	goto ADD_FLOAT_DEAL_WITH_SIGN
+ADD_FLOAT_EXP_BORROW movf math_temp,W
+	call SWAP_STACK
+	movwf math_temp
+	call PEEK_STACK
+	subwf math_temp,W
+	movlw 2
+	movwf math_temp2	
+ADD_FLOAT_DEAL_WITH_SIGN call POP_STACK
+	andlw 0x80 ; sign bit
+	iorwf math_temp2,F ; math_temp2 now has sign bit and flag of which operand has the greater exponent
 	call POP_STACK
-	call SWAP_STACK ; second mantissa is now on top of the stack
+	btfsc math_temp2,0 ; in case the second operand is greater
+	call SWAP_STACK
+	call PUSH_STACK
+	movlw 0x7f
+	andwf math_temp2,W
+	bsf math_temp2,2 ; indicte this is the first mantissa shift, thus add 0x80 for the implied 1 before the decimal point
+ADD_FLOAT_ADJUST_MANTISSA xorlw 0 ; counter starts in W-reg
+	btfsc STATUS,Z
+	goto ADD_FLOAT_NEGATE_MANTISSAE;finish with adjusted MANTISSA on top of the stack and other operand's mantissa below it
+	sublw 1
+	call SWAP_STACK
+	call PUSH_STACK
+	movf math_temp2,W
+	call SWAP_STACK
+	movwf math_temp2
+	rrf math_temp2,W
+	call SWAP_STACK	
+	movwf math_temp2
+	call POP_STACK
+	btfss math_temp2,2
+	addlw 0x80
+	call SWAP_STACK ; counter in w-reg as it should be for the beginning of the loop
+	bcf math_temp2,2
+	goto ADD_FLOAT_ADJUST_MANTISSA		
+ADD_FLOAT_NEGATE_MANTISSAE call POP_STACK
+	btfsc math_temp2,7
+	goto NEGATE_MANTISSA
+	movwf math_temp2
+	goto ADD_FLOAT_CHECK_OTHER_MANTISSA
+ADD_FLOAT_NEGATE_MANTISSA movwf math_temp2
+	compf math_temp2,F
+	incf math_temp2,F
+ADD_FLOAT_CHECK_OTHER_MANTISSA btfss math_temp,7
+	goto ADD_FLOAT_DO_ADD
 	movf math_temp,W
-	call SWAP_STACK ; second mantissa is now in math_temp, exponent is on top of stack
-	;
-	;todo: 	make the adjust smaller exponent's mantissa. then add. 
-	;NOTE: when rrf is done don't forget to add 0x80 to the first rrf result
-	;to account for the fact that the value is normalized before rrf is done.
-	;
-STACK_BIGGER_AF
-ADD_FLOAT_SUBROUTINE 
-END_OF_ADD_FLOAT bcf STATUS,RP0
-	bcf STATUS,RP1
-	return 
+	call SWAP_STACK
+	movwf math_temp
+	compf math_temp,F
+	incf math_temp,W
+	call SWAP_STACK
+	movwf math_temp
+	bcf math_temp,7
+ADD_FLOAT_DO_ADD call POP_STACK
+	addwf math_temp2,F
+	btfss STATUS,C
+	goto ADD_FLOAT_CHECK_SUM_SIGN
+	rrf math_temp2,F
+	incf math_temp,W
+	andlw 0x7f
+	movwf math_temp
+ADD_FLOAT_CHECK_SUM_SIGN btfss math_temp2,7
+	goto ADD_FLOAT_END
+	bsf math_temp,7
+	compf math_temp2,F
+	incf math_temp2,F
+ADD_FLOAT_END movf math_temp2,W
+	call PUSH_STACK
+	movf math_temp,W
+	goto PUSH_STACK; the END!!!
 
 ;Integers are represented using 16-bit two's complement
 ;expects most significant byte on top of the stack.
