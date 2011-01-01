@@ -9,9 +9,13 @@
 
 
 #define KERNEL_MAJOR_VERSION 0x0
-#define KERNEL_MINOR_VERSION 0x4
+#define KERNEL_MINOR_VERSION 0x5
 #define KERNEL_REVISION 0x1
 
+; 0.5.1 - Changed shell to run at the end of the process loop. Does not
+;	 check to see if anything owns the lcd anymore. A better process
+;	 of deciding when to use the shell is needed.
+;
 ; 0.5.0 - started a shell, which runs when no one owns the LCD.
 ;
 ; 0.4.1 - Moved page code to its own include file. Made a new translate
