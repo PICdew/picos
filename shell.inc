@@ -2,6 +2,10 @@
 ;CRC the char values for each character in the command.
 #define EXEC_CRC 42;fill this is later. EXEC runs a process.
 #define DEFAULT_SHELL_CHAR 0xfe
+#define BACKSPACE_CHAR 0x8
+#define CR 0xd
+#define LF 0xa
+
 
 ;parses commands
 ;returns when finished
@@ -40,7 +44,19 @@ SHELL_UPDATE_CHECK nop
 	xorwf INDF,W
 	btfsc STATUS,Z
 	goto END_OF_SHELL
-	incf FSR,F
+	movlw BACKSPACE_CHAR ; is the character a backspace, if so remove character
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto SHELL_BACKSPACE
+	movlw CR ; Let's not retain CR. Windows :-/
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto SHELL_NO_CR
+	movlw LF
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto DO_STUFF_IN_SHELL
+SHELL_ADVANCE_UPDATE incf FSR,F ; Advance lcd pointer
 	movlw DEFAULT_SHELL_CHAR
 	movwf INDF
 	movf FSR,W
@@ -53,6 +69,22 @@ SHELL_UPDATE_DISPLAY movlw SHELL_ID
 	call PUSH_STACK
 	call WRITE_BUFFER
 END_OF_SHELL return
+SHELL_BACKSPACE movlw DEFAULT_SHELL_CHAR
+	movwf INDF
+	decf FSR,F
+	movwf INDF
+	movf FSR,W
+	banksel usart_addr
+	movwf usart_addr
+	banksel lcd_pointer
+	movwf lcd_pointer
+	goto SHELL_UPDATE_DISPLAY
+DO_STUFF_IN_SHELL movlw '!'
+	movwf INDF
+	goto SHELL_ADVANCE_UPDATE	
+SHELL_NO_CR movlw DEFAULT_SHELL_CHAR
+	movwf INDF
+	goto SHELL_UPDATE_DISPLAY
 
 READ_COMMAND movlw low lcd_buffer ; plus one for the ?character
 	addlw 1
