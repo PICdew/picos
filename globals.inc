@@ -48,3 +48,7 @@
 ;LOGIC
 #define TRUE 1
 #define FALSE 0
+
+;KERNEL USER IDs
+#define SHELL_ID 1
+#define TIME_ID 2

@@ -1,54 +1,58 @@
 ;command CRC values
 ;CRC the char values for each character in the command.
 #define EXEC_CRC 42;fill this is later. EXEC runs a process.
+#define DEFAULT_SHELL_CHAR 0xfe
 
 ;parses commands
 ;returns when finished
 ;Precomputed crc's sound be defined for use in this routine
 ;If the command has arguments, they are pushed into the stack, from left to right
-SHELL_MAC macro lcd_pointer,lcd_buffer,crc,usart_addr,PARSE_ARGS,CRC_W,PUSH_STACK,CLEAR_LCD_BUFFER,INPUT_METHOD,EXEC,WRITE_BUFFER
-SHELL call CLEAR_LCD_BUFFER
-	movf lcd_pointer,W
+SHELL_MAC macro lcd_pointer,lcd_buffer,crc,usart_addr,current_process,PARSE_ARGS,CRC_W,PUSH_STACK,CLEAR_LCD_BUFFER,INPUT_METHOD,EXEC,WRITE_BUFFER
+SHELL movlw SHELL_ID
+	banksel lcd_owner
+	xorwf lcd_owner,W ; Is the shell aready running?
 	btfsc STATUS,Z
+	goto SHELL_UPDATE_CHECK
+	call CLEAR_LCD_BUFFER ; INIT SHELL
+	banksel lcd_owner
+	movlw SHELL_ID
+	movwf lcd_owner
 	movlw low lcd_buffer
 	movwf FSR
 	movlw '?'
 	movwf INDF
 	incf FSR,F
-	clrf INDF
+	movlw DEFAULT_SHELL_CHAR
+	movwf INDF
+	movf FSR,W
+	banksel lcd_pointer
+	movwf lcd_pointer
+	banksel usart_addr
+	movwf usart_addr
+	bcf STATUS,RP0
+	bcf STATUS,RP1
+	goto SHELL_UPDATE_DISPLAY
+SHELL_UPDATE_CHECK nop
+	banksel lcd_pointer; if so, should it update itself?
+	movf lcd_pointer,W
+	movwf FSR
+	movlw DEFAULT_SHELL_CHAR ; default character for shell. Did it change?
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto END_OF_SHELL
+	incf FSR,F
+	movlw DEFAULT_SHELL_CHAR
+	movwf INDF
 	movf FSR,W
 	movwf lcd_pointer
 	banksel usart_addr
 	movwf usart_addr
-	banksel lcd_buffer
-	movlw 0
+	bcf STATUS,RP0
+	bcf STATUS,RP1
+SHELL_UPDATE_DISPLAY movlw SHELL_ID
 	call PUSH_STACK
 	call WRITE_BUFFER
-SHELL_LOOP movf lcd_pointer,W
-	movwf FSR
-	movlw 0
-	xorwf INDF,W
-	btfss STATUS,Z ; if the buffer value differs from space, it has changed; thus, update the display.
-	goto SHELL_DISPLAY_UPDATE
-	banksel usart_addr
-	movf FSR,W
-	movwf usart_addr
-	banksel lcd_pointer
-	movlw 0x0a;LF
-	xorwf INDF,W ; need to add LF to MORSE_TABLE!!! Possibly RTN without dit or dat???
-	btfsc STATUS,Z
-	goto READ_COMMAND
-	goto SHELL_LOOP
-SHELL_DISPLAY_UPDATE movlw 0
-	call PUSH_STACK
-	call WRITE_BUFFER
-	banksel lcd_pointer
-	incf lcd_pointer,F
-	movf lcd_pointer,W
-	movwf FSR
-	clrf INDF
-	goto SHELL_LOOP
-	
+END_OF_SHELL return
 
 READ_COMMAND movlw low lcd_buffer ; plus one for the ?character
 	addlw 1

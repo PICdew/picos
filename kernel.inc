@@ -248,14 +248,19 @@ MAIN_PROCESS call CREATE_DISPLAY
 	call DISPLAY_ME
 	clrwdt;WDT checks for run away code. If I get this far, I'm not running away
 	banksel lcd_owner
-	movf lcd_owner,W
-	bcf STATUS,RP0
-	bcf STATUS,RP1
+	movlw SHELL_ID
+	xorwf lcd_owner,W
 	btfsc STATUS,Z ; if no one is using the display, run the shell.
-	call SHELL
+	goto RUN_SHELL
+	movf lcd_owner,W
+	btfsc STATUS,Z
+	goto RUN_SHELL
 PROGRAM_MAIN_FORK btfsc controlPort,PROGRAM_MODE_BIT
 	goto PROGRAM_MODE
 	goto MAIN_LOOP ; repeat....
+RUN_SHELL bcf STATUS,RP0
+	bcf STATUS,RP1
+	call SHELL
 	endm
 	
 BANK_MASK_MAC macro bankSelection

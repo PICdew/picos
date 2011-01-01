@@ -59,10 +59,6 @@ USART_COPY_MAC macro myStatus,usart_addr,errorByte,PUSH_STACK,POP_STACK,RETURN_A
 READ_USART movlw 0
 	banksel PIE1
 	bcf PIE1,RCIE ; clear interrupt during the read process
-	banksel usart_addr
-	xorwf usart_addr,W
-	btfsc STATUS,Z
-	goto END_READ_USART
 	banksel RCSTA
 	btfsc	RCSTA,OERR	;check overrun error flag
 	goto	ERROR_OVRRUN		
@@ -70,14 +66,20 @@ READ_USART movlw 0
 	goto	ERROR_FRAME	
 	movf FSR,W
 	call PUSH_STACK
-	banksel usart_addr
-	movf usart_addr,W
-	movwf FSR
 	banksel RCREG
 	movf RCREG,W
+	call PUSH_STACK
+	banksel usart_addr
+	movf usart_addr,W
+	btfsc STATUS,Z
+	goto READ_USART_IGNORE_ADDR
+	movwf FSR
+	call POP_STACK
 	movwf INDF
 	call POP_STACK
 	movwf FSR
+	goto END_READ_USART
+READ_USART_IGNORE_ADDR call POP_STACK
 	goto END_READ_USART
 ERROR_OVRRUN bcf RCSTA,CREN
 	bsf RCSTA,CREN

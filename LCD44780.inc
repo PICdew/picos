@@ -1,7 +1,7 @@
 ;for a list of changes see bottom of file.
 #define LCD_LINE_SIZE 0x8
 
-LCD_ROUTINES_MAC macro count,count1,counta,countb,tmp1,tmp2,templcd,templcd2,pclTemp,lcd_pointer,lcd_pointer,MAIN_LOOP
+LCD_ROUTINES_MAC macro count,count1,counta,countb,tmp1,tmp2,templcd,templcd2,pclTemp,lcd_pointer,lcd_owner,MAIN_LOOP
 STARTUP_MESSAGE clrf count			;set counter register to zero
 STARTUP1 movf	count, w		;put counter value in W
 		call	STARTUP_TOP;get a character from the text table
@@ -60,6 +60,7 @@ INIT_LCD movlw	0x20;only use four bits (save the others)
 	call	CLEAR_DISPLAY			;clear display
 	movlw low lcd_buffer
 	movwf lcd_pointer
+	clrf lcd_owner
 	return
 
 ;Commands
@@ -222,9 +223,7 @@ DENY_UPDATE_DISPLAY call RESET_BANK
 ALLOW_UPDATE_DISPLAY call RESET_BANK
 	retlw 0
 
-WRITE_BUFFER call PEEK_STACK
-	call PUSH_STACK
-	call CAN_UPDATE_DISPLAY
+WRITE_BUFFER call CAN_UPDATE_DISPLAY
 	xorlw 0
 	btfss STATUS,Z
 	goto WB_LCD_REQUEST_DENIED
@@ -267,10 +266,8 @@ WB_LCD_REQUEST_DENIED bcf STATUS,RP0
 	bcf STATUS,RP1
 	movlw LCD_REQUEST_DENIED
 	movwf errorByte
-END_OF_WRITE_BUFFER call POP_STACK
-	banksel lcd_owner
-	movwf lcd_owner
-	banksel lcd_buffer
+END_OF_WRITE_BUFFER bcf STATUS,RP0
+	bcf STATUS,RP1
 	return
 	endm
 
