@@ -1,3 +1,4 @@
+
 INIT_KERNEL_MAC macro errorByte,current_process,page_table,free_page_count
 	movlw SUCCESS
 	movwf errorByte
@@ -264,6 +265,11 @@ RUN_SHELL bcf STATUS,RP0
 	endm
 	
 BANK_MASK_MAC macro bankSelection
+
+BANK_0 bcf STATUS,RP0
+	bcf STATUS,RP1
+	return
+
 SAVE_BANK clrf bankSelection
 	btfsc STATUS,RP0
 	bsf bankSelection,RP0

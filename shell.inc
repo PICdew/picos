@@ -1,6 +1,7 @@
 ;command CRC values
 ;CRC the char values for each character in the command.
-#define EXEC_CRC 42;fill this is later. EXEC runs a process.
+#define EXEC_CRC 0x3b;fill this is later. EXEC runs a process.
+#define TIME_CRC 0x66
 #define DEFAULT_SHELL_CHAR 0xfe
 #define BACKSPACE_CHAR 0x8
 #define CR 0xd
@@ -11,13 +12,8 @@
 ;returns when finished
 ;Precomputed crc's sound be defined for use in this routine
 ;If the command has arguments, they are pushed into the stack, from left to right
-SHELL_MAC macro lcd_pointer,lcd_buffer,crc,usart_addr,current_process,PARSE_ARGS,CRC_W,PUSH_STACK,CLEAR_LCD_BUFFER,INPUT_METHOD,EXEC,WRITE_BUFFER
-SHELL movlw SHELL_ID
-	banksel lcd_owner
-	xorwf lcd_owner,W ; Is the shell aready running?
-	btfsc STATUS,Z
-	goto SHELL_UPDATE_CHECK
-	call CLEAR_LCD_BUFFER ; INIT SHELL
+SHELL_MAC macro lcd_pointer,lcd_buffer,crc,usart_addr,current_process,PARSE_ARGS,CALCULATE_CRC,PUSH_STACK,CLEAR_LCD_BUFFER,INPUT_METHOD,EXEC,WRITE_BUFFER
+SHELL_INIT call CLEAR_LCD_BUFFER ; INIT SHELL
 	banksel lcd_owner
 	movlw SHELL_ID
 	movwf lcd_owner
@@ -35,8 +31,21 @@ SHELL movlw SHELL_ID
 	movwf usart_addr
 	bcf STATUS,RP0
 	bcf STATUS,RP1
-	goto SHELL_UPDATE_DISPLAY
+	goto SHELL_UPDATE_DISPLAY; will return from there
+
+SHELL movlw SHELL_ID
+	banksel lcd_owner
+	xorwf lcd_owner,W ; Is the shell aready running?
+	btfsc STATUS,Z
+	goto SHELL_UPDATE_CHECK
+	movf lcd_owner,F ; If no one owns the LCD, let the shell take over.
+	btfsc STATUS,Z
+	goto SHELL_INIT
+	return ; someone else is using the LCD, do not run the shell.
 SHELL_UPDATE_CHECK nop
+	banksel btn_pressed
+	btfsc btn_pressed,BTN1
+	goto SHELL_BUTTON_PRESSED
 	banksel lcd_pointer; if so, should it update itself?
 	movf lcd_pointer,W
 	movwf FSR
@@ -79,15 +88,23 @@ SHELL_BACKSPACE movlw DEFAULT_SHELL_CHAR
 	banksel lcd_pointer
 	movwf lcd_pointer
 	goto SHELL_UPDATE_DISPLAY
-DO_STUFF_IN_SHELL movlw '!' ; replace with null character and send to RUN_COMMAND
+DO_STUFF_IN_SHELL movlw 0x0 ; replace with null character and send to RUN_COMMAND
 	movwf INDF
-	goto SHELL_ADVANCE_UPDATE	
+	goto READ_COMMAND	
 SHELL_NO_CR movlw DEFAULT_SHELL_CHAR
 	movwf INDF
 	goto SHELL_UPDATE_DISPLAY
+SHELL_BUTTON_PRESSED movlw low lcd_buffer
+	movwf FSR
+	movlw '!'
+	movwf INDF
+	banksel btn_pressed
+	bcf btn_pressed,BTN1
+	call BANK_0
+	goto SHELL_UPDATE_DISPLAY
 
-READ_COMMAND movlw low lcd_buffer ; plus one for the ?character
-	addlw 1
+
+READ_COMMAND movlw 1+low lcd_buffer ; plus one for the ?character
 	movwf FSR
 	banksel crc
 	clrf crc
@@ -99,7 +116,8 @@ READ_COMMAND_LOOP movf INDF,F ;Parse command characters until a null character i
 	btfsc STATUS,Z
 	goto PARSE_ARGS
 	movf INDF,W
-	call CRC_W
+	call PUSH_STACK
+	call CALCULATE_CRC
 	incf FSR,F
 	goto READ_COMMAND_LOOP
 PARSE_ARGS incf FSR,F
@@ -112,9 +130,19 @@ PARSE_ARGS incf FSR,F
 	movf INDF,W
 	call PUSH_STACK
 	goto PARSE_ARGS
-HAVE_COMMAND movlw EXEC_CRC
+HAVE_COMMAND call SHELL_INIT
+	movlw EXEC_CRC
+	banksel crc
 	xorwf crc,W
 	btfsc STATUS,Z
 	goto EXEC
-	return
+	movlw TIME_CRC
+	xorwf crc,W
+	btfsc STATUS,Z
+	goto RUN_DISPLAY_TIME
+	goto EXEC ; ELSE!!!
+RUN_DISPLAY_TIME movlw TIME_ID
+	banksel lcd_owner 
+	movwf lcd_owner
+	goto DISPLAY_TIME
 	endm
