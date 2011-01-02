@@ -79,7 +79,7 @@ SHELL_BACKSPACE movlw DEFAULT_SHELL_CHAR
 	banksel lcd_pointer
 	movwf lcd_pointer
 	goto SHELL_UPDATE_DISPLAY
-DO_STUFF_IN_SHELL movlw '!'
+DO_STUFF_IN_SHELL movlw '!' ; replace with null character and send to RUN_COMMAND
 	movwf INDF
 	goto SHELL_ADVANCE_UPDATE	
 SHELL_NO_CR movlw DEFAULT_SHELL_CHAR
@@ -91,7 +91,7 @@ READ_COMMAND movlw low lcd_buffer ; plus one for the ?character
 	movwf FSR
 	banksel crc
 	clrf crc
-READ_COMMAND_LOOP movf INDF,F ;double check this can set Z flag
+READ_COMMAND_LOOP movf INDF,F ;Parse command characters until a null character is reached.
 	btfsc STATUS,Z
 	goto HAVE_COMMAND
 	movlw ' '
