@@ -1,7 +1,10 @@
+
 ;command CRC values
 ;CRC the char values for each character in the command.
 #define EXEC_CRC 0x3b;fill this is later. EXEC runs a process.
 #define TIME_CRC 0x66
+#define SET_TIME_CRC 0xea ; set time command
+
 #define DEFAULT_SHELL_CHAR 0xfe
 #define BACKSPACE_CHAR 0x8
 #define CR 0xd
@@ -106,6 +109,9 @@ SHELL_BUTTON_PRESSED movlw low lcd_buffer
 
 READ_COMMAND movlw 1+low lcd_buffer ; plus one for the ?character
 	movwf FSR
+	banksel argv_head;initialize argv (zero if no arguments)
+	clrf argv_head
+	clrf argv_tail
 	banksel crc
 	clrf crc
 READ_COMMAND_LOOP movf INDF,F ;Parse command characters until a null character is reached.
@@ -120,16 +126,8 @@ READ_COMMAND_LOOP movf INDF,F ;Parse command characters until a null character i
 	call CALCULATE_CRC
 	incf FSR,F
 	goto READ_COMMAND_LOOP
-PARSE_ARGS incf FSR,F
-	movf INDF,F 
-	btfsc STATUS,Z
+PARSE_ARGS call GET_NEXT_ARG
 	goto HAVE_COMMAND
-	movlw ' '
-	xorwf INDF,W
-	goto PARSE_ARGS
-	movf INDF,W
-	call PUSH_STACK
-	goto PARSE_ARGS
 HAVE_COMMAND call SHELL_INIT
 	movlw EXEC_CRC
 	banksel crc
@@ -140,9 +138,41 @@ HAVE_COMMAND call SHELL_INIT
 	xorwf crc,W
 	btfsc STATUS,Z
 	goto RUN_DISPLAY_TIME
+	movlw SET_TIME_CRC
+	xorwf crc,W
+	btfsc STATUS,Z
+	goto SHELL_SET_TIME
 	goto EXEC ; ELSE!!!
 RUN_DISPLAY_TIME movlw TIME_ID
 	banksel lcd_owner 
 	movwf lcd_owner
 	goto DISPLAY_TIME
+SHELL_SET_TIME nop
+	banksel argv_head
+	movf argv_head,W
+	call BANK_0
+	btfsc STATUS,Z
+	movlw low minutes
+	movwf FSR
+	movlw 0x30
+	subwf INDF,W
+	movwf minutes
+	return
+
+GET_NEXT_ARG incf FSR,F ; iterate through characters in shell command after the first word
+	movf INDF,F ;place the first non-white space address in argv_head
+	btfsc STATUS,Z ; and the last address in argv_tail
+	return
+	movlw ' '
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto GET_NEXT_ARG
+	movf INDF,W
+	banksel argv_head
+	movf argv_head,F
+	btfsc STATUS,Z
+	movwf argv_head
+	movwf argv_tail
+	call BANK_0
+	goto GET_NEXT_ARG
 	endm
