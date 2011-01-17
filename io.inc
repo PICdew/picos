@@ -5,12 +5,14 @@
 ;
 ;return_btn, dit and dat should be of the bit number within
 ;btn_pressed for the corresponding button
-MORSE_CODE_TREE_MAC macro return_btn,dit,dat,result_addr,btn_pressed,PUSH_STACK
-MORSE_CODE_TREE movlw low result_addr
+MORSE_CODE_TREE_MAC macro return_btn,dit,dat,btn_pressed,PUSH_STACK,SWAP_STACK
+MORSE_CODE_TREE movf FSR,W
+	call SWAP_STACK
 	movwf FSR
 	movlw '?'
 	movlw 0
 	call PUSH_STACK
+	banksel btn_pressed
 MC_LOOP	btfsc btn_pressed,return_btn
 	goto MC_RTN
 	btfsc btn_pressed,dit
@@ -20,24 +22,36 @@ MC_LOOP	btfsc btn_pressed,return_btn
 	goto MC_LOOP
 MC_DIT bcf btn_pressed,dit
 	call POP_STACK
-	movwf result_addr
-	rlf result_addr,F
-	incf result_addr,W
+	movwf INDF
+	rlf INDF,F
+	incf INDF,W
 	call PUSH_STACK
 	call W_TO_MORSE
-	movwf result_addr
-	goto MC_LOOP
+	movwf INDF
+	goto MC_REFRESH
 MC_DAT bcf btn_pressed,dat
 	call POP_STACK
-	movwf result_addr
-	incf result_addr,F
-	rlf result_addr,W
+	movwf INDF
+	incf INDF,F
+	rlf INDF,W
 	call PUSH_STACK
 	call W_TO_MORSE
-	movwf result_addr
-	goto MC_LOOP
+	movwf INDF
+	goto MC_REFRESH
 MC_RTN bcf btn_pressed,return_btn
-	return
+	call POP_STACK ; morse counter
+	call POP_STACK ; old fsr
+	movwf FSR
+	goto BANK_0
+MC_REFRESH movf FSR,W
+	call PUSH_STACK
+	movlw SHELL_ID
+	call PUSH_STACK
+	call WRITE_BUFFER ; pops stack
+	call POP_STACK
+	movwf FSR
+	banksel btn_pressed
+	goto MC_LOOP ; continue MORSE CODE LOOP
 
 W_TO_MORSE movlw HIGH MORSE_TABLE
 	movwf PCLATH

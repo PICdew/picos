@@ -47,7 +47,8 @@ SHELL movlw SHELL_ID
 	return ; someone else is using the LCD, do not run the shell.
 SHELL_UPDATE_CHECK nop
 	banksel btn_pressed
-	btfsc btn_pressed,BTN1
+	movf btn_pressed,F
+	btfss STATUS,Z
 	goto SHELL_BUTTON_PRESSED
 	banksel lcd_pointer; if so, should it update itself?
 	movf lcd_pointer,W
@@ -99,12 +100,21 @@ SHELL_NO_CR movlw DEFAULT_SHELL_CHAR
 	goto SHELL_UPDATE_DISPLAY
 SHELL_BUTTON_PRESSED movlw low lcd_buffer
 	movwf FSR
-	movlw '!'
+	movlw '>'
 	movwf INDF
-	banksel btn_pressed
-	bcf btn_pressed,BTN1
+	movlw SHELL_ID
+	call PUSH_STACK
 	call BANK_0
-	goto SHELL_UPDATE_DISPLAY
+	call WRITE_BUFFER
+	banksel usart_addr
+	movf usart_addr,W
+	call PUSH_STACK
+	call MORSE_CODE_TREE
+	banksel usart_addr
+	movf usart_addr,W
+	movwf FSR
+	banksel lcd_pointer
+	goto SHELL_ADVANCE_UPDATE
 
 
 READ_COMMAND movlw 1+low lcd_buffer ; plus one for the ?character

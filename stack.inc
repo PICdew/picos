@@ -44,11 +44,10 @@ PUSH_STACK movwf stackTemp
 	movf stackTemp,W
 	return
 	
-;push W-reg onto the stack
-SWAP_STACK movwf stackTemp 
+;swap w-reg with top of stack
+SWAP_STACK movwf stackTemp ;to top of stack
 	movf FSR,W
-	movwf stackTemp2
-	incf stackPtr,F
+	movwf stackTemp2 ; save old FSR
 	movf stackPtr,W
 	movwf FSR
 	movf INDF,W
