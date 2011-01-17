@@ -112,8 +112,12 @@ SHELL_BUTTON_PRESSED movlw low lcd_buffer
 	call MORSE_CODE_TREE
 	banksel usart_addr
 	movf usart_addr,W
-	movwf FSR
 	banksel lcd_pointer
+	movwf FSR
+	movlw LF
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto DO_STUFF_IN_SHELL
 	goto SHELL_ADVANCE_UPDATE
 
 
