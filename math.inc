@@ -1,6 +1,29 @@
 ;Macros for 16-bit math (int and float)
 ARITHMETIC_MAC macro math_temp,math_temp2,errorByte,PUSH_STACK,POP_STACK,SWAP_STACK,PEEK_STACK,HEX_TO_CHAR
 
+;Multiples a byte on top of the stack by 10
+;Returns with the product in w-reg
+MULT_BYTE_10 
+	banksel math_temp
+	call SWAP_STACK ; previous mathtemp on stack. Arg(A) in w-reg
+	movwf math_temp
+	call PUSH_STACK ; A in math_temp and top of stack
+	rrf math_temp,F
+	rrf math_temp,F
+	rrf math_temp,W ; 8*A
+	call SWAP_STACK
+	movwf math_temp
+	rrf math_temp,F ; 2*A
+	call POP_STACK
+	addlw math_temp ; 2*A + 8*A = 10*A
+	call SWAP_STACK
+	movwf math_temp ; restore previous mathtemp
+	call BANK_0
+	goto POP_STACK ; returns with 10*A in W-Reg
+
+	endm
+
+ARITHMETIC_MAC_TO_BE_ADDED macro math_temp,math_temp2,errorByte,PUSH_STACK,POP_STACK,SWAP_STACK,PEEK_STACK,HEX_TO_CHAR
 ;If X is on the stack with the MSB on top, then
 ;X is popped and -X is pushed onto the stack.
 NEGATE_INT call POP_STACK ; 

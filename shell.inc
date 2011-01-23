@@ -15,7 +15,7 @@
 ;returns when finished
 ;Precomputed crc's sound be defined for use in this routine
 ;If the command has arguments, they are pushed into the stack, from left to right
-SHELL_MAC macro lcd_pointer,lcd_buffer,crc,usart_addr,current_process,PARSE_ARGS,CALCULATE_CRC,PUSH_STACK,CLEAR_LCD_BUFFER,INPUT_METHOD,EXEC,WRITE_BUFFER
+SHELL_MAC macro lcd_pointer,lcd_buffer,crc,usart_addr,current_process,PARSE_ARGS,CALCULATE_CRC,PUSH_STACK,CLEAR_LCD_BUFFER,INPUT_METHOD,EXEC,WRITE_BUFFER,MULT_BYTE_10
 SHELL_INIT call CLEAR_LCD_BUFFER ; INIT SHELL
 	banksel lcd_owner
 	movlw SHELL_ID
@@ -140,7 +140,9 @@ READ_COMMAND_LOOP movf INDF,F ;Parse command characters until a null character i
 	call CALCULATE_CRC
 	incf FSR,F
 	goto READ_COMMAND_LOOP
-PARSE_ARGS call GET_NEXT_ARG
+PARSE_ARGS movf FSR,W
+	call PUSH_STACK
+	call GET_NEXT_ARG
 	goto HAVE_COMMAND
 HAVE_COMMAND call SHELL_INIT
 	movlw EXEC_CRC
@@ -161,32 +163,84 @@ RUN_DISPLAY_TIME movlw TIME_ID
 	banksel lcd_owner 
 	movwf lcd_owner
 	goto DISPLAY_TIME
-SHELL_SET_TIME nop
+SHELL_SET_TIME call BANK_0
+	clrf minutes
+	clrf hours
 	banksel argv_head
 	movf argv_head,W
-	call BANK_0
 	btfsc STATUS,Z
-	movlw low minutes
+	goto SHELL_SET_TIME_NULL_POINTER
 	movwf FSR
+	call BANK_0 ; args are in bank 0 (lcd_buffer)
 	movlw 0x30
 	subwf INDF,W
+	movwf hours
+	banksel argv_head
+	movf argv_tail,W
+	xorwf FSR,W
+	btfsc STATUS,Z
+	goto SHELL_SET_TIME_MINUTES
+	movf hours,W
+	call PUSH_STACK
+	call MULT_BYTE_10
+	movwf hours
+	incf FSR,F
+	movlw 0x30
+	subwf INDF,W
+	call BANK_0
+	addwf hours
+SHELL_SET_TIME_MINUTES 
+	banksel argv_tail
+	movf argv_tail,W
+	call PUSH_STACK
+	call GET_NEXT_ARG
+	banksel argv_head
+	movf argv_head,W
+	btfsc STATUS,Z
+	goto SHELL_SET_TIME_NULL_POINTER ; no minutes supplied :-/
+	movwf FSR
+	call BANK_0
+	movf INDF,W
+	sublw 0x30
 	movwf minutes
+	banksel argv_tail
+	movf FSR,W
+	xorwf argv_tail
+	btfsc STATUS,Z
+	goto SHELL_SET_TIME_BANK_0_RTN
+	call BANK_0
+	movf minutes,W
+	call PUSH_STACK
+	call MULT_BYTE_10
+	movwf minutes
+	incf FSR,F
+	movf INDF,W
+	sublw 0x30
+	addwf minutes
 	return
+SHELL_SET_TIME_NULL_POINTER 
+SHELL_SET_TIME_BANK_0_RTN goto BANK_0
 
-GET_NEXT_ARG incf FSR,F ; iterate through characters in shell command after the first word
+GET_NEXT_ARG call POP_STACK
+	movwf FSR
+	banksel argv_head
+	clrf argv_head
+	clrf argv_tail
+	call BANK_0
+GET_NEXT_ARG_LOOP incf FSR,F ; iterate through characters in shell command after the first word
 	movf INDF,F ;place the first non-white space address in argv_head
 	btfsc STATUS,Z ; and the last address in argv_tail
 	return
 	movlw ' '
 	xorwf INDF,W
 	btfsc STATUS,Z
-	goto GET_NEXT_ARG
-	movf INDF,W
+	goto GET_NEXT_ARG_LOOP
+	movf FSR,W
 	banksel argv_head
 	movf argv_head,F
 	btfsc STATUS,Z
 	movwf argv_head
 	movwf argv_tail
 	call BANK_0
-	goto GET_NEXT_ARG
+	goto GET_NEXT_ARG_LOOP
 	endm
