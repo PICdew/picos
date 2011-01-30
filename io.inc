@@ -62,3 +62,31 @@ W_TO_MORSE movlw HIGH MORSE_TABLE
 	movwf PCL
 MORSE_TABLE dt "?etianmsurwdkgohvf"," ","l",0xa,"pjbxcyzq??54?3???2??+????16=/?????7???8?90"
 	endm
+
+DEBOUNCE_BUTTONS_MAC macro btn_state,btn_buffer,btn_pressed
+;; btn routine
+DEBOUNCE_BUTTONS call GET_BUTTON_STATE
+	call PUSH_STACK
+	banksel btn_state
+	xorwf btn_buffer,W
+	btfsc STATUS,Z
+	goto DEBOUNCE_SAME_STATE
+	goto DEBOUNCE_CHANGE_STATE
+DEBOUNCE_SAME_STATE incf btn_counter,F
+	btfsc STATUS,Z
+	goto UPDATE_BTN_STATE
+	goto END_OF_DEBOUNCE1
+UPDATE_BTN_STATE comf btn_buffer,W
+	andwf btn_state,W
+	iorwf btn_pressed,F ; ior because I want a system monitor or user to clear the pressed bit when they've used the fact that the button's been pressed.
+	movf btn_buffer,W
+	movwf btn_state
+	goto END_OF_DEBOUNCE1
+DEBOUNCE_CHANGE_STATE call POP_STACK
+	movwf btn_buffer
+	movlw 0xff-0x20
+	movwf btn_counter;clrf btn_counter
+	goto END_OF_DEBOUNCE
+END_OF_DEBOUNCE1 call POP_STACK
+END_OF_DEBOUNCE goto INTERRUPT_CHECKED_TIME;return
+	endm
