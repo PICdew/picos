@@ -7,6 +7,7 @@
 
 #define DEFAULT_SHELL_CHAR 0xfe
 #define BACKSPACE_CHAR 0x7f
+#define BACKSPACE_CHAR_KEYBOARD 8
 #define CR 0xd
 #define LF 0xa
 
@@ -58,6 +59,10 @@ SHELL_UPDATE_CHECK nop
 	btfsc STATUS,Z
 	goto END_OF_SHELL
 	movlw BACKSPACE_CHAR ; is the character a backspace, if so remove character
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto SHELL_BACKSPACE
+	movlw BACKSPACE_CHAR_KEYBOARD ; is the character a backspace, if so remove character
 	xorwf INDF,W
 	btfsc STATUS,Z
 	goto SHELL_BACKSPACE
@@ -115,6 +120,10 @@ SHELL_BUTTON_PRESSED movlw low lcd_buffer
 	banksel lcd_pointer
 	movwf FSR
 	movlw BACKSPACE_CHAR ; is the character a backspace, if so remove character
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto SHELL_BACKSPACE
+	movlw BACKSPACE_CHAR_KEYBOARD ; is the character a backspace, if so remove character
 	xorwf INDF,W
 	btfsc STATUS,Z
 	goto SHELL_BACKSPACE
