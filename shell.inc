@@ -6,7 +6,7 @@
 #define SET_TIME_CRC 0xea ; set time command
 
 #define DEFAULT_SHELL_CHAR 0xfe
-#define BACKSPACE_CHAR 0x8
+#define BACKSPACE_CHAR 0x7f
 #define CR 0xd
 #define LF 0xa
 
@@ -114,6 +114,10 @@ SHELL_BUTTON_PRESSED movlw low lcd_buffer
 	movf usart_addr,W
 	banksel lcd_pointer
 	movwf FSR
+	movlw BACKSPACE_CHAR ; is the character a backspace, if so remove character
+	xorwf INDF,W
+	btfsc STATUS,Z
+	goto SHELL_BACKSPACE
 	movlw LF
 	xorwf INDF,W
 	btfsc STATUS,Z
