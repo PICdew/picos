@@ -1,14 +1,16 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.65])
+AC_PREREQ([2.52])
 AC_INIT(Piclang Assembler, 0.1, david@davecoss.com)
 AC_CONFIG_SRCDIR([Parser.h])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE
+//AM_INIT_AUTOMAKE
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
+AC_PROG_LEX
+AC_PROG_YACC
 
 # Checks for libraries.
 AC_ARG_WITH([dnstd],AS_HELP_STRING([--with-dnstd],[Include DNStd library]),with_dnstd=${withval},AC_MSG_RESULT(Assuming libdnstd is installed in the directory above this one (or in system directories)))
