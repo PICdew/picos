@@ -5,7 +5,7 @@
 ;
 ;return_btn, dit and dat should be of the bit number within
 ;btn_pressed for the corresponding button
-MORSE_CODE_TREE_MAC macro return_btn,dit,dat,btn_pressed,PUSH_STACK,SWAP_STACK
+MORSE_CODE_TREE_MAC macro return_btn,dit,dat,btn_pressed,DIT_SOUND,DAT_SOUND,PUSH_STACK,SWAP_STACK
 MORSE_CODE_TREE movf FSR,W
 	call SWAP_STACK
 	movwf FSR
@@ -28,6 +28,7 @@ MC_DIT bcf btn_pressed,dit
 	call PUSH_STACK
 	call W_TO_MORSE
 	movwf INDF
+	call DIT_SOUND
 	goto MC_REFRESH
 MC_DAT bcf btn_pressed,dat
 	call POP_STACK
@@ -37,6 +38,7 @@ MC_DAT bcf btn_pressed,dat
 	call PUSH_STACK
 	call W_TO_MORSE
 	movwf INDF
+	call DAT_SOUND
 	goto MC_REFRESH
 MC_RTN bcf btn_pressed,return_btn
 	call POP_STACK ; morse counter
@@ -89,4 +91,157 @@ DEBOUNCE_CHANGE_STATE call POP_STACK
 	goto END_OF_DEBOUNCE
 END_OF_DEBOUNCE1 call POP_STACK
 END_OF_DEBOUNCE goto INTERRUPT_CHECKED_TIME;return
+	endm
+
+
+SOUND_MAC macro Delay255,Delay100,Delay50,temp
+
+MUTE_SOUND call SAVE_BANK
+	call BANK_0
+	clrf CCP1CON
+	goto RESET_BANK
+	
+TONE_440 call SAVE_BANK
+	call BANK_0
+	movlw 0x8d
+	movwf PR2
+	clrf CCPR1L
+	bcf TRISC,5
+	movlw b'111'
+	movwf T2CON
+	movlw 0x3c
+	movwf CCP1CON
+	movlw 0x46
+	movwf CCPR1L
+	goto RESET_BANK
+
+DIT_SOUND call TONE_440
+	call Delay100
+TONE_END call MUTE_SOUND
+	goto Delay50
+
+DAT_SOUND call TONE_440
+	call Delay100
+	call Delay100
+	call Delay100
+	goto TONE_END
+
+MORSE_SOUND movlw HIGH MORSE_SOUND_TABLE
+	movwf PCLATH
+	call POP_STACK
+	movwf temp
+	movlw 'A'
+	subwf temp,W
+	addlw low MORSE_SOUND_TABLE
+	btfsc STATUS,C
+	incf PCLATH,F ; long program o.O
+	movwf PCL;USES RUN_COMMAND_TABLE as a lookup table.
+MORSE_SOUND_TABLE goto A_SOUND
+	goto B_SOUND
+	goto C_SOUND
+	goto D_SOUND
+	goto DIT_SOUND;E
+	goto F_SOUND
+	goto G_SOUND
+	goto H_SOUND
+	goto I_SOUND
+	goto J_SOUND
+	goto K_SOUND
+	goto L_SOUND
+	goto M_SOUND
+	goto N_SOUND
+	goto O_SOUND
+	goto P_SOUND
+	goto Q_SOUND
+	goto R_SOUND
+	goto S_SOUND
+	goto DAT_SOUND;T
+	goto U_SOUND
+	goto V_SOUND
+	goto W_SOUND
+	goto X_SOUND
+	goto Y_SOUND
+	goto Z_SOUND	
+
+I_SOUND call DIT_SOUND
+	goto DIT_SOUND
+A_SOUND call DIT_SOUND
+	goto DAT_SOUND
+N_SOUND call DAT_SOUND
+	goto DIT_SOUND
+M_SOUND call DAT_SOUND
+	goto DAT_SOUND
+S_SOUND call DIT_SOUND
+	call DIT_SOUND
+	goto DIT_SOUND
+U_SOUND call DIT_SOUND
+	call DIT_SOUND
+	goto DAT_SOUND
+R_SOUND call DIT_SOUND
+	call DAT_SOUND
+	goto DIT_SOUND
+W_SOUND call DIT_SOUND
+	call DAT_SOUND
+	goto DAT_SOUND
+D_SOUND call DAT_SOUND
+	call DIT_SOUND
+	goto DIT_SOUND
+K_SOUND call DAT_SOUND
+	call DIT_SOUND
+	goto DAT_SOUND
+G_SOUND call DAT_SOUND
+	call DAT_SOUND
+	goto DIT_SOUND
+O_SOUND call DAT_SOUND
+	call DAT_SOUND
+	goto DAT_SOUND
+H_SOUND call DIT_SOUND
+	call DIT_SOUND
+	call DIT_SOUND
+	goto DIT_SOUND
+V_SOUND call DIT_SOUND
+	call DIT_SOUND
+	call DIT_SOUND
+	goto DAT_SOUND
+F_SOUND call DIT_SOUND
+	call DIT_SOUND
+	call DAT_SOUND
+	goto DIT_SOUND
+L_SOUND call DIT_SOUND
+	call DAT_SOUND
+	call DIT_SOUND
+	goto DIT_SOUND
+P_SOUND call DIT_SOUND
+	call DAT_SOUND
+	call DAT_SOUND
+	goto DIT_SOUND
+J_SOUND call DIT_SOUND
+	call DAT_SOUND
+	call DAT_SOUND
+	goto DAT_SOUND		
+B_SOUND call DAT_SOUND
+	call DIT_SOUND
+	call DIT_SOUND
+	goto DIT_SOUND
+X_SOUND call DAT_SOUND
+	call DIT_SOUND
+	call DIT_SOUND
+	goto DAT_SOUND
+C_SOUND call DAT_SOUND
+	call DIT_SOUND
+	call DAT_SOUND
+	goto DIT_SOUND
+Y_SOUND call DAT_SOUND
+	call DIT_SOUND
+	call DAT_SOUND
+	goto DAT_SOUND
+Z_SOUND call DAT_SOUND
+	call DAT_SOUND
+	call DIT_SOUND
+	goto DIT_SOUND
+Q_SOUND call DAT_SOUND
+	call DAT_SOUND
+	call DIT_SOUND
+	goto DAT_SOUND
+
 	endm
