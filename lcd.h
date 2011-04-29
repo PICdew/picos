@@ -4,7 +4,7 @@
  */
 
 /* write a byte to the LCD in 4 bit mode */
-
+char lcd_pos;
 extern void lcd_write(unsigned char);
 
 /* Clear and home the LCD */

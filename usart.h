@@ -28,14 +28,11 @@
 	#define TX_PIN TRISC6
 #endif
 
-/* Serial initialization */
-#define usart_init()\
-	RX_PIN = 1;	\
-	TX_PIN = 1;		  \
-	SPBRG = DIVIDER;     	\
-	RCSTA = (NINE_BITS|0x90);	\
-	TXSTA = (SPEED|NINE_BITS|0x20)
+#define USART_DEFAULT_TIMEOUT 128;
+char USART_timeout;
 
+/* Serial initialization */
+void usart_init();
 void usart_putch(unsigned char);
 unsigned char usart_getch(void);
 unsigned char usart_getche(void);

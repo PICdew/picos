@@ -34,6 +34,9 @@
 #define LCD_DATA	PORTC
 #endif
 
+#define LCD_WIDTH 8
+#define LCD_EOF 16
+
 #define	LCD_STROBE()	((LCD_EN = 1),(LCD_EN=0))
 
 /* write a byte to the LCD in 4 bit mode */
@@ -41,11 +44,12 @@
 void
 lcd_write(unsigned char c)
 {
-	__delay_us(40);
-	LCD_DATA = ( ( c >> 4 ) & 0x0F );
-	LCD_STROBE();
-	LCD_DATA = ( c & 0x0F );
-	LCD_STROBE();
+
+  __delay_us(40);
+  LCD_DATA = ( ( c >> 4 ) & 0x0F );
+  LCD_STROBE();
+  LCD_DATA = ( c & 0x0F );
+  LCD_STROBE();
 }
 
 /*
@@ -58,6 +62,7 @@ lcd_clear(void)
 	LCD_RS = 0;
 	lcd_write(0x1);
 	__delay_ms(2);
+	lcd_pos = 0;
 }
 
 /* write a string of chars to the LCD */
@@ -67,7 +72,13 @@ lcd_puts(const char * s)
 {
 	LCD_RS = 1;	// write characters
 	while(*s)
-		lcd_write(*s++);
+	  {
+	    if(*s == '\n' && lcd_pos < LCD_WIDTH)
+	      lcd_goto(0x40);
+	    else if(*s == '\n')
+	      lcd_goto(0);
+	    lcd_write(*s++);
+	  }
 }
 
 /* write one character to the LCD */
@@ -75,8 +86,20 @@ lcd_puts(const char * s)
 void
 lcd_putch(char c)
 {
-	LCD_RS = 1;	// write characters
-	lcd_write( c );
+  if(c == '\n')
+    if(lcd_pos < LCD_WIDTH)
+      {
+	lcd_goto(0x40);
+	return;
+      }
+    else
+      {
+	lcd_goto(0);
+	return;
+      }
+  
+  LCD_RS = 1;	// write characters
+  lcd_write( c );
 }
 
 
@@ -89,6 +112,12 @@ lcd_goto(unsigned char pos)
 {
 	LCD_RS = 0;
 	lcd_write(0x80+pos);
+	if(pos < 8)
+	  lcd_pos = pos;
+	else if(pos >= 0x40 && pos <= (0x40+ LCD_WIDTH))
+	  lcd_pos = pos - 40;
+	else
+	  lcd_pos = 0;
 }
 	
 /* initialise the LCD - put into 4 bit mode */
@@ -121,5 +150,7 @@ lcd_init()
 	lcd_write(0xF); // Display On, Cursor On, Cursor Blink
 	lcd_clear();	// Clear screen
 	lcd_write(0x6); // Set entry Mode
+
+	lcd_pos = 0;
 }
 

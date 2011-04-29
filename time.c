@@ -1,13 +1,7 @@
-
-/**
- * Simple Real time clock example by Garth Klee.
- * If run on PICDEM2+, time will be displayed
- * on LCD and will incorporate LED pendulum.
- * Has been written to run on PIC16F87x/A
- */
-
 #include <htc.h>
 #include <stdio.h>
+#include <string.h>
+#include "utils.h"
 #include "time.h"
 
 static TIME_t TIME_curr;
@@ -93,88 +87,20 @@ void TIME_set(TIME_t *t)
 }
 
 
-#if 0
-void main(void){
-	init();
-#if SCREEN == ON
-	lcd_init();
-#endif
-
-	newSecond = tickCounter = 0;
-
-	// Initialise the current time
-	hours = START_H;
-	minutes = START_M;
-	seconds = START_S;
-	ampm = START_AP;
-
-	// Measure time
-	while(1){
-		if(newSecond){
-			// A second has accumulated, count it
-			newSecond--;
-			if(++seconds > 59){
-				seconds=0;
-				if(++minutes > 59){
-					minutes = 0;
-					hours++;
-					if(hours == 12)
-						ampm^=1;
-					if(hours>12)
-						hours=1;
-				}
-			}
-
-#if SCREEN == ON
-			// print time on LCD screen
-			lcd_goto(0);
-			lcd_puts("Time=");
-			// Print hours
-			if(hours/10)
-				lcd_putch('1');
-			else
-				lcd_putch(' ');
-			lcd_putch((hours%10)+'0');
-			lcd_putch(':');
-			// print minutes
-			lcd_putch((minutes/10)+'0');
-			lcd_putch((minutes%10)+'0');
-			lcd_putch(':');
-			// print seconds
-			lcd_putch((seconds/10)+'0');
-			lcd_putch((seconds%10)+'0');
-			if(ampm)
-				lcd_putch('P');
-			else
-				lcd_putch('A');
-			lcd_putch('M');
-#endif
-
-#if PENDULUM == ON
-			// Rotate LED pattern every second
-			PORTB=(pattern[seconds%sizeof(pattern)]);
-#endif
-#if TICKING == ON
-			RC2^=1;	// tick effect
-#endif
-
-		}
-#if ALARM == ON
-		// If time matches alarm setting, toggle RC2
-		if((hours == ALARM_H) &&
-				(minutes == ALARM_M) &&
-				(ampm == ALARM_AP)&&
-				(seconds < ALARM_LENGTH)){
-			unsigned int tone;
-			RC2 ^= 1;	// generate buzz
-			tone=TONE2;
-			if(seconds&1)
-				tone=TONE1;
-			while(tone--)continue;	// tone generation
-			RC2 ^= 1;	// generate buzz
-		}
-#endif
-	}
+void strtime(char *str, const TIME_t *t)
+{
+  char pos = 0;
+  if(str == NULL)
+    return;
+  if(t == NULL)
+    t = &TIME_curr;
+  
+  hex_to_word(str,t->month);pos += 2;
+  str[pos++] = '/';
+  hex_to_word(&str[pos],t->day);pos += 2;
+  str[pos++] = '\n';
+  hex_to_word(&str[pos],t->hours);pos += 2;
+  str[pos++] = ':';
+  hex_to_word(&str[pos],t->minutes);pos += 2;
+  str[pos] = 0;
 }
-#endif
-
