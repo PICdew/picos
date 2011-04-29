@@ -141,6 +141,8 @@ void morse_sound(const char *str)
 	morse_ditdat_sound_blocking(morse_encoding[*str - 0x41]);
       else if(*str >= 0x61 && *str <= 0x7A)
 	morse_ditdat_sound_blocking(morse_encoding[*str - 0x61]);
+      else if(*str >= 0x30 && *str <= 0x39)
+	morse_ditdat_sound_blocking(morse_encoding[*str - 0x17]);
       str++;
     }
 }
