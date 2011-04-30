@@ -27,12 +27,10 @@
 #include "version.h"
 
 //DEFAULTS
-#ifndef LCD_RS
 #define	LCD_RS RA0
 #define	LCD_RW RA1
 #define LCD_EN RA2
 #define LCD_DATA	PORTC
-#endif
 
 #define LCD_WIDTH 8
 #define LCD_EOF 16
@@ -44,7 +42,30 @@
 void
 lcd_write(unsigned char c)
 {
-
+	if(lcd_pos == LCD_WIDTH && LCD_RS)
+	{
+	  LCD_RS = 0;
+	  __delay_us(40);
+	  LCD_DATA = ( 0xC);
+	  LCD_STROBE();
+	  LCD_DATA = ( 0);
+	  LCD_STROBE();
+	  LCD_RS = 1;
+	  lcd_pos++;
+	}
+	else if(lcd_pos == LCD_EOF  && LCD_RS)
+	{
+	  LCD_RS = 0;
+		__delay_us(40);
+	  LCD_DATA = (8);
+	  LCD_STROBE();
+	  LCD_DATA = ( 0);
+	  LCD_STROBE();
+	  lcd_pos = 0;
+	  LCD_RS = 1;
+	}
+	else if(LCD_RS)
+		lcd_pos++;
   __delay_us(40);
   LCD_DATA = ( ( c >> 4 ) & 0x0F );
   LCD_STROBE();
@@ -126,11 +147,11 @@ lcd_init()
 {
 	char init_value;
 
-	ADCON1 = 0x06;	// Disable analog pins on PORTA
+	//ADCON1 = 0x06;	// Disable analog pins on PORTA
+	ANSEL = 0;
+	ANSELH = 0;
 
 	init_value = 0x3;
-	TRISA=0;
-	TRISB=0;
 	LCD_RS = 0;
 	LCD_EN = 0;
 	LCD_RW = 0;

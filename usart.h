@@ -20,14 +20,6 @@
 #define SPEED 0
 #endif
 
-#if defined(_16F87) || defined(_16F88)
-	#define RX_PIN TRISB2
-	#define TX_PIN TRISB5
-#else
-	#define RX_PIN TRISC7
-	#define TX_PIN TRISC6
-#endif
-
 #define USART_DEFAULT_TIMEOUT 128;
 char USART_timeout;
 

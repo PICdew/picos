@@ -124,11 +124,11 @@ void morse_ditdat_sound_blocking(char encoded)
   for(;i < count;i++)
     {
       tone_440();
-      __delay_us(48);
+      __delay_ms(96);
       if(encoded & 0x80)
-	__delay_us(96);
+	     __delay_ms(192);
       mute_sound();
-      __delay_us(24);
+      __delay_ms(48);
       encoded = encoded << 1;
     }
 }
@@ -159,32 +159,40 @@ char get_command()
     {
       if(indev == IN_USART || indev == IN_USART_BTNS)
 	{
+	  char received_char[2];
 	  USART_timeout = 100;
 	  ditdat = usart_getch();
+	  received_char[0] = ditdat;received_char[1] = 0;
+	  morse_sound(received_char);
 	}
       if((indev == IN_USART_BTNS && ditdat == 0) || indev == IN_BTNS)
 	{
+		char button_val = '?';
 	  button_val = get_button_state();
 	  if(button_val == 0)
 	    continue;
-	  if(button_val & BTN_DIT)
+	  while(button_val & BTN_RTN == 0)
+	  {
+		if(button_val & BTN_DIT)
 	    {
 	      ditdat = (ditdat << 1) + 1;
 	      morse_ditdat_sound(0);
 	    }
-	  else if(button_val & BTN_DAT)
+	  	else if(button_val & BTN_DAT)
 	    {
 	      ditdat = (ditdat+1) << 1;
 	      morse_ditdat_sound(1);
 	    }
-	  else if(button_val & BTN_RTN == 0)
-	    continue;
+		button_val = get_button_state();
+      	if(button_val & BTN_RTN)
+			ditdat = morse_to_char(ditdat);
+	  }
 	}
-      if(ditdat == 0)
-	continue;
-      ditdat = morse_to_char(ditdat);
-      if(ditdat != 0xa || ditdat != 0xd)
-	break;
+	if(ditdat == 0)
+		continue;
+		
+      if(ditdat == 0xa || ditdat == 0xd)
+		break;
       printf("%c",ditdat);
       calculate_crc(&command_hash,ditdat);
     }
@@ -202,11 +210,12 @@ char morse_to_char(char morse)
 
 void tone_440()
 {
-  TRISC5 = 1;
-  PR2 = 0b10001101 ;
+  PR2 = 0x8d ;
+  CCPR1L = 0;
+  TRISC5 = 0;
   T2CON = 0b00000111 ;
-  CCPR1L = 0b01000110 ;
-  CCP1CON = 0b00111100 ;
+  CCP1CON = 0x3c;
+  CCPR1L = 0x46;
 }
 
 void mute_sound()
