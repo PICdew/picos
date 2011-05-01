@@ -5,7 +5,7 @@
 #define button_port PORTA
 #endif
 #ifndef button_phase
-#define button_phase 0
+#define button_phase 3
 #endif
 #ifndef button_debounce_time 
 #define button_debounce_time 10 //ms

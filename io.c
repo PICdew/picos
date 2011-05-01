@@ -37,9 +37,9 @@ void clear_output()
 
 char get_button_state()
 {
-  char retval = button_port >> button_phase;
+  char retval = ((button_port & 0b111000) >> button_phase);
   __delay_ms(button_debounce_time);
-  retval &= button_port >> button_phase;
+  retval &= ((button_port & 0b111000) >> button_phase);
   return retval;
 }
 
@@ -171,7 +171,7 @@ char get_command()
 	  button_val = get_button_state();
 	  if(button_val == 0)
 	    continue;
-	  while(button_val & BTN_RTN == 0)
+	  while((button_val & BTN_RTN) == 0)
 	  {
 		if(button_val & BTN_DIT)
 	    {
