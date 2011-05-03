@@ -35,7 +35,5 @@ extern void clear_output();
 extern void mute_sound();
 extern void tone_440();
 void morse_sound(const char *str);
-
-
-
+extern void morse_ditdat_sound(char dat_not_dit);
 

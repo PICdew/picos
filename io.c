@@ -7,6 +7,7 @@
 #include "lcd.h"
 #include "usart.h"
 #include "io.h"
+#include "utils.h"
 
 void putch(char c)
 { 
@@ -40,7 +41,7 @@ char get_button_state()
   char retval = ((button_port & 0b111000) >> button_phase);
   __delay_ms(button_debounce_time);
   retval &= ((button_port & 0b111000) >> button_phase);
-  return retval;
+  return ~retval & 7;
 }
 
 void calculate_crc(char *crc, char newval)
@@ -68,8 +69,10 @@ void calculate_crc(char *crc, char newval)
 
 void morse_ditdat_sound(char dat_not_dit)
 {
-  SOUND_counter = 12;
-  if(dat_not_dit)
+  if(SOUND_counter != 0)
+	return;// can only set, not update.
+  SOUND_counter = 4;
+  if(dat_not_dit == TRUE)
     SOUND_counter = SOUND_counter * 3;
   tone_440();
 }
@@ -167,25 +170,29 @@ char get_command()
 	}
       if((indev == IN_USART_BTNS && ditdat == 0) || indev == IN_BTNS)
 	{
-		char button_val = '?';
+		char button_val = '@';
 	  button_val = get_button_state();
-	  if(button_val == 0)
-	    continue;
 	  while((button_val & BTN_RTN) == 0)
 	  {
-		if(button_val & BTN_DIT)
+		if((button_val & BTN_DIT) != 0)
 	    {
 	      ditdat = (ditdat << 1) + 1;
-	      morse_ditdat_sound(0);
+	      morse_ditdat_sound(FALSE);
+			__delay_ms(400);
 	    }
-	  	else if(button_val & BTN_DAT)
+	  	else if((button_val & BTN_DAT) != 0)
 	    {
 	      ditdat = (ditdat+1) << 1;
-	      morse_ditdat_sound(1);
+	      morse_ditdat_sound(TRUE);
+			__delay_ms(400);
 	    }
 		button_val = get_button_state();
-      	if(button_val & BTN_RTN)
-			ditdat = morse_to_char(ditdat);
+      	if((button_val & BTN_RTN) != 0)
+		{
+			printf("%x",ditdat);
+	        ditdat = morse_to_char(ditdat);
+			__delay_ms(400);
+         }
 	  }
 	}
 	if(ditdat == 0)
