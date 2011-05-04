@@ -46,13 +46,14 @@
      PRINT = 262,
      PRINTL = 263,
      EXIT = 264,
-     IFX = 265,
-     ELSE = 266,
-     NE = 267,
-     EQ = 268,
-     LE = 269,
-     GE = 270,
-     UMINUS = 271
+     INPUT = 265,
+     IFX = 266,
+     ELSE = 267,
+     NE = 268,
+     EQ = 269,
+     LE = 270,
+     GE = 271,
+     UMINUS = 272
    };
 #endif
 /* Tokens.  */
@@ -63,13 +64,14 @@
 #define PRINT 262
 #define PRINTL 263
 #define EXIT 264
-#define IFX 265
-#define ELSE 266
-#define NE 267
-#define EQ 268
-#define LE 269
-#define GE 270
-#define UMINUS 271
+#define INPUT 265
+#define IFX 266
+#define ELSE 267
+#define NE 268
+#define EQ 269
+#define LE 270
+#define GE 271
+#define UMINUS 272
 
 
 
@@ -83,7 +85,7 @@ typedef union YYSTYPE
     nodeType *nPtr;             /* node pointer */
 }
 /* Line 1529 of yacc.c.  */
-#line 87 "pasm_yacc.h"
+#line 89 "pasm_yacc.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1

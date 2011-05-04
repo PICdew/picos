@@ -25,7 +25,7 @@ int sym[26];                    /* symbol table */
 
 %token <iValue> INTEGER
 %token <sIndex> VARIABLE
-%token WHILE IF PRINT PRINTL EXIT
+%token WHILE IF PRINT PRINTL EXIT INPUT
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -47,8 +47,9 @@ function:
         | /* NULL */
         ;
 
-stmt: EXIT {YYACCEPT;}
+stmt: 
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
+| INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
         | PRINT expr ';'                 { $$ = opr(PRINT, 1, $2); }
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
@@ -56,6 +57,7 @@ stmt: EXIT {YYACCEPT;}
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
+        | EXIT {YYACCEPT;}
         ;
 
 stmt_list:

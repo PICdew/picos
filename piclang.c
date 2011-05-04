@@ -146,6 +146,13 @@ void PICLANG_next()
     case PICLANG_PUSHL:
       PICLANG_pushl(PICLANG_get_next_byte());
       break;
+    case PICLANG_PUSH:
+      {
+	char *addr = PAGE_resolve(PICLANG_get_next_byte());
+	if(addr != 0)
+	  *addr = PICLANG_pushl(*addr);
+	break;
+      }
     case PICLANG_POP:
       {
 	char *addr = PAGE_resolve(PICLANG_get_next_byte());

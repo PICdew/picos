@@ -38,6 +38,7 @@ int ex(nodeType *p) {
       break;
     case typeId:        
       printf("\tpush\t%c\n", p->id.i + 'a');
+      insert_code(PICLANG_PUSH);
       insert_code(p->id.i);
       break;
     case typeOpr:
@@ -68,8 +69,8 @@ int ex(nodeType *p) {
             }
             break;
         case PRINT:     
-            ex(p->opr.op[0]);
-            printf("\tprint\n");insert_code(PICLANG_PRINT);
+	  ex(p->opr.op[0]);
+           printf("\tprint\n");insert_code(PICLANG_PRINT);
             break;
         case PRINTL:
             ex(p->opr.op[0]);
@@ -77,12 +78,20 @@ int ex(nodeType *p) {
             break;
         case '=':       
             ex(p->opr.op[1]);
-            printf("\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);
+            printf("\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(p->opr.op[0]->id.i);
             break;
         case UMINUS:    
             ex(p->opr.op[0]);
             printf("\tneg\n");
             break;
+	case INPUT:
+	  //ex(p->opr.op[0]);
+	  printf("\tpushl\t%c\n",p->opr.op[0]->id.i + 'a');
+	  insert_code(PICLANG_PUSHL);
+	  insert_code(p->opr.op[0]->id.i);
+	  printf("\tinput\n");
+	  insert_code( PICLANG_INPUT);
+	  break;
         default:
             ex(p->opr.op[0]);
             ex(p->opr.op[1]);

@@ -34,8 +34,7 @@ void yyerror(char *);
 "if"            return IF;
 "else"          return ELSE;
 "print"         return PRINT;
-"printl"         return PRINTL;
-
+"input"         return INPUT;
 "quit"          return EXIT;
 
 [ \t\n]+        ;       /* ignore whitespace */
