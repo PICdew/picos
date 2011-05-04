@@ -1,8 +1,8 @@
 bin_PROGRAMS = pasm simulator
 
-pasm_SOURCES =  pasm_yacc.y pasm_lex.l pasm_src.c 
-pasm_LDADD = -lm
 AM_YFLAGS = -d
+pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c 
+pasm_LDADD = -lm
 
 simulator_SOURCES = Build.cpp Command.cpp CommandWords.cpp simulator.cpp Parser.cpp Help.cpp \
 	DString.cpp StringTokenizer.cpp good_exceptions.cpp

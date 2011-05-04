@@ -1,7 +1,7 @@
 %{
 #include <stdlib.h>
 #include "pasm.h"
-#include "y.tab.h"
+#include "pasm_yacc.h"
 void yyerror(char *);
 %}
 

@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "pasm.h"
-#include "y.tab.h"
+#include "pasm_yacc.h"
 
 int ex(nodeType *p) {
     if (!p) return 0;

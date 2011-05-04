@@ -5,7 +5,7 @@ AC_PREREQ([2.52])
 AC_INIT(Piclang Assembler, 0.1, david@davecoss.com)
 AC_CONFIG_SRCDIR([Parser.h])
 AC_CONFIG_HEADERS([config.h])
-//AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC

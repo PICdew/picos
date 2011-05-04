@@ -396,7 +396,7 @@ char *yytext;
 #line 2 "pasm_lex.l"
 #include <stdlib.h>
 #include "pasm.h"
-#include "y.tab.h"
+#include "pasm_yacc.h"
 void yyerror(char *);
 #line 402 "pasm_lex.c"
 
