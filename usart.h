@@ -20,13 +20,14 @@
 #define SPEED 0
 #endif
 
+#define USART_have_incoming() RCIF
 #define USART_DEFAULT_TIMEOUT 128;
 char USART_timeout;
 
 /* Serial initialization */
-void usart_init();
-void usart_putch(unsigned char);
-unsigned char usart_getch(void);
-unsigned char usart_getche(void);
+extern void usart_init();
+extern void usart_putch(unsigned char);
+extern char usart_getch(void);
+extern char usart_getche(void);
 
 #endif

@@ -2,44 +2,40 @@
 #include <stdio.h>
 #include "usart.h"
 
-void 
-usart_putch(unsigned char byte) 
+void usart_putch(unsigned char byte) 
 {
-	while(!TXIF) 
-		continue;
-	TXREG = byte;
+  while(!TXIF) 
+    continue;
+  TXREG = byte;
 }
 
-unsigned char 
-usart_getch() 
+char usart_getch() 
 {
-	while(!RCIF)	/* set when register is not empty */
-	    continue;
-	return RCREG;	
+  while(!USART_have_incoming())	/* set when register is not empty */
+    continue;
+  return RCREG;	
 }
 
-unsigned char 
-usart_getch_block() 
+char usart_getch_block() 
 {
-	while(!RCIF)	/* set when register is not empty */
-	    continue;
-	return RCREG;	
+  while(!RCIF)	/* set when register is not empty */
+    continue;
+  return RCREG;	
 }
 
-unsigned char
-usart_getche(void)
+char usart_getche(void)
 {
-	unsigned char c;
-	putch(c = getch());
-	return c;
+  unsigned char c;
+  putch(c = getch());
+  return c;
 }
 
 void usart_init()
 {
   //RX_PIN = 1;	
   //TX_PIN = 1;		  
-ANSEL = 0;
-	ANSELH = 0;
+  ANSEL = 0;
+  ANSELH = 0;
   SPBRG = DIVIDER;    
   SPBRGH = 1;
 
