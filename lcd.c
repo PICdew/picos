@@ -56,7 +56,7 @@ void lcd_puts(const char * s)
 	LCD_RS = 1;	
 	while(*s)
 	  {
-	    if(*s == '\n' && lcd_pos < LCD_WIDTH)
+	    if(*s == '\n' && lcd_pos <= LCD_WIDTH)
 	      lcd_goto(0x40);
 	    else if(*s == '\n')
 	      lcd_goto(0);

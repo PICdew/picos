@@ -93,7 +93,7 @@ void strtime(char *str, const TIME_t *t)
   if(str == NULL)
     return;
   if(t == NULL)
-    t = &TIME_curr;
+    t = TIME_get();
   
   hex_to_word(str,t->month);pos += 2;
   str[pos++] = '/';
@@ -103,4 +103,9 @@ void strtime(char *str, const TIME_t *t)
   str[pos++] = ':';
   hex_to_word(&str[pos],t->minutes);pos += 2;
   str[pos] = 0;
+}
+
+void TIME_stdout()
+{
+  printf("%d/%d\n%d:%d",TIME_curr.month,TIME_curr.day,TIME_curr.hours,TIME_curr.minutes);
 }

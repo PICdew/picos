@@ -20,6 +20,11 @@
 #endif
 
 /**
+ * 1.0.0 - Switched from assembly to C. The OS grew to such a size as
+ *         to make assembly (i.e. paging) unbearable. As of this version,
+ *         IO using buttons, USART, LCD and sound word. Commands are 
+ *         parsed into CRC unsigned char's.
+ *
  * 0.5.1 - Changed shell to run at the end of the process loop. Does not
  *	 check to see if anything owns the lcd anymore. A better process
  *	 of deciding when to use the shell is needed.
