@@ -31,7 +31,6 @@ int sym[26];                    /* symbol table */
 %left GE LE EQ NE '>' '<'
 %left '+' '-'
 %left '*' '/'
-%left '^'
 %nonassoc UMINUS
 
 %type <nPtr> stmt expr stmt_list
@@ -70,7 +69,6 @@ expr:
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
         | expr '-' expr         { $$ = opr('-', 2, $1, $3); }
         | expr '*' expr         { $$ = opr('*', 2, $1, $3); }
-        | expr '^' expr         { $$ = opr('^', 2, $1, $3); }
         | expr '/' expr         { $$ = opr('/', 2, $1, $3); }
         | expr '<' expr         { $$ = opr('<', 2, $1, $3); }
         | expr '>' expr         { $$ = opr('>', 2, $1, $3); }
@@ -79,8 +77,6 @@ expr:
         | expr NE expr          { $$ = opr(NE, 2, $1, $3); }
         | expr EQ expr          { $$ = opr(EQ, 2, $1, $3); }
         | '(' expr ')'          { $$ = $2; }
-        | error ';'             
-        | error '}'
         ;
 
 %%
@@ -154,12 +150,10 @@ void freeNode(nodeType *p) {
 }
 
 void yyerror(char *s) {
-  fprintf(stdout, "Error: %s\n", s);
+    fprintf(stdout, "%s\n", s);
 }
 
 int main(void) {
-  printf("Welcome to mycosmo.\n");
     yyparse();
-    printf("Good bye.\n");
     return 0;
 }

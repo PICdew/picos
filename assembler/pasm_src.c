@@ -2,34 +2,73 @@
 #include "pasm.h"
 #include "pasm_yacc.h"
 
+static int lbl;
+
 int ex(nodeType *p) {
+    int lbl1, lbl2;
+
     if (!p) return 0;
     switch(p->type) {
-    case typeCon:       return p->con.value;
-    case typeId:        return sym[p->id.i];
+    case typeCon:       
+        printf("\tpush\t%d\n", p->con.value); 
+        break;
+    case typeId:        
+        printf("\tpush\t%c\n", p->id.i + 'a'); 
+        break;
     case typeOpr:
         switch(p->opr.oper) {
-        case WHILE:     while(ex(p->opr.op[0])) ex(p->opr.op[1]); return 0;
-        case IF:        if (ex(p->opr.op[0]))
-                            ex(p->opr.op[1]);
-                        else if (p->opr.nops > 2)
-                            ex(p->opr.op[2]);
-                        return 0;
-        case PRINT:     printf("%d\n", ex(p->opr.op[0])); return 0;
-        case ';':       ex(p->opr.op[0]); return ex(p->opr.op[1]);
-        case '=':       return sym[p->opr.op[0]->id.i] = ex(p->opr.op[1]);
-        case UMINUS:    return -ex(p->opr.op[0]);
-        case '+':       return ex(p->opr.op[0]) + ex(p->opr.op[1]);
-        case '-':       return ex(p->opr.op[0]) - ex(p->opr.op[1]);
-        case '*':       return ex(p->opr.op[0]) * ex(p->opr.op[1]);
-        case '^':       return pow(ex(p->opr.op[0]),ex(p->opr.op[1]));
-        case '/':       return ex(p->opr.op[0]) / ex(p->opr.op[1]);
-        case '<':       return ex(p->opr.op[0]) < ex(p->opr.op[1]);
-        case '>':       return ex(p->opr.op[0]) > ex(p->opr.op[1]);
-        case GE:        return ex(p->opr.op[0]) >= ex(p->opr.op[1]);
-        case LE:        return ex(p->opr.op[0]) <= ex(p->opr.op[1]);
-        case NE:        return ex(p->opr.op[0]) != ex(p->opr.op[1]);
-        case EQ:        return ex(p->opr.op[0]) == ex(p->opr.op[1]);
+        case WHILE:
+            printf("L%03d:\n", lbl1 = lbl++);
+            ex(p->opr.op[0]);
+            printf("\tjz\tL%03d\n", lbl2 = lbl++);
+            ex(p->opr.op[1]);
+            printf("\tjmp\tL%03d\n", lbl1);
+            printf("L%03d:\n", lbl2);
+            break;
+        case IF:
+            ex(p->opr.op[0]);
+            if (p->opr.nops > 2) {
+                /* if else */
+                printf("\tjz\tL%03d\n", lbl1 = lbl++);
+                ex(p->opr.op[1]);
+                printf("\tjmp\tL%03d\n", lbl2 = lbl++);
+                printf("L%03d:\n", lbl1);
+                ex(p->opr.op[2]);
+                printf("L%03d:\n", lbl2);
+            } else {
+                /* if */
+                printf("\tjz\tL%03d\n", lbl1 = lbl++);
+                ex(p->opr.op[1]);
+                printf("L%03d:\n", lbl1);
+            }
+            break;
+        case PRINT:     
+            ex(p->opr.op[0]);
+            printf("\tprint\n");
+            break;
+        case '=':       
+            ex(p->opr.op[1]);
+            printf("\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
+            break;
+        case UMINUS:    
+            ex(p->opr.op[0]);
+            printf("\tneg\n");
+            break;
+        default:
+            ex(p->opr.op[0]);
+            ex(p->opr.op[1]);
+            switch(p->opr.oper) {
+            case '+':   printf("\tadd\n"); break;
+            case '-':   printf("\tsub\n"); break; 
+            case '*':   printf("\tmul\n"); break;
+            case '/':   printf("\tdiv\n"); break;
+            case '<':   printf("\tcompLT\n"); break;
+            case '>':   printf("\tcompGT\n"); break;
+            case GE:    printf("\tcompGE\n"); break;
+            case LE:    printf("\tcompLE\n"); break;
+            case NE:    printf("\tcompNE\n"); break;
+            case EQ:    printf("\tcompEQ\n"); break;
+            }
         }
     }
     return 0;
