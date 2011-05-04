@@ -7,16 +7,21 @@
 #define DEFAULT_PICLANG_QUANTUM 25
 #endif
 
-enum PICLANG_STATUS{SUCCESS = 0,UNKNOWN_ERROR,NO_SUCH_PROGRAM,SUSPENDED,UNKNOWN_COMMAND,PC_OVERFLOW,EEPROM_OVERFLOW};
+#ifndef PICLANG_STACK_SIZE
+#define PICLANG_STACK_SIZE 0x10
+#endif
+
+enum PICLANG_STATUS{SUCCESS = 0,UNKNOWN_ERROR,NO_SUCH_PROGRAM,SUSPENDED,UNKNOWN_COMMAND,PC_OVERFLOW,EEPROM_OVERFLOW,STACK_OVERFLOW};
 
 typedef struct{
   char size;// size of program
   char pc;// program counter
-  char A;// Accumulator
-  char W;// w-reg
   char status;// Error status
   char start_address;// First bit off eeprom used for program (after PCB)
+  char stack[PICLANG_STACK_SIZE];
+  char stack_head;
 }PCB;
+#define PCB_SIZE 5 + PICLANG_STACK_SIZE
 
 extern PCB curr_process;
 extern char PICLANG_quantum;
@@ -38,6 +43,10 @@ extern char PICLANG_save();
 
 extern void PICLANG_next();
 
-enum PICLANG_COMMANDS{PICLANG_ADDA, PICLANG_SUBA, PICLANG_MULTA};
+enum PICLANG_COMMANDS
+  {
+    PICLANG_ADD, PICLANG_SUB, PICLANG_MULT,PICLANG_PUSHL, PICLANG_POP, 
+    PICLANG_NUM_COMMANDS
+  };
 
 #endif //PICLANG_H
