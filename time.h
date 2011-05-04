@@ -14,3 +14,5 @@ typedef struct {
 extern void TIME_init(void);
 extern void TIME_tick(void);
 extern void strtime(char *str, const TIME_t *t);
+extern void TIME_set(TIME_t *t);
+extern const TIME_t* TIME_get();

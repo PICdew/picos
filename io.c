@@ -189,7 +189,6 @@ char get_command()
 		button_val = get_button_state();
       	if((button_val & BTN_RTN) != 0)
 		{
-			printf("%x",ditdat);
 	        ditdat = morse_to_char(ditdat);
 			__delay_ms(400);
          }
@@ -202,6 +201,7 @@ char get_command()
 		break;
       printf("%c",ditdat);
       calculate_crc(&command_hash,ditdat);
+	  ditdat = 0;
     }
   return command_hash;
 }
