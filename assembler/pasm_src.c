@@ -1,8 +1,30 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "pasm.h"
 #include "pasm_yacc.h"
+#include "../piclang.h"
 
 static int lbl;
+
+void insert_code(unsigned char val)
+{
+  if(the_code == NULL)
+    {
+      the_code = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      the_code_end = the_code;
+      the_code->val = val;
+      the_code->label = 0;
+      return;
+    }
+  
+  the_code_end->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  the_code_end->next->label = the_code_end->label + 1;
+  the_code_end = the_code_end->next;
+  the_code_end->next = NULL;
+  the_code_end->val = val;
+  
+}
+
 
 int ex(nodeType *p) {
     int lbl1, lbl2;
@@ -10,11 +32,14 @@ int ex(nodeType *p) {
     if (!p) return 0;
     switch(p->type) {
     case typeCon:       
-        printf("\tpushl\t%d\n", p->con.value); 
-        break;
+      printf("\tpushl\t%d\n", p->con.value); 
+      insert_code(PICLANG_PUSHL);
+      insert_code(p->con.value);
+      break;
     case typeId:        
-        printf("\tpush\t%c\n", p->id.i + 'a'); 
-        break;
+      printf("\tpush\t%c\n", p->id.i + 'a');
+      insert_code(p->id.i);
+      break;
     case typeOpr:
         switch(p->opr.oper) {
         case WHILE:
@@ -44,11 +69,15 @@ int ex(nodeType *p) {
             break;
         case PRINT:     
             ex(p->opr.op[0]);
-            printf("\tprint\n");
+            printf("\tprint\n");insert_code(PICLANG_PRINT);
+            break;
+        case PRINTL:
+            ex(p->opr.op[0]);
+            printf("\tprintl\n");insert_code(PICLANG_PRINTL);
             break;
         case '=':       
             ex(p->opr.op[1]);
-            printf("\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
+            printf("\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);
             break;
         case UMINUS:    
             ex(p->opr.op[0]);
@@ -58,9 +87,9 @@ int ex(nodeType *p) {
             ex(p->opr.op[0]);
             ex(p->opr.op[1]);
             switch(p->opr.oper) {
-            case '+':   printf("\tadd\n"); break;
-            case '-':   printf("\tsub\n"); break; 
-            case '*':   printf("\tmul\n"); break;
+            case '+':   printf("\tadd \n"); insert_code(PICLANG_ADD);break;
+            case '-':   printf("\tsub\n");insert_code(PICLANG_SUB); break; 
+            case '*':   printf("\tmul\n");insert_code(PICLANG_MULT); break;
             case '/':   printf("\tdiv\n"); break;
             case '<':   printf("\tcompLT\n"); break;
             case '>':   printf("\tcompGT\n"); break;

@@ -1,4 +1,5 @@
 #include <htc.h>
+#include <stdio.h>
 #include "piclang.h"
 
 char PICLANG_load(char nth)
@@ -150,7 +151,18 @@ void PICLANG_next()
 	char *addr = PAGE_resolve(PICLANG_get_next_byte());
 	if(addr != 0)
 	  *addr = PICLANG_pop();
+	break;
       }
+    case PICLANG_PRINT:
+      {
+	char two_chrs[2];two_chrs[1] = 0;
+	two_chrs[0] = PICLANG_pop();
+	printf("%s",two_chrs);
+	break;
+      }
+    case PICLANG_PRINTL:
+      printf("%d",PICLANG_pop());
+      break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(UNKNOWN_COMMAND);
       return;

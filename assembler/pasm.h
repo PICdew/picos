@@ -30,3 +30,14 @@ typedef struct nodeTypeTag {
 } nodeType;
 
 extern int sym[26];
+
+struct compiled_code
+{
+  unsigned char label;
+  unsigned char val;
+  struct compiled_code *next;
+};
+
+struct compiled_code *the_code;
+struct compiled_code *the_code_end;
+extern void insert_code(unsigned char val);

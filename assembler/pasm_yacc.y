@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "pasm.h"
+#include "../piclang.h"
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
@@ -24,7 +25,7 @@ int sym[26];                    /* symbol table */
 
 %token <iValue> INTEGER
 %token <sIndex> VARIABLE
-%token WHILE IF PRINT
+%token WHILE IF PRINT PRINTL EXIT
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -38,15 +39,15 @@ int sym[26];                    /* symbol table */
 %%
 
 program:
-        function                { exit(0); }
+        function                { YYACCEPT; }
         ;
 
-function:
+function: 
           function stmt         { ex($2); freeNode($2); }
         | /* NULL */
         ;
 
-stmt:
+stmt: EXIT {YYACCEPT;}
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
         | expr ';'                       { $$ = $1; }
         | PRINT expr ';'                 { $$ = opr(PRINT, 1, $2); }
@@ -153,9 +154,50 @@ void yyerror(char *s) {
     fprintf(stdout, "%s\n", s);
 }
 
-int main(void) {
+
+#define COMPILE_MAX_WIDTH 8//max width
+
+void PrintCode(struct compiled_code* code, int col)
+{
+  if(code == NULL)
+    return;
+  if(col == 0)
+    printf(":");
+  printf("%02x",code->val);
+  col++;
+  if(col >= COMPILE_MAX_WIDTH)
+    {
+      col = 0;
+      printf("\n");
+    }
+  
+  PrintCode(code->next,col);
+}
+
+void FreeCode(struct compiled_code* code)
+{
+  if(code == NULL)
+    return;
+  FreeCode(code->next);
+  free(code);
+}
+
+int main(int argc, char **argv) 
+{
+  the_code_end = the_code = NULL;
   printf("Welcome to the piclang compiler.\n");
-    yyparse();
-    printf("Thank you come again.");
-    return 0;
+  if(argc > 1)
+    {
+      FILE *input = fopen(argv[1],"r");
+      extern FILE *yyin;
+      if(input != NULL)
+	yyin = input;
+    }
+  yyparse();
+  printf("Here comes your code.\nThank you come again.\nCODE:\n");
+  insert_code(EOP);
+  PrintCode(the_code,0);
+  printf("\n");
+  FreeCode(the_code);
+  return 0;
 }
