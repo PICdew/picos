@@ -10,7 +10,7 @@ int ex(nodeType *p) {
     if (!p) return 0;
     switch(p->type) {
     case typeCon:       
-        printf("\tpush\t%d\n", p->con.value); 
+        printf("\tpushl\t%d\n", p->con.value); 
         break;
     case typeId:        
         printf("\tpush\t%c\n", p->id.i + 'a'); 

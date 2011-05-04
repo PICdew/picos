@@ -1820,7 +1820,9 @@ void yyerror(char *s) {
 }
 
 int main(void) {
+  printf("Welcome to the piclang compiler.\n");
     yyparse();
+    printf("Thank you come again.");
     return 0;
 }
 
