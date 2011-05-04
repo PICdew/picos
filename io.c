@@ -44,28 +44,7 @@ char get_button_state()
   return ~retval & 7;
 }
 
-void calculate_crc(char *crc, char newval)
-{
-  *crc = *crc ^ newval;
-  newval = 0x3b;
-  if(*crc & 1)
-    newval ^= 0x1d;
-  if(*crc & 2)
-    newval ^= 0x3a;
-  if(*crc & 3)
-    newval ^= 0x74;
-  if(*crc & 4)
-    newval ^= 0xe8;
-  if(*crc & 5)
-    newval ^= 0xcd;
-  if(*crc & 6)
-    newval ^= 0x87;
-  if(*crc & 7)
-    newval ^= 0x13;
-  if(*crc & 8)
-    newval ^= 0x26;
-  *crc = newval;
-}
+
 
 void morse_ditdat_sound(char dat_not_dit)
 {

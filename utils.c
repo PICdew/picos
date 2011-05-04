@@ -1,4 +1,7 @@
+#ifndef NOT_FOR_PIC
 #include <htc.h>
+#endif
+
 #include <stddef.h>
 
 void hex_to_word(char *two_chars, char hex)
@@ -15,4 +18,27 @@ void hex_to_word(char *two_chars, char hex)
       else
 	two_chars[hex] = two_chars[hex] + 0x30;
     }
+}
+
+void calculate_crc(char *crc, char newval)
+{
+  *crc = *crc ^ newval;
+  newval = 0x3b;
+  if(*crc & 1)
+    newval ^= 0x1d;
+  if(*crc & 2)
+    newval ^= 0x3a;
+  if(*crc & 3)
+    newval ^= 0x74;
+  if(*crc & 4)
+    newval ^= 0xe8;
+  if(*crc & 5)
+    newval ^= 0xcd;
+  if(*crc & 6)
+    newval ^= 0x87;
+  if(*crc & 7)
+    newval ^= 0x13;
+  if(*crc & 8)
+    newval ^= 0x26;
+  *crc = newval;
 }
