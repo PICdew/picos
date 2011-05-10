@@ -150,7 +150,7 @@ void PICLANG_next()
       {
 	char *addr = PAGE_resolve(PICLANG_get_next_byte());
 	if(addr != 0)
-	  *addr = PICLANG_pushl(*addr);
+	  PICLANG_pushl(*addr);
 	break;
       }
     case PICLANG_POP:
