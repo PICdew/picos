@@ -16,7 +16,7 @@ char PICLANG_load(char nth)
     }
 
   if(size == 0)
-    return NO_SUCH_PROGRAM;
+    return PICLANG_NO_SUCH_PROGRAM;
 
   curr_process.size = size;
   curr_process.pc = eeprom_read(++pos);
@@ -29,7 +29,7 @@ char PICLANG_load(char nth)
   curr_process.stack_head = eeprom_read(++pos);
 
   PICLANG_quantum = DEFAULT_PICLANG_QUANTUM;
-  return SUCCESS;
+  return PICLANG_SUCCESS;
 
 }
 
@@ -37,11 +37,11 @@ char PICLANG_save()
 {
   char pos,status;
   if(curr_process.size == 0)
-    return NO_SUCH_PROGRAM;
+    return PICLANG_NO_SUCH_PROGRAM;
 
   pos = curr_process.start_address;
   if(pos - 5 - PICLANG_STACK_SIZE < 0)
-    return EEPROM_OVERFLOW;
+    return PICLANG_EEPROM_OVERFLOW;
   
   pos--;// move back to stack head
   eeprom_write(pos--,curr_process.stack_head);
@@ -53,8 +53,8 @@ char PICLANG_save()
 	break;
     }
   pos--;// skip start_address
-  if(curr_process.status == SUCCESS)
-    curr_process.status = SUSPENDED;
+  if(curr_process.status == PICLANG_SUCCESS)
+    curr_process.status = PICLANG_SUSPENDED;
   status = curr_process.status;
   eeprom_write(pos,curr_process.status);
   pos--;
@@ -72,7 +72,7 @@ void PICLANG_init()
 {
   curr_process.size = 0;
   curr_process.pc = 0;
-  curr_process.status = SUSPENDED;
+  curr_process.status = PICLANG_SUSPENDED;
   curr_process.start_address = 0;
   curr_process.stack_head = 0;
   PICLANG_quantum = 0;
@@ -89,7 +89,7 @@ void PICLANG_pushl(char val)
   curr_process.stack_head++;
   if(curr_process.stack_head > PICLANG_STACK_SIZE)
     {
-      PICLANG_error(STACK_OVERFLOW);
+      PICLANG_error(PICLANG_STACK_OVERFLOW);
       return;
     }
   curr_process.stack[curr_process.stack_head] = val;
@@ -99,7 +99,7 @@ char PICLANG_pop()
 {
   if(curr_process.stack_head > PICLANG_STACK_SIZE)
     {
-      PICLANG_error(STACK_OVERFLOW);
+      PICLANG_error(PICLANG_STACK_OVERFLOW);
       return 0;
     }
   return curr_process.stack[curr_process.stack_head--];
@@ -124,7 +124,7 @@ void PICLANG_next()
   
   if(curr_process.size < curr_process.pc)
     {
-      PICLANG_error(PC_OVERFLOW);
+      PICLANG_error(PICLANG_PC_OVERFLOW);
       return;
     }
 
@@ -171,7 +171,7 @@ void PICLANG_next()
       printf("%d",PICLANG_pop());
       break;
     case PICLANG_NUM_COMMANDS:default:
-      PICLANG_error(UNKNOWN_COMMAND);
+      PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       return;
     }
 }
