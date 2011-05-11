@@ -1,0 +1,9 @@
+enum ERROR_CODES{
+  SUCCESS = 0,
+  SD_INIT_ERROR,
+  SD_BLOCK_ERROR,
+  SD_WRITE_ERROR,
+  SD_READ_ERROR
+};
+
+char error_code;
