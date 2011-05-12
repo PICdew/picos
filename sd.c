@@ -1,7 +1,8 @@
 #include <htc.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "sd.h"
+//#include "sd.h"
+#define SD_CS RC6
 #include "error.h"
 
 char SPI_sendrecv(char data)

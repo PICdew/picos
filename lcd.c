@@ -67,7 +67,7 @@ void lcd_puts(const char * s)
 void lcd_putch(char c)
 {
   if(c == '\n')
-    if(lcd_pos < LCD_WIDTH)
+    if(lcd_pos <= LCD_WIDTH)
       {
 	lcd_goto(0x40);
 	return;

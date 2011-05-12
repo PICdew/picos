@@ -52,7 +52,7 @@ void morse_ditdat_sound(char dat_not_dit)
 	return;// can only set, not update.
   SOUND_counter = 4;
   if(dat_not_dit == TRUE)
-    SOUND_counter = SOUND_counter * 3;
+    SOUND_counter = SOUND_counter * 2;
   tone_440();
 }
 

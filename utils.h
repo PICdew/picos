@@ -7,3 +7,4 @@ extern void calculate_crc(char *crc, char newval);
 #define CRC_time 0xAA
 #define CRC_usart 0xd9
 #define CRC_morse 0xe2
+#define CRC_run 0x8a
