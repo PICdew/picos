@@ -22,7 +22,7 @@
 
 #define USART_have_incoming() RCIF
 #define USART_DEFAULT_TIMEOUT 128;
-char USART_timeout;
+volatile char USART_timeout;
 
 /* Serial initialization */
 extern void usart_init();
@@ -30,4 +30,15 @@ extern void usart_putch(unsigned char);
 extern char usart_getch(void);
 extern char usart_getche(void);
 
+/**
+ * Continuously streams usart to eeprom
+ * Ends after 0xde byte followed by 0xad byte
+ */
+extern void usart2eeprom(char start_address);
+
+/**
+ * Send the size number of bytes from eeprom (starting
+ * at addr) to usart
+ */
+void eeprom2usart(char addr, char size);
 #endif

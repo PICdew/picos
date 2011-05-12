@@ -16,7 +16,7 @@ int main(int argc, char **argv)
       while(*ch != 0)
 	calculate_crc(&crc,*(ch++));
 
-      printf("Word: %s  CRC: %x\n",argv[argidx],crc);
+      printf("Word: %s  CRC(hex): %x\n",argv[argidx],crc);
     }
   return (int)crc;
 }

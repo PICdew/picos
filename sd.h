@@ -26,3 +26,8 @@ void SD_read(char *addr, char *buffer, char n);
  * Sets the proper TRIS bits. Initializes master mode with clock idle high and sped = Fosc/4
  */
 void SD_init(void);
+
+/**
+ * Restarts the SD card communication
+ */
+void SD_restart(char block_size);

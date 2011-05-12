@@ -25,7 +25,7 @@ typedef char out_t;
 typedef char in_t;
 out_t outdev;
 in_t indev;
-char SOUND_counter;
+volatile char SOUND_counter;
 
 extern char morse_to_char(char morse);
 extern char get_command();

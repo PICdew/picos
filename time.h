@@ -1,6 +1,6 @@
 #define TIME_PERIOD 25
 
-unsigned char TIME_tickCounter;
+volatile char TIME_tickCounter;
 
 typedef struct {
   char hours;

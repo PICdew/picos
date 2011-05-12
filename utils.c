@@ -22,6 +22,7 @@ void hex_to_word(char *two_chars, char hex)
 
 void calculate_crc(char *crc, char newval)
 {
+#if 0//old
   *crc = *crc ^ newval;
   newval = 0x3b;
   if(*crc & 1)
@@ -41,4 +42,6 @@ void calculate_crc(char *crc, char newval)
   if(*crc & 8)
     newval ^= 0x26;
   *crc = newval;
+#endif
+  *crc ^= newval;
 }

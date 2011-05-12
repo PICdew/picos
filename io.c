@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "defines.h"
-
+#include "arg.h"
 #include "lcd.h"
 #include "usart.h"
 #include "io.h"
@@ -49,7 +49,7 @@ char get_button_state()
 void morse_ditdat_sound(char dat_not_dit)
 {
   if(SOUND_counter != 0)
-	return;// can only set, not update.
+    return;// can only set, not update.
   SOUND_counter = 4;
   if(dat_not_dit == TRUE)
     SOUND_counter = SOUND_counter * 2;
@@ -108,7 +108,7 @@ void morse_ditdat_sound_blocking(char encoded)
       tone_440();
       __delay_ms(96);
       if(encoded & 0x80)
-	     __delay_ms(192);
+	__delay_ms(192);
       mute_sound();
       __delay_ms(48);
       encoded = encoded << 1;
@@ -135,8 +135,13 @@ char get_command()
   char button_val;
   char ditdat = 0;
   char command_hash = 0;
+  static bit have_command;
+  char char_counter = 0;
   clear_output();
+  ARG_clear();
   printf("$");
+  have_command = FALSE;
+
   while(TRUE)
     {
       if(indev == IN_USART || indev == IN_USART_BTNS)
@@ -149,39 +154,53 @@ char get_command()
 	}
       if((indev == IN_USART_BTNS && ditdat == 0) || indev == IN_BTNS)
 	{
-		char button_val = '@';
+	  char button_val = '@';
 	  button_val = get_button_state();
 	  while((button_val & BTN_RTN) == 0)
-	  {
-		if((button_val & BTN_DIT) != 0)
 	    {
-	      ditdat = (ditdat << 1) + 1;
-	      morse_ditdat_sound(FALSE);
-			__delay_ms(400);
-	    }
-	  	else if((button_val & BTN_DAT) != 0)
-	    {
-	      ditdat = (ditdat+1) << 1;
-	      morse_ditdat_sound(TRUE);
-			__delay_ms(400);
-	    }
-		button_val = get_button_state();
-      	if((button_val & BTN_RTN) != 0)
+	      if((button_val & BTN_DIT) != 0)
 		{
-	        ditdat = morse_to_char(ditdat);
-			__delay_ms(400);
-         }
-	  }
+		  ditdat = (ditdat << 1) + 1;
+		  morse_ditdat_sound(FALSE);
+		  __delay_ms(400);
+		}
+	      else if((button_val & BTN_DAT) != 0)
+		{
+		  ditdat = (ditdat+1) << 1;
+		  morse_ditdat_sound(TRUE);
+		  __delay_ms(400);
+		}
+	      button_val = get_button_state();
+	      if((button_val & BTN_RTN) != 0)
+		{
+		  ditdat = morse_to_char(ditdat);
+		  __delay_ms(400);
+		}
+	    }
 	}
-	if(ditdat == 0)
-		continue;
+      if(ditdat == 0)
+	continue;
 		
       if(ditdat == 0xa || ditdat == 0xd)
-		break;
-      printf("%c",ditdat);
-      calculate_crc(&command_hash,ditdat);
-	  ditdat = 0;
+	break;
+      ARG_putch(ditdat);
+      char_counter++;
+      if(ditdat == ' ')
+	{
+	  have_command = TRUE;
+	  ARG_next = char_counter;
+	}
+      if(!have_command)
+	{
+	  calculate_crc(&command_hash,ditdat);
+	}
+      clear_output();
+      printf("?%s",ARG_buffer);
+      ditdat = 0;
     }
+  ditdat = ARG_getch();
+  if(ditdat == 0 || ditdat == ' ')
+    ARG_next = ARG_SIZE;
   return command_hash;
 }
 
