@@ -24,8 +24,8 @@ typedef struct{
 #define PCB_SIZE 5 + PICLANG_STACK_SIZE
 
 extern PCB curr_process;
-extern char PICLANG_quantum;
-
+volatile char PICLANG_quantum;
+volatile char PICLANG_system;// CRC hex value for system calls within piclan
 
 extern void PICLANG_init();
 
@@ -45,9 +45,9 @@ extern void PICLANG_next();
 
 enum PICLANG_COMMANDS
   {
-    PICLANG_ADD, PICLANG_SUB, PICLANG_MULT,PICLANG_PUSHL,PICLANG_PUSH,
+    PICLANG_ADD=0, PICLANG_SUB, PICLANG_MULT,PICLANG_PUSHL,PICLANG_PUSH,
     PICLANG_POP, PICLANG_INPUT,PICLANG_PRINT,PICLANG_PRINTL,
-    PICLANG_NUM_COMMANDS
+    PICLANG_SYSTEM,PICLANG_NUM_COMMANDS
   };
 
 #endif //PICLANG_H

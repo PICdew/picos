@@ -170,6 +170,10 @@ void PICLANG_next()
     case PICLANG_PRINTL:
       printf("%d",PICLANG_pop());
       break;
+    case PICLANG_SYSTEM:
+      PICLANG_system = PICLANG_get_next_byte();
+      PICLANG_quantum = 0;// will suspend for system call
+      break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       return;
