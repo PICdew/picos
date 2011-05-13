@@ -1887,22 +1887,28 @@ void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignmen
  FirstPass(code->next,variable_map,skip_assignment_check,next_memory_slot);
 }
 
-void PrintCode(struct compiled_code* code, int col)
+void PrintCode(struct compiled_code* code, int col, char *buffer,int start_address, int checksum)
 {
   if(code == NULL)
     return;
-  if(col == 0)
-    printf(":");
 
- printf("%02x",code->val);
+  sprintf(&buffer[4*col],"%04x",(code->val << 8) & 0xff00);
+  checksum += (code->val & 0xff);
   col++;
-  if(col >= COMPILE_MAX_WIDTH)
+  if(col >= COMPILE_MAX_WIDTH || code->next == NULL)
     {
+      checksum += (2*col & 0xff) + (start_address & 0xff) + ((start_address & 0xff00) >> 8);
+      checksum = (~checksum & 0xff);
+      checksum++;
+      printf(":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
+      memset(buffer,0,45*sizeof(char));
       col = 0;
-      printf("\n");
+      checksum = 0;
+      start_address += 0x10;
     }
+    
   
-  PrintCode(code->next,col);
+  PrintCode(code->next,col,buffer,start_address,checksum);
 }
 
 void FreeCode(struct compiled_code* code)
@@ -1972,8 +1978,11 @@ int main(int argc, char **argv)
   memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
   FirstPass(the_code,variable_map,FALSE,&total_memory);
   the_code = MakePCB(the_code,total_memory);
-  PrintCode(the_code,0);
-  printf("\n");
+  char hex_buffer[45];
+  memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
+  printf(":020000040000FA\n");
+  PrintCode(the_code,0,hex_buffer,0x4200,0);
+  printf(":00000001FF\n");
   FreeCode(the_code);
   return 0;
 }
