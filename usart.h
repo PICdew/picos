@@ -27,6 +27,7 @@ volatile char USART_timeout;
 /* Serial initialization */
 extern void usart_init();
 extern void usart_putch(unsigned char);
+extern void usart_puts(const char *str);
 extern char usart_getch(void);
 extern char usart_getche(void);
 

@@ -22,7 +22,22 @@ void putch(char c)
       lcd_putch(c); 
       break;
     }
-} 
+}
+
+void IO_puts(const char *str)
+{
+  switch(outdev)
+    {
+    case OUT_LCD_USART:
+      lcd_puts(str);
+    case OUT_USART:
+      usart_puts(str);
+      break;
+    case OUT_LCD:default:
+      lcd_puts(str); 
+      break;
+    }
+}
 
 void clear_output()
 {
@@ -139,7 +154,7 @@ char get_command()
   char char_counter = 0;
   clear_output();
   ARG_clear();
-  printf("$");
+  IO_puts("$");
   have_command = FALSE;
 
   while(TRUE)
@@ -195,7 +210,8 @@ char get_command()
 	  calculate_crc(&command_hash,ditdat);
 	}
       clear_output();
-      printf("?%s",ARG_buffer);
+      lcd_puts("?");
+      lcd_puts(ARG_buffer);
       ditdat = 0;
     }
   ditdat = ARG_getch();

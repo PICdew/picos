@@ -107,5 +107,5 @@ void strtime(char *str, const TIME_t *t)
 
 void TIME_stdout()
 {
-  printf("%d/%d\n%d:%d",TIME_curr.month,TIME_curr.day,TIME_curr.hours,TIME_curr.minutes);
+  //printf("%d/%d\n%d:%d",TIME_curr.month,TIME_curr.day,TIME_curr.hours,TIME_curr.minutes);
 }

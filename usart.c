@@ -1,5 +1,6 @@
 #include <htc.h>
 #include <stdio.h>
+#include <stddef.h>
 #include "defines.h"
 #include "usart.h"
 
@@ -8,6 +9,14 @@ void usart_putch(unsigned char byte)
   while(!TXIF) 
     continue;
   TXREG = byte;
+}
+
+void usart_puts(const char *str)
+{
+  if(str == NULL)
+    return;
+  while(*str != 0)
+    usart_putch(*(str++));
 }
 
 char usart_getch() 
