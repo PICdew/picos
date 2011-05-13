@@ -311,7 +311,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE LEX LEXLIB LEX_OUTPUT_ROOT YACC LIBDNSTD_CPPFLAGS LIBDNSTD_LDFLAGS LIBDNSTD_LDADD LIBREADLINE CPP EGREP LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar CXX CXXFLAGS LDFLAGS CPPFLAGS ac_ct_CXX EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE CC CFLAGS ac_ct_CC CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE LEX LEXLIB LEX_OUTPUT_ROOT YACC LIBDNSTD_CPPFLAGS LIBDNSTD_LDFLAGS LIBDNSTD_LDADD PICOS_CFLAGS LIBREADLINE CPP EGREP LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -864,6 +864,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-dnstd            Include DNStd library
+  --with-picos            Include PIC OS headers
   --without-readline      disable support for readline
 
 Some influential environment variables:
@@ -3671,6 +3672,25 @@ if test x$with_dnstd != x; then
 
 fi
 
+# Check whether --with-picos or --without-picos was given.
+if test "${with_picos+set}" = set; then
+  withval="$with_picos"
+  with_picos="$withval"
+else
+  with_picos=no
+fi;
+
+if test x"$with_picos" != x"no"; then
+   PICOS_CFLAGS="-I ${with_picos}"
+
+   echo "$as_me:$LINENO: result: Using provided picos path $with_picos" >&5
+echo "${ECHO_T}Using provided picos path $with_picos" >&6
+else
+   echo "$as_me:$LINENO: result: Assuming picos headers are installed in the directory above this one or in system directories" >&5
+echo "${ECHO_T}Assuming picos headers are installed in the directory above this one or in system directories" >&6
+fi
+
+
 #For readline!
 
 # Check whether --with-readline or --without-readline was given.
@@ -5111,6 +5131,7 @@ s,@YACC@,$YACC,;t t
 s,@LIBDNSTD_CPPFLAGS@,$LIBDNSTD_CPPFLAGS,;t t
 s,@LIBDNSTD_LDFLAGS@,$LIBDNSTD_LDFLAGS,;t t
 s,@LIBDNSTD_LDADD@,$LIBDNSTD_LDADD,;t t
+s,@PICOS_CFLAGS@,$PICOS_CFLAGS,;t t
 s,@LIBREADLINE@,$LIBREADLINE,;t t
 s,@CPP@,$CPP,;t t
 s,@EGREP@,$EGREP,;t t

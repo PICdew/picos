@@ -1,6 +1,8 @@
 #include <htc.h>
 #include <stdio.h>
 
+#include "page.h"
+#include "error.h"
 #include "piclang.h"
 #include "io.h"
 #include "utils.h"
@@ -22,6 +24,7 @@ char PICLANG_load(char nth)
     return PICLANG_NO_SUCH_PROGRAM;
 
   curr_process.size = size;
+  curr_process.num_pages = eeprom_read(++pos);
   curr_process.pc = eeprom_read(++pos);
   curr_process.status = eeprom_read(++pos);
   curr_process.start_address = eeprom_read(++pos);
@@ -32,6 +35,14 @@ char PICLANG_load(char nth)
   curr_process.stack_head = eeprom_read(++pos);
 
   PICLANG_quantum = DEFAULT_PICLANG_QUANTUM;
+
+  if(curr_process.status != PICLANG_SUSPENDED)
+    {
+      char retval = PAGE_request(curr_process.num_pages,curr_process.start_address);
+      if(retval != 0)
+	return error_code;
+    }
+
   return PICLANG_SUCCESS;
 
 }

@@ -1,9 +1,20 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
+#include <math.h>
 #include "pasm.h"
 #include "../piclang.h"
+#include "page.h"
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
@@ -49,7 +60,7 @@ function:
 
 stmt: 
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
-| INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
+        | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
         | PRINT expr ';'                 { $$ = opr(PRINT, 1, $2); }
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
@@ -159,13 +170,36 @@ void yyerror(char *s) {
 
 #define COMPILE_MAX_WIDTH 8//max width
 
+void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignment_check,   int *next_memory_slot)
+{
+  int clean_skip_assignment_check = skip_assignment_check;
+  
+  if(code == NULL)
+    return;
+    switch(code->val)
+    {
+    case PICLANG_PUSH:case PICLANG_POP:case PICLANG_INPUT:case PICLANG_PRINT:
+      if(!skip_assignment_check && code->next != NULL && (code->next->val <= 'z' - 'a'))
+	{
+	  if(variable_map[(size_t)code->next->val] == -1)
+	    variable_map[(size_t)code->next->val] = *(next_memory_slot++);
+	  code->next->val = variable_map[(size_t)code->next->val];
+	  skip_assignment_check = TRUE;
+	}
+    }
+  if(clean_skip_assignment_check)
+    skip_assignment_check = FALSE;
+ FirstPass(code->next,variable_map,skip_assignment_check,next_memory_slot);
+}
+
 void PrintCode(struct compiled_code* code, int col)
 {
   if(code == NULL)
     return;
   if(col == 0)
     printf(":");
-  printf("%02x",code->val);
+
+ printf("%02x",code->val);
   col++;
   if(col >= COMPILE_MAX_WIDTH)
     {
@@ -184,6 +218,46 @@ void FreeCode(struct compiled_code* code)
   free(code);
 }
 
+size_t CountCode(struct compiled_code *the_code)
+{
+  if(the_code == NULL)
+    return 0;
+  return 1 + CountCode(the_code->next);
+}
+
+struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
+{
+  struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  size->val = CountCode(the_code);
+  struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  num_pages->val = (unsigned char)ceil(total_memory/PAGE_SIZE);
+  struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  pc->val = 0;
+  struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  status->val = PICLANG_SUCCESS;
+  struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  start_address->val = 0;
+  struct compiled_code *stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *end_of_stack = stack;
+  size_t stack_counter = 1;
+  for(;stack_counter < PICLANG_STACK_SIZE;stack_counter++)
+    {
+      end_of_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      end_of_stack = end_of_stack->next;
+    }
+  end_of_stack->next  = (struct compiled_code*)malloc(sizeof(struct compiled_code));// this is the stack head pointer.
+  end_of_stack->next->val = 0;
+  size->next = num_pages;
+  num_pages->next = pc;
+  pc->next = status;
+  status->next = start_address;
+  start_address->next = stack;
+  
+  end_of_stack->next = the_code;
+  return size;
+}
+
+
 int main(int argc, char **argv) 
 {
   the_code_end = the_code = NULL;
@@ -198,6 +272,11 @@ int main(int argc, char **argv)
   yyparse();
   printf("Here comes your code.\nThank you come again.\nCODE:\n");
   insert_code(EOP);
+  int variable_map['z'-'a'+1];
+  int total_memory = 0;
+  memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
+  FirstPass(the_code,variable_map,FALSE,&total_memory);
+  the_code = MakePCB(the_code,total_memory);
   PrintCode(the_code,0);
   printf("\n");
   FreeCode(the_code);

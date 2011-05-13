@@ -108,9 +108,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
+#include <math.h>
 #include "pasm.h"
 #include "../piclang.h"
+#include "page.h"
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
@@ -144,14 +155,14 @@ int sym[26];                    /* symbol table */
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 20 "pasm_yacc.y"
+#line 31 "pasm_yacc.y"
 {
     int iValue;                 /* integer value */
     char sIndex;                /* symbol table index */
     nodeType *nPtr;             /* node pointer */
 }
 /* Line 193 of yacc.c.  */
-#line 155 "pasm_yacc.c"
+#line 166 "pasm_yacc.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -164,7 +175,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 168 "pasm_yacc.c"
+#line 179 "pasm_yacc.c"
 
 #ifdef short
 # undef short
@@ -460,10 +471,10 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    42,    42,    46,    47,    51,    52,    53,    54,    55,
-      56,    57,    58,    59,    60,    64,    65,    69,    70,    71,
-      72,    73,    74,    75,    76,    77,    78,    79,    80,    81,
-      82
+       0,    53,    53,    57,    58,    62,    63,    64,    65,    66,
+      67,    68,    69,    70,    71,    75,    76,    80,    81,    82,
+      83,    84,    85,    86,    87,    88,    89,    90,    91,    92,
+      93
 };
 #endif
 
@@ -1421,148 +1432,148 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 42 "pasm_yacc.y"
+#line 53 "pasm_yacc.y"
     { YYACCEPT; }
     break;
 
   case 3:
-#line 46 "pasm_yacc.y"
+#line 57 "pasm_yacc.y"
     { ex((yyvsp[(2) - (2)].nPtr)); freeNode((yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 5:
-#line 51 "pasm_yacc.y"
+#line 62 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, NULL, NULL); }
     break;
 
   case 6:
-#line 52 "pasm_yacc.y"
+#line 63 "pasm_yacc.y"
     { (yyval.nPtr) = opr(INPUT, 1, id((yyvsp[(2) - (3)].sIndex))); }
     break;
 
   case 7:
-#line 53 "pasm_yacc.y"
+#line 64 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (2)].nPtr); }
     break;
 
   case 8:
-#line 54 "pasm_yacc.y"
+#line 65 "pasm_yacc.y"
     { (yyval.nPtr) = opr(PRINT, 1, (yyvsp[(2) - (3)].nPtr)); }
     break;
 
   case 9:
-#line 55 "pasm_yacc.y"
+#line 66 "pasm_yacc.y"
     { (yyval.nPtr) = opr('=', 2, id((yyvsp[(1) - (4)].sIndex)), (yyvsp[(3) - (4)].nPtr)); }
     break;
 
   case 10:
-#line 56 "pasm_yacc.y"
+#line 67 "pasm_yacc.y"
     { (yyval.nPtr) = opr(WHILE, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 11:
-#line 57 "pasm_yacc.y"
+#line 68 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 12:
-#line 58 "pasm_yacc.y"
+#line 69 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 3, (yyvsp[(3) - (7)].nPtr), (yyvsp[(5) - (7)].nPtr), (yyvsp[(7) - (7)].nPtr)); }
     break;
 
   case 13:
-#line 59 "pasm_yacc.y"
+#line 70 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
   case 14:
-#line 60 "pasm_yacc.y"
+#line 71 "pasm_yacc.y"
     {YYACCEPT;}
     break;
 
   case 15:
-#line 64 "pasm_yacc.y"
+#line 75 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (1)].nPtr); }
     break;
 
   case 16:
-#line 65 "pasm_yacc.y"
+#line 76 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, (yyvsp[(1) - (2)].nPtr), (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 17:
-#line 69 "pasm_yacc.y"
+#line 80 "pasm_yacc.y"
     { (yyval.nPtr) = con((yyvsp[(1) - (1)].iValue)); }
     break;
 
   case 18:
-#line 70 "pasm_yacc.y"
+#line 81 "pasm_yacc.y"
     { (yyval.nPtr) = id((yyvsp[(1) - (1)].sIndex)); }
     break;
 
   case 19:
-#line 71 "pasm_yacc.y"
+#line 82 "pasm_yacc.y"
     { (yyval.nPtr) = opr(UMINUS, 1, (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 20:
-#line 72 "pasm_yacc.y"
+#line 83 "pasm_yacc.y"
     { (yyval.nPtr) = opr('+', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 21:
-#line 73 "pasm_yacc.y"
+#line 84 "pasm_yacc.y"
     { (yyval.nPtr) = opr('-', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 22:
-#line 74 "pasm_yacc.y"
+#line 85 "pasm_yacc.y"
     { (yyval.nPtr) = opr('*', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 23:
-#line 75 "pasm_yacc.y"
+#line 86 "pasm_yacc.y"
     { (yyval.nPtr) = opr('/', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 24:
-#line 76 "pasm_yacc.y"
+#line 87 "pasm_yacc.y"
     { (yyval.nPtr) = opr('<', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 25:
-#line 77 "pasm_yacc.y"
+#line 88 "pasm_yacc.y"
     { (yyval.nPtr) = opr('>', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 26:
-#line 78 "pasm_yacc.y"
+#line 89 "pasm_yacc.y"
     { (yyval.nPtr) = opr(GE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 27:
-#line 79 "pasm_yacc.y"
+#line 90 "pasm_yacc.y"
     { (yyval.nPtr) = opr(LE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 28:
-#line 80 "pasm_yacc.y"
+#line 91 "pasm_yacc.y"
     { (yyval.nPtr) = opr(NE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 29:
-#line 81 "pasm_yacc.y"
+#line 92 "pasm_yacc.y"
     { (yyval.nPtr) = opr(EQ, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 30:
-#line 82 "pasm_yacc.y"
+#line 93 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1566 "pasm_yacc.c"
+#line 1577 "pasm_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1776,7 +1787,7 @@ yyreturn:
 }
 
 
-#line 85 "pasm_yacc.y"
+#line 96 "pasm_yacc.y"
 
 
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
@@ -1854,13 +1865,36 @@ void yyerror(char *s) {
 
 #define COMPILE_MAX_WIDTH 8//max width
 
+void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignment_check,   int *next_memory_slot)
+{
+  int clean_skip_assignment_check = skip_assignment_check;
+  
+  if(code == NULL)
+    return;
+    switch(code->val)
+    {
+    case PICLANG_PUSH:case PICLANG_POP:case PICLANG_INPUT:case PICLANG_PRINT:
+      if(!skip_assignment_check && code->next != NULL && (code->next->val <= 'z' - 'a'))
+	{
+	  if(variable_map[(size_t)code->next->val] == -1)
+	    variable_map[(size_t)code->next->val] = *(next_memory_slot++);
+	  code->next->val = variable_map[(size_t)code->next->val];
+	  skip_assignment_check = TRUE;
+	}
+    }
+  if(clean_skip_assignment_check)
+    skip_assignment_check = FALSE;
+ FirstPass(code->next,variable_map,skip_assignment_check,next_memory_slot);
+}
+
 void PrintCode(struct compiled_code* code, int col)
 {
   if(code == NULL)
     return;
   if(col == 0)
     printf(":");
-  printf("%02x",code->val);
+
+ printf("%02x",code->val);
   col++;
   if(col >= COMPILE_MAX_WIDTH)
     {
@@ -1879,6 +1913,46 @@ void FreeCode(struct compiled_code* code)
   free(code);
 }
 
+size_t CountCode(struct compiled_code *the_code)
+{
+  if(the_code == NULL)
+    return 0;
+  return 1 + CountCode(the_code->next);
+}
+
+struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
+{
+  struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  size->val = CountCode(the_code);
+  struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  num_pages->val = (unsigned char)ceil(total_memory/PAGE_SIZE);
+  struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  pc->val = 0;
+  struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  status->val = PICLANG_SUCCESS;
+  struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  start_address->val = 0;
+  struct compiled_code *stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *end_of_stack = stack;
+  size_t stack_counter = 1;
+  for(;stack_counter < PICLANG_STACK_SIZE;stack_counter++)
+    {
+      end_of_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      end_of_stack = end_of_stack->next;
+    }
+  end_of_stack->next  = (struct compiled_code*)malloc(sizeof(struct compiled_code));// this is the stack head pointer.
+  end_of_stack->next->val = 0;
+  size->next = num_pages;
+  num_pages->next = pc;
+  pc->next = status;
+  status->next = start_address;
+  start_address->next = stack;
+  
+  end_of_stack->next = the_code;
+  return size;
+}
+
+
 int main(int argc, char **argv) 
 {
   the_code_end = the_code = NULL;
@@ -1893,6 +1967,11 @@ int main(int argc, char **argv)
   yyparse();
   printf("Here comes your code.\nThank you come again.\nCODE:\n");
   insert_code(EOP);
+  int variable_map['z'-'a'+1];
+  int total_memory = 0;
+  memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
+  FirstPass(the_code,variable_map,FALSE,&total_memory);
+  the_code = MakePCB(the_code,total_memory);
   PrintCode(the_code,0);
   printf("\n");
   FreeCode(the_code);

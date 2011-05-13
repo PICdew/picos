@@ -39,7 +39,8 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	depcomp install-sh missing pasm_lex.c pasm_yacc.c pasm_yacc.h
+	compile depcomp install-sh missing pasm_lex.c pasm_yacc.c \
+	pasm_yacc.h
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -52,8 +53,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_pasm_OBJECTS = pasm_lex.$(OBJEXT) pasm_yacc.$(OBJEXT) \
-	pasm_src.$(OBJEXT)
+am_pasm_OBJECTS = pasm-pasm_lex.$(OBJEXT) pasm-pasm_yacc.$(OBJEXT) \
+	pasm-pasm_src.$(OBJEXT)
 pasm_OBJECTS = $(am_pasm_OBJECTS)
 pasm_DEPENDENCIES =
 am_simulator_OBJECTS = simulator-Build.$(OBJEXT) \
@@ -142,6 +143,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PICOS_CFLAGS = @PICOS_CFLAGS@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -180,6 +182,7 @@ sharedstatedir = @sharedstatedir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 AM_YFLAGS = -d
+pasm_CFLAGS = ${PICOS_CFLAGS}
 pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c 
 pasm_LDADD = -lm
 simulator_SOURCES = Build.cpp Command.cpp CommandWords.cpp simulator.cpp Parser.cpp Help.cpp \
@@ -284,9 +287,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm_lex.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm_src.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm_yacc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_lex.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_src.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_yacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Build.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Command.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-CommandWords.Po@am__quote@
@@ -310,6 +313,48 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+pasm-pasm_lex.o: pasm_lex.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_lex.o -MD -MP -MF "$(DEPDIR)/pasm-pasm_lex.Tpo" -c -o pasm-pasm_lex.o `test -f 'pasm_lex.c' || echo '$(srcdir)/'`pasm_lex.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pasm-pasm_lex.Tpo" "$(DEPDIR)/pasm-pasm_lex.Po"; else rm -f "$(DEPDIR)/pasm-pasm_lex.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_lex.c' object='pasm-pasm_lex.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_lex.o `test -f 'pasm_lex.c' || echo '$(srcdir)/'`pasm_lex.c
+
+pasm-pasm_lex.obj: pasm_lex.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_lex.obj -MD -MP -MF "$(DEPDIR)/pasm-pasm_lex.Tpo" -c -o pasm-pasm_lex.obj `if test -f 'pasm_lex.c'; then $(CYGPATH_W) 'pasm_lex.c'; else $(CYGPATH_W) '$(srcdir)/pasm_lex.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pasm-pasm_lex.Tpo" "$(DEPDIR)/pasm-pasm_lex.Po"; else rm -f "$(DEPDIR)/pasm-pasm_lex.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_lex.c' object='pasm-pasm_lex.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_lex.obj `if test -f 'pasm_lex.c'; then $(CYGPATH_W) 'pasm_lex.c'; else $(CYGPATH_W) '$(srcdir)/pasm_lex.c'; fi`
+
+pasm-pasm_yacc.o: pasm_yacc.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_yacc.o -MD -MP -MF "$(DEPDIR)/pasm-pasm_yacc.Tpo" -c -o pasm-pasm_yacc.o `test -f 'pasm_yacc.c' || echo '$(srcdir)/'`pasm_yacc.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pasm-pasm_yacc.Tpo" "$(DEPDIR)/pasm-pasm_yacc.Po"; else rm -f "$(DEPDIR)/pasm-pasm_yacc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_yacc.c' object='pasm-pasm_yacc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_yacc.o `test -f 'pasm_yacc.c' || echo '$(srcdir)/'`pasm_yacc.c
+
+pasm-pasm_yacc.obj: pasm_yacc.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_yacc.obj -MD -MP -MF "$(DEPDIR)/pasm-pasm_yacc.Tpo" -c -o pasm-pasm_yacc.obj `if test -f 'pasm_yacc.c'; then $(CYGPATH_W) 'pasm_yacc.c'; else $(CYGPATH_W) '$(srcdir)/pasm_yacc.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pasm-pasm_yacc.Tpo" "$(DEPDIR)/pasm-pasm_yacc.Po"; else rm -f "$(DEPDIR)/pasm-pasm_yacc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_yacc.c' object='pasm-pasm_yacc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_yacc.obj `if test -f 'pasm_yacc.c'; then $(CYGPATH_W) 'pasm_yacc.c'; else $(CYGPATH_W) '$(srcdir)/pasm_yacc.c'; fi`
+
+pasm-pasm_src.o: pasm_src.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_src.o -MD -MP -MF "$(DEPDIR)/pasm-pasm_src.Tpo" -c -o pasm-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pasm-pasm_src.Tpo" "$(DEPDIR)/pasm-pasm_src.Po"; else rm -f "$(DEPDIR)/pasm-pasm_src.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='pasm-pasm_src.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c
+
+pasm-pasm_src.obj: pasm_src.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_src.obj -MD -MP -MF "$(DEPDIR)/pasm-pasm_src.Tpo" -c -o pasm-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pasm-pasm_src.Tpo" "$(DEPDIR)/pasm-pasm_src.Po"; else rm -f "$(DEPDIR)/pasm-pasm_src.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='pasm-pasm_src.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

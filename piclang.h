@@ -15,13 +15,14 @@ enum PICLANG_STATUS{PICLANG_SUCCESS = 0,PICLANG_UNKNOWN_ERROR,PICLANG_NO_SUCH_PR
 
 typedef struct{
   char size;// size of program
+  char num_pages;
   char pc;// program counter
   char status;// Error status
   char start_address;// First bit off eeprom used for program (after PCB)
   char stack[PICLANG_STACK_SIZE];
   char stack_head;
 }PCB;
-#define PCB_SIZE 5 + PICLANG_STACK_SIZE
+#define PCB_SIZE 6 + PICLANG_STACK_SIZE
 
 extern PCB curr_process;
 volatile char PICLANG_quantum;
