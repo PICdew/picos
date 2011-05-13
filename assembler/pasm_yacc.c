@@ -111,6 +111,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <getopt.h>
 #include "pasm.h"
 #include "../piclang.h"
 #include "page.h"
@@ -130,7 +131,7 @@ nodeType *con(int value);
 void freeNode(nodeType *p);
 int ex(nodeType *p);
 int yylex(void);
-
+ FILE *assembly_file;
 void yyerror(char *s);
 int sym[26];                    /* symbol table */
 
@@ -155,14 +156,14 @@ int sym[26];                    /* symbol table */
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 31 "pasm_yacc.y"
+#line 32 "pasm_yacc.y"
 {
     int iValue;                 /* integer value */
     char sIndex;                /* symbol table index */
     nodeType *nPtr;             /* node pointer */
 }
 /* Line 193 of yacc.c.  */
-#line 166 "pasm_yacc.c"
+#line 167 "pasm_yacc.c"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
@@ -175,7 +176,7 @@ typedef union YYSTYPE
 
 
 /* Line 216 of yacc.c.  */
-#line 179 "pasm_yacc.c"
+#line 180 "pasm_yacc.c"
 
 #ifdef short
 # undef short
@@ -471,10 +472,10 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    53,    53,    57,    58,    62,    63,    64,    65,    66,
-      67,    68,    69,    70,    71,    75,    76,    80,    81,    82,
-      83,    84,    85,    86,    87,    88,    89,    90,    91,    92,
-      93
+       0,    54,    54,    58,    59,    63,    64,    65,    66,    67,
+      68,    69,    70,    71,    72,    76,    77,    81,    82,    83,
+      84,    85,    86,    87,    88,    89,    90,    91,    92,    93,
+      94
 };
 #endif
 
@@ -1432,148 +1433,148 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 53 "pasm_yacc.y"
+#line 54 "pasm_yacc.y"
     { YYACCEPT; }
     break;
 
   case 3:
-#line 57 "pasm_yacc.y"
+#line 58 "pasm_yacc.y"
     { ex((yyvsp[(2) - (2)].nPtr)); freeNode((yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 5:
-#line 62 "pasm_yacc.y"
+#line 63 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, NULL, NULL); }
     break;
 
   case 6:
-#line 63 "pasm_yacc.y"
+#line 64 "pasm_yacc.y"
     { (yyval.nPtr) = opr(INPUT, 1, id((yyvsp[(2) - (3)].sIndex))); }
     break;
 
   case 7:
-#line 64 "pasm_yacc.y"
+#line 65 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (2)].nPtr); }
     break;
 
   case 8:
-#line 65 "pasm_yacc.y"
+#line 66 "pasm_yacc.y"
     { (yyval.nPtr) = opr(PRINT, 1, (yyvsp[(2) - (3)].nPtr)); }
     break;
 
   case 9:
-#line 66 "pasm_yacc.y"
+#line 67 "pasm_yacc.y"
     { (yyval.nPtr) = opr('=', 2, id((yyvsp[(1) - (4)].sIndex)), (yyvsp[(3) - (4)].nPtr)); }
     break;
 
   case 10:
-#line 67 "pasm_yacc.y"
+#line 68 "pasm_yacc.y"
     { (yyval.nPtr) = opr(WHILE, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 11:
-#line 68 "pasm_yacc.y"
+#line 69 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 12:
-#line 69 "pasm_yacc.y"
+#line 70 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 3, (yyvsp[(3) - (7)].nPtr), (yyvsp[(5) - (7)].nPtr), (yyvsp[(7) - (7)].nPtr)); }
     break;
 
   case 13:
-#line 70 "pasm_yacc.y"
+#line 71 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
   case 14:
-#line 71 "pasm_yacc.y"
+#line 72 "pasm_yacc.y"
     {YYACCEPT;}
     break;
 
   case 15:
-#line 75 "pasm_yacc.y"
+#line 76 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (1)].nPtr); }
     break;
 
   case 16:
-#line 76 "pasm_yacc.y"
+#line 77 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, (yyvsp[(1) - (2)].nPtr), (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 17:
-#line 80 "pasm_yacc.y"
+#line 81 "pasm_yacc.y"
     { (yyval.nPtr) = con((yyvsp[(1) - (1)].iValue)); }
     break;
 
   case 18:
-#line 81 "pasm_yacc.y"
+#line 82 "pasm_yacc.y"
     { (yyval.nPtr) = id((yyvsp[(1) - (1)].sIndex)); }
     break;
 
   case 19:
-#line 82 "pasm_yacc.y"
+#line 83 "pasm_yacc.y"
     { (yyval.nPtr) = opr(UMINUS, 1, (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 20:
-#line 83 "pasm_yacc.y"
+#line 84 "pasm_yacc.y"
     { (yyval.nPtr) = opr('+', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 21:
-#line 84 "pasm_yacc.y"
+#line 85 "pasm_yacc.y"
     { (yyval.nPtr) = opr('-', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 22:
-#line 85 "pasm_yacc.y"
+#line 86 "pasm_yacc.y"
     { (yyval.nPtr) = opr('*', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 23:
-#line 86 "pasm_yacc.y"
+#line 87 "pasm_yacc.y"
     { (yyval.nPtr) = opr('/', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 24:
-#line 87 "pasm_yacc.y"
+#line 88 "pasm_yacc.y"
     { (yyval.nPtr) = opr('<', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 25:
-#line 88 "pasm_yacc.y"
+#line 89 "pasm_yacc.y"
     { (yyval.nPtr) = opr('>', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 26:
-#line 89 "pasm_yacc.y"
+#line 90 "pasm_yacc.y"
     { (yyval.nPtr) = opr(GE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 27:
-#line 90 "pasm_yacc.y"
+#line 91 "pasm_yacc.y"
     { (yyval.nPtr) = opr(LE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 28:
-#line 91 "pasm_yacc.y"
+#line 92 "pasm_yacc.y"
     { (yyval.nPtr) = opr(NE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 29:
-#line 92 "pasm_yacc.y"
+#line 93 "pasm_yacc.y"
     { (yyval.nPtr) = opr(EQ, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 30:
-#line 93 "pasm_yacc.y"
+#line 94 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1577 "pasm_yacc.c"
+#line 1578 "pasm_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1787,7 +1788,7 @@ yyreturn:
 }
 
 
-#line 96 "pasm_yacc.y"
+#line 97 "pasm_yacc.y"
 
 
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
@@ -1887,7 +1888,7 @@ void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignmen
  FirstPass(code->next,variable_map,skip_assignment_check,next_memory_slot);
 }
 
-void PrintCode(struct compiled_code* code, int col, char *buffer,int start_address, int checksum)
+void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum)
 {
   if(code == NULL)
     return;
@@ -1900,7 +1901,7 @@ void PrintCode(struct compiled_code* code, int col, char *buffer,int start_addre
       checksum += (2*col & 0xff) + (start_address & 0xff) + ((start_address & 0xff00) >> 8);
       checksum = (~checksum & 0xff);
       checksum++;
-      printf(":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
+      fprintf(hex_file,":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
       memset(buffer,0,45*sizeof(char));
       col = 0;
       checksum = 0;
@@ -1908,7 +1909,7 @@ void PrintCode(struct compiled_code* code, int col, char *buffer,int start_addre
     }
     
   
-  PrintCode(code->next,col,buffer,start_address,checksum);
+  FPrintCode(hex_file,code->next,col,buffer,start_address,checksum);
 }
 
 void FreeCode(struct compiled_code* code)
@@ -1929,9 +1930,8 @@ size_t CountCode(struct compiled_code *the_code)
 struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
 {
   struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  size->val = CountCode(the_code);
   struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  num_pages->val = (unsigned char)ceil(total_memory/PAGE_SIZE);
+  num_pages->val = (unsigned char)ceil(1.0*total_memory/PAGE_SIZE);
   struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   pc->val = 0;
   struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -1955,34 +1955,78 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
   start_address->next = stack;
   
   end_of_stack->next = the_code;
+  
+  size->val = CountCode(size);
   return size;
 }
 
+static struct option long_options[] =
+             {
+               {"hex", 1,NULL, 'o'},
+	       {"asm", 1,NULL, 'a'},
+               {0, 0, 0, 0}
+             };
 
 int main(int argc, char **argv) 
 {
+  int variable_map['z'-'a'+1];
+  int total_memory = 0;
+  char hex_buffer[45];
+  FILE *hex_file = stdout;
+  char opt;
+  int opt_index;
+
+  assembly_file = stdout;
   the_code_end = the_code = NULL;
   printf("Welcome to the piclang compiler.\n");
-  if(argc > 1)
+
+  while(TRUE)
+    {    
+      opt = getopt_long(argc,argv,"o:a:",long_options,&opt_index);
+      if(opt == -1)
+	break;
+      
+      switch(opt)
+	{
+	case 'o':
+	  hex_file = fopen(optarg,"w");
+	  if(hex_file == NULL)
+	    hex_file = stdout;
+	  break;
+	case 'a':
+	  assembly_file = fopen(optarg,"w");
+	  if(assembly_file == NULL)
+	    assembly_file = stdout;
+	  break;
+	default:
+	  fprintf(stderr,"WARNING - Unknown flag %c\n",opt);
+	  break;
+	}
+    }
+		    
+
+  if(optind < argc)
     {
-      FILE *input = fopen(argv[1],"r");
+      FILE *input = fopen(argv[optind++],"r");
       extern FILE *yyin;
       if(input != NULL)
 	yyin = input;
     }
+
+  
   yyparse();
-  printf("Here comes your code.\nThank you come again.\nCODE:\n");
   insert_code(EOP);
-  int variable_map['z'-'a'+1];
-  int total_memory = 0;
+
   memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
   FirstPass(the_code,variable_map,FALSE,&total_memory);
   the_code = MakePCB(the_code,total_memory);
-  char hex_buffer[45];
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
-  printf(":020000040000FA\n");
-  PrintCode(the_code,0,hex_buffer,0x4200,0);
-  printf(":00000001FF\n");
+
+  if(hex_file == stdout)
+    printf("Here comes your code.\nThank you come again.\nCODE:\n");
+  fprintf(hex_file,":020000040000FA\n");
+  FPrintCode(hex_file,the_code,0,hex_buffer,0x4200,0);
+  fprintf(hex_file,":00000001FF\n");
   FreeCode(the_code);
   return 0;
 }

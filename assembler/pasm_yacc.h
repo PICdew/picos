@@ -78,7 +78,7 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 31 "pasm_yacc.y"
+#line 32 "pasm_yacc.y"
 {
     int iValue;                 /* integer value */
     char sIndex;                /* symbol table index */

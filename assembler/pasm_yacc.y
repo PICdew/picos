@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <math.h>
+#include <getopt.h>
 #include "pasm.h"
 #include "../piclang.h"
 #include "page.h"
@@ -23,7 +24,7 @@ nodeType *con(int value);
 void freeNode(nodeType *p);
 int ex(nodeType *p);
 int yylex(void);
-
+ FILE *assembly_file;
 void yyerror(char *s);
 int sym[26];                    /* symbol table */
 %}
@@ -192,7 +193,7 @@ void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignmen
  FirstPass(code->next,variable_map,skip_assignment_check,next_memory_slot);
 }
 
-void PrintCode(struct compiled_code* code, int col, char *buffer,int start_address, int checksum)
+void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum)
 {
   if(code == NULL)
     return;
@@ -205,7 +206,7 @@ void PrintCode(struct compiled_code* code, int col, char *buffer,int start_addre
       checksum += (2*col & 0xff) + (start_address & 0xff) + ((start_address & 0xff00) >> 8);
       checksum = (~checksum & 0xff);
       checksum++;
-      printf(":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
+      fprintf(hex_file,":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
       memset(buffer,0,45*sizeof(char));
       col = 0;
       checksum = 0;
@@ -213,7 +214,7 @@ void PrintCode(struct compiled_code* code, int col, char *buffer,int start_addre
     }
     
   
-  PrintCode(code->next,col,buffer,start_address,checksum);
+  FPrintCode(hex_file,code->next,col,buffer,start_address,checksum);
 }
 
 void FreeCode(struct compiled_code* code)
@@ -234,9 +235,8 @@ size_t CountCode(struct compiled_code *the_code)
 struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
 {
   struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  size->val = CountCode(the_code);
   struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  num_pages->val = (unsigned char)ceil(total_memory/PAGE_SIZE);
+  num_pages->val = (unsigned char)ceil(1.0*total_memory/PAGE_SIZE);
   struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   pc->val = 0;
   struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -260,34 +260,78 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
   start_address->next = stack;
   
   end_of_stack->next = the_code;
+  
+  size->val = CountCode(size);
   return size;
 }
 
+static struct option long_options[] =
+             {
+               {"hex", 1,NULL, 'o'},
+	       {"asm", 1,NULL, 'a'},
+               {0, 0, 0, 0}
+             };
 
 int main(int argc, char **argv) 
 {
+  int variable_map['z'-'a'+1];
+  int total_memory = 0;
+  char hex_buffer[45];
+  FILE *hex_file = stdout;
+  char opt;
+  int opt_index;
+
+  assembly_file = stdout;
   the_code_end = the_code = NULL;
   printf("Welcome to the piclang compiler.\n");
-  if(argc > 1)
+
+  while(TRUE)
+    {    
+      opt = getopt_long(argc,argv,"o:a:",long_options,&opt_index);
+      if(opt == -1)
+	break;
+      
+      switch(opt)
+	{
+	case 'o':
+	  hex_file = fopen(optarg,"w");
+	  if(hex_file == NULL)
+	    hex_file = stdout;
+	  break;
+	case 'a':
+	  assembly_file = fopen(optarg,"w");
+	  if(assembly_file == NULL)
+	    assembly_file = stdout;
+	  break;
+	default:
+	  fprintf(stderr,"WARNING - Unknown flag %c\n",opt);
+	  break;
+	}
+    }
+		    
+
+  if(optind < argc)
     {
-      FILE *input = fopen(argv[1],"r");
+      FILE *input = fopen(argv[optind++],"r");
       extern FILE *yyin;
       if(input != NULL)
 	yyin = input;
     }
+
+  
   yyparse();
-  printf("Here comes your code.\nThank you come again.\nCODE:\n");
   insert_code(EOP);
-  int variable_map['z'-'a'+1];
-  int total_memory = 0;
+
   memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
   FirstPass(the_code,variable_map,FALSE,&total_memory);
   the_code = MakePCB(the_code,total_memory);
-  char hex_buffer[45];
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
-  printf(":020000040000FA\n");
-  PrintCode(the_code,0,hex_buffer,0x4200,0);
-  printf(":00000001FF\n");
+
+  if(hex_file == stdout)
+    printf("Here comes your code.\nThank you come again.\nCODE:\n");
+  fprintf(hex_file,":020000040000FA\n");
+  FPrintCode(hex_file,the_code,0,hex_buffer,0x4200,0);
+  fprintf(hex_file,":00000001FF\n");
   FreeCode(the_code);
   return 0;
 }
