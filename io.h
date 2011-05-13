@@ -38,3 +38,4 @@ void morse_sound(const char *str);
 extern void morse_ditdat_sound(char dat_not_dit);
 
 void IO_puts(const char *str);
+void IO_putd(char d);

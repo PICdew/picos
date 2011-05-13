@@ -1,5 +1,4 @@
 #include <htc.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "defines.h"
@@ -24,18 +23,22 @@ void putch(char c)
     }
 }
 
+void IO_putd(char d)
+{
+  char hex_val[2];
+  hex_to_word(&hex_val,d);
+  putch(hex_val[0]);
+  putch(hex_val[1]);
+}
+
 void IO_puts(const char *str)
 {
-  switch(outdev)
+  if(str == NULL)
+    return;
+  while(*str != 0)
     {
-    case OUT_LCD_USART:
-      lcd_puts(str);
-    case OUT_USART:
-      usart_puts(str);
-      break;
-    case OUT_LCD:default:
-      lcd_puts(str); 
-      break;
+      putch(*str);
+      str++;
     }
 }
 
@@ -210,8 +213,8 @@ char get_command()
 	  calculate_crc(&command_hash,ditdat);
 	}
       clear_output();
-      lcd_puts("?");
-      lcd_puts(ARG_buffer);
+      IO_puts("?");
+      IO_puts(ARG_buffer);
       ditdat = 0;
     }
   ditdat = ARG_getch();

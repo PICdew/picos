@@ -1,6 +1,8 @@
 #include <htc.h>
+#include <stddef.h>
 #include <stdio.h>
-#include <string.h>
+
+#include "io.h"
 #include "utils.h"
 #include "time.h"
 
@@ -107,5 +109,11 @@ void strtime(char *str, const TIME_t *t)
 
 void TIME_stdout()
 {
-  //printf("%d/%d\n%d:%d",TIME_curr.month,TIME_curr.day,TIME_curr.hours,TIME_curr.minutes);
+  IO_putd(TIME_curr.month);
+  putch('/');
+  IO_putd(TIME_curr.day);
+  putch('\n');
+  IO_putd(TIME_curr.hours);
+  putch(':');
+  IO_putd(TIME_curr.minutes);
 }
