@@ -1,6 +1,9 @@
 #include <htc.h>
 #include <stdio.h>
+
 #include "piclang.h"
+#include "io.h"
+#include "utils.h"
 
 char PICLANG_load(char nth)
 {
@@ -162,14 +165,18 @@ void PICLANG_next()
       }
     case PICLANG_PRINT:
       {
-	char two_chrs[2];two_chrs[1] = 0;
-	two_chrs[0] = PICLANG_pop();
-	printf("%s",two_chrs);
+	IO_puts("%s");
+	putch(PICLANG_pop());
 	break;
       }
     case PICLANG_PRINTL:
-      printf("%d",PICLANG_pop());
-      break;
+      {
+	char hex_val[2];
+	hex_to_word(hex_val,PICLANG_pop());
+	putch(hex_val[0]);
+	putch(hex_val[1]);
+	break;
+      }
     case PICLANG_SYSTEM:
       PICLANG_system = PICLANG_get_next_byte();
       PICLANG_quantum = 0;// will suspend for system call
