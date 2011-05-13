@@ -4,7 +4,7 @@
 
 #include "io.h"
 #include "utils.h"
-#include "time.h"
+#include "picos_time.h"
 
 static TIME_t TIME_curr;
 
