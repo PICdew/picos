@@ -32,7 +32,7 @@ int ex(nodeType *p) {
 
     if (!p) return 0;
     switch(p->type) {
-    case typeCon:       
+    case typeCon: case STRING:
       fprintf(assembly_file,"\tpushl\t%d\n", p->con.value); 
       insert_code(PICLANG_PUSHL);
       insert_code(p->con.value);
@@ -92,6 +92,10 @@ int ex(nodeType *p) {
 	  insert_code(p->opr.op[0]->id.i);
 	  fprintf(assembly_file,"\tinput\n");
 	  insert_code( PICLANG_INPUT);
+	  break;
+        case SYSTEM:
+	  ex(p->opr.op[0]);
+	  fprintf(assembly_file,"\tsystem\n");
 	  break;
         default:
             ex(p->opr.op[0]);

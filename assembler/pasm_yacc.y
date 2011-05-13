@@ -7,6 +7,7 @@
 #include <getopt.h>
 #include "pasm.h"
 #include "../piclang.h"
+#include "utils.h"
 #include "page.h"
 
 #ifndef FALSE
@@ -26,6 +27,8 @@ int ex(nodeType *p);
 int yylex(void);
  FILE *assembly_file;
 void yyerror(char *s);
+ extern char *yytext;
+unsigned char do_crc(const char *str);
 int sym[26];                    /* symbol table */
 %}
 
@@ -35,9 +38,9 @@ int sym[26];                    /* symbol table */
     nodeType *nPtr;             /* node pointer */
 };
 
-%token <iValue> INTEGER
+%token <iValue> INTEGER STRING
 %token <sIndex> VARIABLE
-%token WHILE IF PRINT PRINTL EXIT INPUT SYSTEM
+%token WHILE IF PRINT PRINTL EXIT INPUT SYSTEM 
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -61,6 +64,7 @@ function:
 
 stmt: 
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
+        | SYSTEM expr ';'{ $$ = opr(SYSTEM,1,$2);}
         | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
         | PRINT expr ';'                 { $$ = opr(PRINT, 1, $2); }
@@ -79,6 +83,7 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = con($1); }
+        | STRING                { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
@@ -335,3 +340,6 @@ int main(int argc, char **argv)
   FreeCode(the_code);
   return 0;
 }
+
+
+

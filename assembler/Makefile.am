@@ -1,8 +1,8 @@
 bin_PROGRAMS = pasm simulator
 
 AM_YFLAGS = -d
-pasm_CFLAGS = ${PICOS_CFLAGS}
-pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c 
+pasm_CFLAGS = ${PICOS_CFLAGS} -DNOT_FOR_PIC
+pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c utils.c
 pasm_LDADD = -lm
 
 simulator_SOURCES = Build.cpp Command.cpp CommandWords.cpp simulator.cpp Parser.cpp Help.cpp \

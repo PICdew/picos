@@ -184,7 +184,7 @@ void PICLANG_next()
       IO_putd(PICLANG_pop());
       break;
     case PICLANG_SYSTEM:
-      PICLANG_system = PICLANG_get_next_byte();
+      PICLANG_system = PICLANG_pop();
       PICLANG_quantum = 0;// will suspend for system call
       break;
     case PICLANG_NUM_COMMANDS:default:
