@@ -170,13 +170,8 @@ void PICLANG_next()
 	break;
       }
     case PICLANG_PRINTL:
-      {
-	char hex_val[2];
-	hex_to_word(hex_val,PICLANG_pop());
-	putch(hex_val[0]);
-	putch(hex_val[1]);
-	break;
-      }
+      IO_putd(PICLANG_pop());
+      break;
     case PICLANG_SYSTEM:
       PICLANG_system = PICLANG_get_next_byte();
       PICLANG_quantum = 0;// will suspend for system call
