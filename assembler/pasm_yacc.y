@@ -37,7 +37,7 @@ int sym[26];                    /* symbol table */
 
 %token <iValue> INTEGER
 %token <sIndex> VARIABLE
-%token WHILE IF PRINT PRINTL EXIT INPUT
+%token WHILE IF PRINT PRINTL EXIT INPUT SYSTEM
 %nonassoc IFX
 %nonassoc ELSE
 

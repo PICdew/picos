@@ -5,7 +5,16 @@
 void yyerror(char *);
 %}
 
+
+%s C_COMMENT
+
 %%
+
+"/*"            BEGIN(C_COMMENT);
+<C_COMMENT>"*/" {BEGIN(INITIAL);}
+<C_COMMENT>. {}
+
+
 
 [a-z]       { 
                 yylval.sIndex = *yytext - 'a';
