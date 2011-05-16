@@ -94,9 +94,13 @@ int ex(nodeType *p) {
 	  insert_code( PICLANG_INPUT);
 	  break;
         case SYSTEM:
-	  ex(p->opr.op[0]);
-	  fprintf(assembly_file,"\tsystem\n");
-	  break;
+	  {
+	    int op_counter = p->opr.nops - 1;
+	    for(;op_counter >= 0 ;op_counter--)
+		ex(p->opr.op[op_counter]);
+	    fprintf(assembly_file,"\tsystem\n");
+	    break;
+	  }
         default:
             ex(p->opr.op[0]);
             ex(p->opr.op[1]);

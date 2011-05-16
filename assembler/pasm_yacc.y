@@ -64,7 +64,8 @@ function:
 
 stmt: 
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
-        | SYSTEM expr ';'{ $$ = opr(SYSTEM,1,$2);}
+        | SYSTEM '(' expr ',' expr ')' ';'{ $$ = opr(SYSTEM,2,$3,$5);}
+        | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
         | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
         | PRINT expr ';'                 { $$ = opr(PRINT, 1, $2); }

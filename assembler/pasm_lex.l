@@ -50,7 +50,7 @@ unsigned char do_crc(const char *str)
                 return INTEGER;
             }
 
-[-()<>=+*/;{}.] {
+[-,()<>=+*/;{}.] {
                 return *yytext;
              }
 

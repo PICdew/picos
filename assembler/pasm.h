@@ -1,4 +1,6 @@
-typedef enum { typeCon, typeId, typeOpr } nodeEnum;
+#include <limits.h>
+
+typedef enum { typeCon, typeId, typeOpr/*, typeSys*/ } nodeEnum;
 
 /* constants */
 typedef struct {
@@ -16,6 +18,11 @@ typedef struct {
     int nops;                   /* number of operands */
     struct nodeTypeTag *op[1];  /* operands (expandable) */
 } oprNodeType;
+
+/* system calls 
+typedef struct{
+  char name[FILENAME_MAX];  
+} sysNodeType;*/
 
 typedef struct nodeTypeTag {
     nodeEnum type;              /* type of node */
