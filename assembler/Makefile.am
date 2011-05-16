@@ -1,12 +1,10 @@
-bin_PROGRAMS = pasm simulator
+bin_PROGRAMS = pasm #psim
 
 AM_YFLAGS = -d
 pasm_CFLAGS = ${PICOS_CFLAGS} -DNOT_FOR_PIC
 pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c utils.c
 pasm_LDADD = -lm
 
-simulator_SOURCES = Build.cpp Command.cpp CommandWords.cpp simulator.cpp Parser.cpp Help.cpp \
-	DString.cpp StringTokenizer.cpp good_exceptions.cpp
-simulator_CPPFLAGS = ${LIBDNSTD_CPPFLAGS}
-simulator_LDFLAGS = ${LIBDNSTD_LDFLAGS} ${LIBREADLINE}
-simulator_LDADD = ${LIBDNSTD_LDADD}
+psim_SOURCES = psim_lex.l psim_yacc.y psim_src.c utils.c
+psim_CFLAGS = ${PICOS_CFLAGS} -DNOT_FOR_PIC
+psim_LDADD = -lm

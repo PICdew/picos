@@ -34,13 +34,13 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = pasm$(EXEEXT) simulator$(EXEEXT)
+bin_PROGRAMS = pasm$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
 	compile depcomp install-sh missing pasm_lex.c pasm_yacc.c \
-	pasm_yacc.h
+	pasm_yacc.h ylwrap
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -57,15 +57,6 @@ am_pasm_OBJECTS = pasm-pasm_lex.$(OBJEXT) pasm-pasm_yacc.$(OBJEXT) \
 	pasm-pasm_src.$(OBJEXT) pasm-utils.$(OBJEXT)
 pasm_OBJECTS = $(am_pasm_OBJECTS)
 pasm_DEPENDENCIES =
-am_simulator_OBJECTS = simulator-Build.$(OBJEXT) \
-	simulator-Command.$(OBJEXT) simulator-CommandWords.$(OBJEXT) \
-	simulator-simulator.$(OBJEXT) simulator-Parser.$(OBJEXT) \
-	simulator-Help.$(OBJEXT) simulator-DString.$(OBJEXT) \
-	simulator-StringTokenizer.$(OBJEXT) \
-	simulator-good_exceptions.$(OBJEXT)
-simulator_OBJECTS = $(am_simulator_OBJECTS)
-am__DEPENDENCIES_1 =
-simulator_DEPENDENCIES = $(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -73,15 +64,10 @@ COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
 LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-CXXLD = $(CXX)
-CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
 LEXCOMPILE = $(LEX) $(LFLAGS) $(AM_LFLAGS)
 YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS)
-SOURCES = $(pasm_SOURCES) $(simulator_SOURCES)
-DIST_SOURCES = $(pasm_SOURCES) $(simulator_SOURCES)
+SOURCES = $(pasm_SOURCES)
+DIST_SOURCES = $(pasm_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -185,17 +171,14 @@ AM_YFLAGS = -d
 pasm_CFLAGS = ${PICOS_CFLAGS} -DNOT_FOR_PIC
 pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c utils.c
 pasm_LDADD = -lm
-simulator_SOURCES = Build.cpp Command.cpp CommandWords.cpp simulator.cpp Parser.cpp Help.cpp \
-	DString.cpp StringTokenizer.cpp good_exceptions.cpp
-
-simulator_CPPFLAGS = ${LIBDNSTD_CPPFLAGS}
-simulator_LDFLAGS = ${LIBDNSTD_LDFLAGS} ${LIBREADLINE}
-simulator_LDADD = ${LIBDNSTD_LDADD}
+psim_SOURCES = psim_lex.l psim_yacc.y psim_src.c utils.c
+psim_CFLAGS = ${PICOS_CFLAGS} -DNOT_FOR_PIC
+psim_LDADD = -lm
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .cpp .l .o .obj .y
+.SUFFIXES: .c .l .o .obj .y
 am--refresh:
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -277,9 +260,6 @@ pasm_yacc.h: pasm_yacc.c
 pasm$(EXEEXT): $(pasm_OBJECTS) $(pasm_DEPENDENCIES) 
 	@rm -f pasm$(EXEEXT)
 	$(LINK) $(pasm_LDFLAGS) $(pasm_OBJECTS) $(pasm_LDADD) $(LIBS)
-simulator$(EXEEXT): $(simulator_OBJECTS) $(simulator_DEPENDENCIES) 
-	@rm -f simulator$(EXEEXT)
-	$(CXXLINK) $(simulator_LDFLAGS) $(simulator_OBJECTS) $(simulator_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -291,15 +271,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_yacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-utils.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Build.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Command.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-CommandWords.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-DString.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Help.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-Parser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-StringTokenizer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-good_exceptions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simulator-simulator.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -370,146 +341,6 @@ pasm-utils.obj: utils.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils.c' object='pasm-utils.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-utils.obj `if test -f 'utils.c'; then $(CYGPATH_W) 'utils.c'; else $(CYGPATH_W) '$(srcdir)/utils.c'; fi`
-
-.cpp.o:
-@am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
-
-.cpp.obj:
-@am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-simulator-Build.o: Build.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Build.o -MD -MP -MF "$(DEPDIR)/simulator-Build.Tpo" -c -o simulator-Build.o `test -f 'Build.cpp' || echo '$(srcdir)/'`Build.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Build.Tpo" "$(DEPDIR)/simulator-Build.Po"; else rm -f "$(DEPDIR)/simulator-Build.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Build.cpp' object='simulator-Build.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Build.o `test -f 'Build.cpp' || echo '$(srcdir)/'`Build.cpp
-
-simulator-Build.obj: Build.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Build.obj -MD -MP -MF "$(DEPDIR)/simulator-Build.Tpo" -c -o simulator-Build.obj `if test -f 'Build.cpp'; then $(CYGPATH_W) 'Build.cpp'; else $(CYGPATH_W) '$(srcdir)/Build.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Build.Tpo" "$(DEPDIR)/simulator-Build.Po"; else rm -f "$(DEPDIR)/simulator-Build.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Build.cpp' object='simulator-Build.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Build.obj `if test -f 'Build.cpp'; then $(CYGPATH_W) 'Build.cpp'; else $(CYGPATH_W) '$(srcdir)/Build.cpp'; fi`
-
-simulator-Command.o: Command.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Command.o -MD -MP -MF "$(DEPDIR)/simulator-Command.Tpo" -c -o simulator-Command.o `test -f 'Command.cpp' || echo '$(srcdir)/'`Command.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Command.Tpo" "$(DEPDIR)/simulator-Command.Po"; else rm -f "$(DEPDIR)/simulator-Command.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Command.cpp' object='simulator-Command.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Command.o `test -f 'Command.cpp' || echo '$(srcdir)/'`Command.cpp
-
-simulator-Command.obj: Command.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Command.obj -MD -MP -MF "$(DEPDIR)/simulator-Command.Tpo" -c -o simulator-Command.obj `if test -f 'Command.cpp'; then $(CYGPATH_W) 'Command.cpp'; else $(CYGPATH_W) '$(srcdir)/Command.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Command.Tpo" "$(DEPDIR)/simulator-Command.Po"; else rm -f "$(DEPDIR)/simulator-Command.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Command.cpp' object='simulator-Command.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Command.obj `if test -f 'Command.cpp'; then $(CYGPATH_W) 'Command.cpp'; else $(CYGPATH_W) '$(srcdir)/Command.cpp'; fi`
-
-simulator-CommandWords.o: CommandWords.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-CommandWords.o -MD -MP -MF "$(DEPDIR)/simulator-CommandWords.Tpo" -c -o simulator-CommandWords.o `test -f 'CommandWords.cpp' || echo '$(srcdir)/'`CommandWords.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-CommandWords.Tpo" "$(DEPDIR)/simulator-CommandWords.Po"; else rm -f "$(DEPDIR)/simulator-CommandWords.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CommandWords.cpp' object='simulator-CommandWords.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-CommandWords.o `test -f 'CommandWords.cpp' || echo '$(srcdir)/'`CommandWords.cpp
-
-simulator-CommandWords.obj: CommandWords.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-CommandWords.obj -MD -MP -MF "$(DEPDIR)/simulator-CommandWords.Tpo" -c -o simulator-CommandWords.obj `if test -f 'CommandWords.cpp'; then $(CYGPATH_W) 'CommandWords.cpp'; else $(CYGPATH_W) '$(srcdir)/CommandWords.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-CommandWords.Tpo" "$(DEPDIR)/simulator-CommandWords.Po"; else rm -f "$(DEPDIR)/simulator-CommandWords.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CommandWords.cpp' object='simulator-CommandWords.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-CommandWords.obj `if test -f 'CommandWords.cpp'; then $(CYGPATH_W) 'CommandWords.cpp'; else $(CYGPATH_W) '$(srcdir)/CommandWords.cpp'; fi`
-
-simulator-simulator.o: simulator.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-simulator.o -MD -MP -MF "$(DEPDIR)/simulator-simulator.Tpo" -c -o simulator-simulator.o `test -f 'simulator.cpp' || echo '$(srcdir)/'`simulator.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-simulator.Tpo" "$(DEPDIR)/simulator-simulator.Po"; else rm -f "$(DEPDIR)/simulator-simulator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='simulator.cpp' object='simulator-simulator.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-simulator.o `test -f 'simulator.cpp' || echo '$(srcdir)/'`simulator.cpp
-
-simulator-simulator.obj: simulator.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-simulator.obj -MD -MP -MF "$(DEPDIR)/simulator-simulator.Tpo" -c -o simulator-simulator.obj `if test -f 'simulator.cpp'; then $(CYGPATH_W) 'simulator.cpp'; else $(CYGPATH_W) '$(srcdir)/simulator.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-simulator.Tpo" "$(DEPDIR)/simulator-simulator.Po"; else rm -f "$(DEPDIR)/simulator-simulator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='simulator.cpp' object='simulator-simulator.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-simulator.obj `if test -f 'simulator.cpp'; then $(CYGPATH_W) 'simulator.cpp'; else $(CYGPATH_W) '$(srcdir)/simulator.cpp'; fi`
-
-simulator-Parser.o: Parser.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Parser.o -MD -MP -MF "$(DEPDIR)/simulator-Parser.Tpo" -c -o simulator-Parser.o `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Parser.Tpo" "$(DEPDIR)/simulator-Parser.Po"; else rm -f "$(DEPDIR)/simulator-Parser.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Parser.cpp' object='simulator-Parser.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Parser.o `test -f 'Parser.cpp' || echo '$(srcdir)/'`Parser.cpp
-
-simulator-Parser.obj: Parser.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Parser.obj -MD -MP -MF "$(DEPDIR)/simulator-Parser.Tpo" -c -o simulator-Parser.obj `if test -f 'Parser.cpp'; then $(CYGPATH_W) 'Parser.cpp'; else $(CYGPATH_W) '$(srcdir)/Parser.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Parser.Tpo" "$(DEPDIR)/simulator-Parser.Po"; else rm -f "$(DEPDIR)/simulator-Parser.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Parser.cpp' object='simulator-Parser.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Parser.obj `if test -f 'Parser.cpp'; then $(CYGPATH_W) 'Parser.cpp'; else $(CYGPATH_W) '$(srcdir)/Parser.cpp'; fi`
-
-simulator-Help.o: Help.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Help.o -MD -MP -MF "$(DEPDIR)/simulator-Help.Tpo" -c -o simulator-Help.o `test -f 'Help.cpp' || echo '$(srcdir)/'`Help.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Help.Tpo" "$(DEPDIR)/simulator-Help.Po"; else rm -f "$(DEPDIR)/simulator-Help.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Help.cpp' object='simulator-Help.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Help.o `test -f 'Help.cpp' || echo '$(srcdir)/'`Help.cpp
-
-simulator-Help.obj: Help.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-Help.obj -MD -MP -MF "$(DEPDIR)/simulator-Help.Tpo" -c -o simulator-Help.obj `if test -f 'Help.cpp'; then $(CYGPATH_W) 'Help.cpp'; else $(CYGPATH_W) '$(srcdir)/Help.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-Help.Tpo" "$(DEPDIR)/simulator-Help.Po"; else rm -f "$(DEPDIR)/simulator-Help.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Help.cpp' object='simulator-Help.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-Help.obj `if test -f 'Help.cpp'; then $(CYGPATH_W) 'Help.cpp'; else $(CYGPATH_W) '$(srcdir)/Help.cpp'; fi`
-
-simulator-DString.o: DString.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-DString.o -MD -MP -MF "$(DEPDIR)/simulator-DString.Tpo" -c -o simulator-DString.o `test -f 'DString.cpp' || echo '$(srcdir)/'`DString.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-DString.Tpo" "$(DEPDIR)/simulator-DString.Po"; else rm -f "$(DEPDIR)/simulator-DString.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DString.cpp' object='simulator-DString.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-DString.o `test -f 'DString.cpp' || echo '$(srcdir)/'`DString.cpp
-
-simulator-DString.obj: DString.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-DString.obj -MD -MP -MF "$(DEPDIR)/simulator-DString.Tpo" -c -o simulator-DString.obj `if test -f 'DString.cpp'; then $(CYGPATH_W) 'DString.cpp'; else $(CYGPATH_W) '$(srcdir)/DString.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-DString.Tpo" "$(DEPDIR)/simulator-DString.Po"; else rm -f "$(DEPDIR)/simulator-DString.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DString.cpp' object='simulator-DString.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-DString.obj `if test -f 'DString.cpp'; then $(CYGPATH_W) 'DString.cpp'; else $(CYGPATH_W) '$(srcdir)/DString.cpp'; fi`
-
-simulator-StringTokenizer.o: StringTokenizer.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-StringTokenizer.o -MD -MP -MF "$(DEPDIR)/simulator-StringTokenizer.Tpo" -c -o simulator-StringTokenizer.o `test -f 'StringTokenizer.cpp' || echo '$(srcdir)/'`StringTokenizer.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-StringTokenizer.Tpo" "$(DEPDIR)/simulator-StringTokenizer.Po"; else rm -f "$(DEPDIR)/simulator-StringTokenizer.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StringTokenizer.cpp' object='simulator-StringTokenizer.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-StringTokenizer.o `test -f 'StringTokenizer.cpp' || echo '$(srcdir)/'`StringTokenizer.cpp
-
-simulator-StringTokenizer.obj: StringTokenizer.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-StringTokenizer.obj -MD -MP -MF "$(DEPDIR)/simulator-StringTokenizer.Tpo" -c -o simulator-StringTokenizer.obj `if test -f 'StringTokenizer.cpp'; then $(CYGPATH_W) 'StringTokenizer.cpp'; else $(CYGPATH_W) '$(srcdir)/StringTokenizer.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-StringTokenizer.Tpo" "$(DEPDIR)/simulator-StringTokenizer.Po"; else rm -f "$(DEPDIR)/simulator-StringTokenizer.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StringTokenizer.cpp' object='simulator-StringTokenizer.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-StringTokenizer.obj `if test -f 'StringTokenizer.cpp'; then $(CYGPATH_W) 'StringTokenizer.cpp'; else $(CYGPATH_W) '$(srcdir)/StringTokenizer.cpp'; fi`
-
-simulator-good_exceptions.o: good_exceptions.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-good_exceptions.o -MD -MP -MF "$(DEPDIR)/simulator-good_exceptions.Tpo" -c -o simulator-good_exceptions.o `test -f 'good_exceptions.cpp' || echo '$(srcdir)/'`good_exceptions.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-good_exceptions.Tpo" "$(DEPDIR)/simulator-good_exceptions.Po"; else rm -f "$(DEPDIR)/simulator-good_exceptions.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='good_exceptions.cpp' object='simulator-good_exceptions.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-good_exceptions.o `test -f 'good_exceptions.cpp' || echo '$(srcdir)/'`good_exceptions.cpp
-
-simulator-good_exceptions.obj: good_exceptions.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT simulator-good_exceptions.obj -MD -MP -MF "$(DEPDIR)/simulator-good_exceptions.Tpo" -c -o simulator-good_exceptions.obj `if test -f 'good_exceptions.cpp'; then $(CYGPATH_W) 'good_exceptions.cpp'; else $(CYGPATH_W) '$(srcdir)/good_exceptions.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/simulator-good_exceptions.Tpo" "$(DEPDIR)/simulator-good_exceptions.Po"; else rm -f "$(DEPDIR)/simulator-good_exceptions.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='good_exceptions.cpp' object='simulator-good_exceptions.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(simulator_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o simulator-good_exceptions.obj `if test -f 'good_exceptions.cpp'; then $(CYGPATH_W) 'good_exceptions.cpp'; else $(CYGPATH_W) '$(srcdir)/good_exceptions.cpp'; fi`
 
 .l.c:
 	$(LEXCOMPILE) $<
