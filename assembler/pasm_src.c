@@ -42,6 +42,19 @@ int ex(nodeType *p) {
       insert_code(PICLANG_PUSH);
       insert_code(p->id.i);
       break;
+    case typeStr:
+      {
+	char *pStr = p->str.string;
+	while(pStr != NULL)
+	  {
+	    fprintf(assembly_file,"\tstore\t%c\n", *pStr);
+	    insert_code(*pStr);
+	    if(*pStr == 0)
+	      break;
+	    pStr++;
+	  }
+	break;
+      }
     case typeOpr:
         switch(p->opr.oper) {
         case WHILE:
@@ -102,9 +115,9 @@ int ex(nodeType *p) {
 	    break;
 	  }
 	case SPRINT:
-	  ex(p->opr.op[0]);
 	  fprintf(assembly_file,"\tsprint\n");
 	  insert_code(PICLANG_SPRINT);
+	  ex(p->opr.op[0]);
 	  break;
         default:
             ex(p->opr.op[0]);

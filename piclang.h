@@ -26,7 +26,7 @@ typedef struct{
   char stack[PICLANG_STACK_SIZE];
   char stack_head;
 }PCB;
-#define PCB_SIZE (sizeof(PCB) - 1);
+#define PCB_SIZE sizeof(PCB);
 
 extern PCB curr_process;
 volatile char PICLANG_quantum;

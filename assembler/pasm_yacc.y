@@ -86,7 +86,7 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = con($1); }
-        | STRING        {$$ = con(0);store_string($1->str.string);}
+        | STRING        {$$ = store_string($1->str.string);}
         | CR {$$ = store_string("\n");}
         | VARIABLE              { $$ = id($1); }
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
@@ -188,11 +188,14 @@ void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignmen
     return;
     switch(code->val)
     {
-    case PICLANG_PUSH:case PICLANG_POP:case PICLANG_INPUT:case PICLANG_PRINT:
+    case PICLANG_PUSH:case PICLANG_POP:case PICLANG_INPUT:
       if(!skip_assignment_check && code->next != NULL && (code->next->val <= 'z' - 'a'))
 	{
 	  if(variable_map[(size_t)code->next->val] == -1)
-	    variable_map[(size_t)code->next->val] = *(next_memory_slot++);
+	    {
+	      variable_map[(size_t)code->next->val] = *next_memory_slot;
+	      *next_memory_slot += 1;
+	    }
 	  code->next->val = variable_map[(size_t)code->next->val];
 	  skip_assignment_check = TRUE;
 	}
@@ -290,16 +293,18 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory, 
   struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   start_address->val = PCB_SIZE;
   struct compiled_code *stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  stack->val = 0xff;
   struct compiled_code *end_of_stack = stack;
   size_t stack_counter = 1;
   for(;stack_counter < PICLANG_STACK_SIZE;stack_counter++)
     {
-      end_of_stack->val = 0xff;
       end_of_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       end_of_stack = end_of_stack->next;
+      end_of_stack->val = 0xff;
     }
   end_of_stack->next  = (struct compiled_code*)malloc(sizeof(struct compiled_code));// this is the stack head pointer.
   end_of_stack->next->val = 0;
+  end_of_stack = end_of_stack->next;
   size->next = bitmap;
   bitmap->next = num_pages;
   num_pages->next = pc;
@@ -319,8 +324,14 @@ nodeType* store_string(const char *str)
   if(str == NULL)
     return;
 
+  retval = (nodeType*)malloc(sizeof(nodeType));
+  strncpy(retval->str.string,str,strlen(str)+1);
+  retval->type = typeStr;
+
+  return retval;
   
-  while(*str  != 0)
+  /*
+    while(*str  != 0)
     {
       if(*str == '\n')
 	printf("\tCR\n");
@@ -328,7 +339,8 @@ nodeType* store_string(const char *str)
 	printf("\tstore\t%c\n",*str);
       insert_code(*str);
       str++;
-    }
+      }
+      /**/
 }
 
 

@@ -1,6 +1,6 @@
 #include <limits.h>
 
-typedef enum { typeCon, typeId, typeOpr/*, typeSys*/ } nodeEnum;
+typedef enum { typeCon, typeId, typeOpr, typeStr } nodeEnum;
 
 /* constants */
 typedef struct {
