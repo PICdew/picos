@@ -177,7 +177,7 @@ void yyerror(char *s) {
 
 #define COMPILE_MAX_WIDTH 8//max width
 
-void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignment_check,   int *next_memory_slot)
+void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignment_check, unsigned char *piclang_bitmap,  int *next_memory_slot)
 {
   int clean_skip_assignment_check = skip_assignment_check;
   
@@ -193,18 +193,34 @@ void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignmen
 	  code->next->val = variable_map[(size_t)code->next->val];
 	  skip_assignment_check = TRUE;
 	}
+      break;
+    case PICLANG_SYSTEM:
+      if(piclang_bitmap != NULL)
+	*piclang_bitmap |= PICLANG_BIT_SYSCALL;
+      break;
     }
   if(clean_skip_assignment_check)
     skip_assignment_check = FALSE;
- FirstPass(code->next,variable_map,skip_assignment_check,next_memory_slot);
+  
+  FirstPass(code->next,variable_map,skip_assignment_check,piclang_bitmap,next_memory_slot);
 }
 
-void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum)
+
+enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
+void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type)
 {
   if(code == NULL)
     return;
 
-  sprintf(&buffer[4*col],"%04x",(code->val << 8) & 0xff00);
+  switch(print_type)
+    {
+    case PRINT_EEPROM_DATA:
+      sprintf(&buffer[5*col],",0x%02x",code->val & 0xff);
+      break;
+    case PRINT_HEX:default:
+      sprintf(&buffer[4*col],"%04x",(code->val << 8) & 0xff00);
+      break;
+    }
   checksum += (code->val & 0xff);
   col++;
   if(col >= COMPILE_MAX_WIDTH || code->next == NULL)
@@ -212,7 +228,26 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
       checksum += (2*col & 0xff) + (start_address & 0xff) + ((start_address & 0xff00) >> 8);
       checksum = (~checksum & 0xff);
       checksum++;
-      fprintf(hex_file,":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
+      switch(print_type)
+	{
+	case PRINT_EEPROM_DATA:
+	  {
+	    int counter = 0;
+	    fprintf(hex_file,"__EEPROM_DATA(");
+	    if(strlen(buffer) > 1)
+	      fprintf(hex_file,"%s",&buffer[1]);
+	    if(col % 8 != 0)
+	      {
+		for(;counter < 8-(col % 8);counter++)
+		  fprintf(hex_file,",0xff");
+	      }
+	    fprintf(hex_file,");\n");
+	    break;
+	  }
+	case PRINT_HEX:default:
+	  fprintf(hex_file,":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
+	  break;
+	}
       memset(buffer,0,45*sizeof(char));
       col = 0;
       checksum = 0;
@@ -220,7 +255,7 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
     }
     
   
-  FPrintCode(hex_file,code->next,col,buffer,start_address,checksum);
+  FPrintCode(hex_file,code->next,col,buffer,start_address,checksum,print_type);
 }
 
 void FreeCode(struct compiled_code* code)
@@ -238,9 +273,11 @@ size_t CountCode(struct compiled_code *the_code)
   return 1 + CountCode(the_code->next);
 }
 
-struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
+struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory, unsigned char piclang_bitmap)
 {
   struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  bitmap->val = piclang_bitmap;
   struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   num_pages->val = (unsigned char)ceil(1.0*total_memory/PAGE_SIZE);
   struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -248,18 +285,20 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory)
   struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   status->val = PICLANG_SUCCESS;
   struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  start_address->val = 0;
+  start_address->val = PCB_SIZE;
   struct compiled_code *stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *end_of_stack = stack;
   size_t stack_counter = 1;
   for(;stack_counter < PICLANG_STACK_SIZE;stack_counter++)
     {
+      end_of_stack->val = 0xff;
       end_of_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       end_of_stack = end_of_stack->next;
     }
   end_of_stack->next  = (struct compiled_code*)malloc(sizeof(struct compiled_code));// this is the stack head pointer.
   end_of_stack->next->val = 0;
-  size->next = num_pages;
+  size->next = bitmap;
+  bitmap->next = num_pages;
   num_pages->next = pc;
   pc->next = status;
   status->next = start_address;
@@ -275,6 +314,7 @@ static struct option long_options[] =
              {
                {"hex", 1,NULL, 'o'},
 	       {"asm", 1,NULL, 'a'},
+	       {"eeprom",1,NULL, 'e'},
                {0, 0, 0, 0}
              };
 
@@ -283,9 +323,10 @@ int main(int argc, char **argv)
   int variable_map['z'-'a'+1];
   int total_memory = 0;
   char hex_buffer[45];
-  FILE *hex_file = stdout;
+  FILE *hex_file = stdout, *eeprom_file = stdout;
   char opt;
   int opt_index;
+  unsigned char piclang_bitmap = 0;
 
   assembly_file = stdout;
   the_code_end = the_code = NULL;
@@ -293,7 +334,7 @@ int main(int argc, char **argv)
 
   while(TRUE)
     {    
-      opt = getopt_long(argc,argv,"o:a:",long_options,&opt_index);
+      opt = getopt_long(argc,argv,"a:e:o:",long_options,&opt_index);
       if(opt == -1)
 	break;
       
@@ -308,6 +349,11 @@ int main(int argc, char **argv)
 	  assembly_file = fopen(optarg,"w");
 	  if(assembly_file == NULL)
 	    assembly_file = stdout;
+	  break;
+	case 'e':
+	  eeprom_file = fopen(optarg,"w");
+	  if(eeprom_file == NULL)
+	    eeprom_file = stdout;
 	  break;
 	default:
 	  fprintf(stderr,"WARNING - Unknown flag %c\n",opt);
@@ -329,15 +375,16 @@ int main(int argc, char **argv)
   insert_code(EOP);
 
   memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
-  FirstPass(the_code,variable_map,FALSE,&total_memory);
-  the_code = MakePCB(the_code,total_memory);
+  FirstPass(the_code,variable_map,FALSE,&piclang_bitmap,&total_memory);
+  the_code = MakePCB(the_code,total_memory,piclang_bitmap);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
   fprintf(hex_file,":020000040000FA\n");
-  FPrintCode(hex_file,the_code,0,hex_buffer,0x4200,0);
+  FPrintCode(hex_file,the_code,0,hex_buffer,0x4200,0,PRINT_HEX);
   fprintf(hex_file,":00000001FF\n");
+  FPrintCode(eeprom_file,the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
   FreeCode(the_code);
   return 0;
 }

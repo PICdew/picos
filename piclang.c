@@ -25,6 +25,7 @@ char PICLANG_load(char nth)
     return PICLANG_NO_SUCH_PROGRAM;
 
   curr_process.size = size;
+  curr_process.bitmap = eeprom_read(++pos);
   curr_process.num_pages = eeprom_read(++pos);
   curr_process.pc = eeprom_read(++pos);
   curr_process.status = eeprom_read(++pos);
@@ -43,6 +44,9 @@ char PICLANG_load(char nth)
       if(retval != 0)
 	return error_code;
     }
+
+  if((curr_process.bitmap & PICLANG_BIT_SYSCALL) != 0)
+    ARG_source = ARG_PICLANG;
 
   return PICLANG_SUCCESS;
 
@@ -188,12 +192,6 @@ void PICLANG_next()
       PICLANG_system = PICLANG_pop();
       PICLANG_quantum = 0;// will suspend for system call
       break;
-	case PICLANG_ARG_SOURCE:
-	  if(ARG_source == ARG_PICLANG)
-	     ARG_source = ARG_SHELL;
-	  else
-		 ARG_source = ARG_PICLANG;
-	  break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       return;

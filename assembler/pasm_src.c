@@ -98,7 +98,7 @@ int ex(nodeType *p) {
 	    int op_counter = p->opr.nops - 1;
 	    for(;op_counter >= 0 ;op_counter--)
 		ex(p->opr.op[op_counter]);
-	    fprintf(assembly_file,"\tsystem\n");
+	    fprintf(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
 	    break;
 	  }
         default:

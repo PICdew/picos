@@ -11,10 +11,14 @@
 #define PICLANG_STACK_SIZE 0x10
 #endif
 
+// bitmap masks
+#define PICLANG_BIT_SYSCALL 0x1
+
 enum PICLANG_STATUS{PICLANG_SUCCESS = 0,PICLANG_UNKNOWN_ERROR,PICLANG_NO_SUCH_PROGRAM,PICLANG_SUSPENDED,PICLANG_UNKNOWN_COMMAND,PICLANG_PC_OVERFLOW,PICLANG_EEPROM_OVERFLOW,PICLANG_STACK_OVERFLOW};
 
 typedef struct{
   char size;// size of program
+  char bitmap;// flags for the OS, i.e. uses system call arguments?
   char num_pages;
   char pc;// program counter
   char status;// Error status
@@ -22,7 +26,7 @@ typedef struct{
   char stack[PICLANG_STACK_SIZE];
   char stack_head;
 }PCB;
-#define PCB_SIZE 6 + PICLANG_STACK_SIZE
+#define PCB_SIZE (sizeof(PCB) - 1);
 
 extern PCB curr_process;
 volatile char PICLANG_quantum;
@@ -50,7 +54,7 @@ enum PICLANG_COMMANDS
   {
     PICLANG_ADD=0, PICLANG_SUB, PICLANG_MULT,PICLANG_PUSHL,PICLANG_PUSH,
     PICLANG_POP, PICLANG_INPUT,PICLANG_PRINT,PICLANG_PRINTL,
-    PICLANG_SYSTEM,PICLANG_ARG_SOURCE,PICLANG_NUM_COMMANDS
+    PICLANG_SYSTEM,PICLANG_NUM_COMMANDS
   };
 
 #endif //PICLANG_H
