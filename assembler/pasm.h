@@ -19,10 +19,10 @@ typedef struct {
     struct nodeTypeTag *op[1];  /* operands (expandable) */
 } oprNodeType;
 
-/* system calls 
+/* system calls */
 typedef struct{
-  char name[FILENAME_MAX];  
-} sysNodeType;*/
+  char string[FILENAME_MAX];  
+} strNodeType;
 
 typedef struct nodeTypeTag {
     nodeEnum type;              /* type of node */
@@ -33,6 +33,8 @@ typedef struct nodeTypeTag {
         conNodeType con;        /* constants */
         idNodeType id;          /* identifiers */
         oprNodeType opr;        /* operators */
+      strNodeType str;
+
     };
 } nodeType;
 

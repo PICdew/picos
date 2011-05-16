@@ -1,5 +1,9 @@
 %{
 #include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+#include <limits.h>
+
 #include "pasm.h"
 #include "pasm_yacc.h"
 void yyerror(char *);
@@ -11,7 +15,7 @@ unsigned char do_crc(const char *str)
     return 0;
 
   crc = 0;
-  while(*str != NULL)
+  while(*str != 0)
     {
       calculate_crc(&crc,*str);
       str++;
@@ -30,10 +34,17 @@ unsigned char do_crc(const char *str)
 <C_COMMENT>"*/" {BEGIN(INITIAL);}
 <C_COMMENT>. {}
 
-\"[a-zA-Z][a-zA-Z0-9]*\" {
+\'[a-zA-Z][a-zA-Z0-9]*\' {
                               yylval.iValue = do_crc(yytext);
+                              return INTEGER;
+                         }
+
+\"[a-zA-Z.][a-zA-Z0-9 ]*\" {
+                              yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
+                              strncpy(yylval.nPtr->str.string,&yytext[1],strlen(yytext)-2);
                               return STRING;
                          }
+
 
 [a-z]       { 
                 yylval.sIndex = *yytext - 'a';
@@ -50,7 +61,7 @@ unsigned char do_crc(const char *str)
                 return INTEGER;
             }
 
-[-,()<>=+*/;{}.] {
+[-,()<>=+*/;{}\[\]] {
                 return *yytext;
              }
 
@@ -64,6 +75,8 @@ unsigned char do_crc(const char *str)
 "print"         return PRINT;
 "input"         return INPUT;
 "system"        return SYSTEM;
+"sprint"        return SPRINT;
+"cr"            return CR;
 "quit"          return EXIT;
 
 [ \t\n]+        ;       /* ignore whitespace */

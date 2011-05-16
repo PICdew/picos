@@ -28,7 +28,8 @@ int yylex(void);
  FILE *assembly_file;
 void yyerror(char *s);
  extern char *yytext;
-unsigned char do_crc(const char *str);
+ extern char *last_string;
+ nodeType* store_string(const char *);
 int sym[26];                    /* symbol table */
 %}
 
@@ -38,9 +39,9 @@ int sym[26];                    /* symbol table */
     nodeType *nPtr;             /* node pointer */
 };
 
-%token <iValue> INTEGER STRING
+%token <iValue> INTEGER 
 %token <sIndex> VARIABLE
-%token WHILE IF PRINT PRINTL EXIT INPUT SYSTEM 
+%token WHILE IF PRINT PRINTL EXIT INPUT SYSTEM SPRINT STRING CR
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -49,7 +50,7 @@ int sym[26];                    /* symbol table */
 %left '*' '/'
 %nonassoc UMINUS
 
-%type <nPtr> stmt expr stmt_list
+%type <nPtr> stmt expr stmt_list STRING
 
 %%
 
@@ -66,9 +67,10 @@ stmt:
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
         | SYSTEM '(' expr ',' expr ')' ';'{ $$ = opr(SYSTEM,2,$3,$5);}
         | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
+        | SPRINT '(' expr ')' ';' {$$ = opr(SPRINT,1,$3);}
         | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
-        | PRINT expr ';'                 { $$ = opr(PRINT, 1, $2); }
+        | PRINT '(' expr ')' ';'                 { $$ = opr(PRINT, 1, $3); }
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
@@ -84,7 +86,8 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = con($1); }
-        | STRING                { $$ = con($1); }
+        | STRING        {$$ = con(0);store_string($1->str.string);}
+        | CR {$$ = store_string("\n");}
         | VARIABLE              { $$ = id($1); }
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
@@ -309,6 +312,25 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory, 
   size->val = CountCode(size);
   return size;
 }
+
+nodeType* store_string(const char *str)
+{
+  nodeType *retval = NULL;
+  if(str == NULL)
+    return;
+
+  
+  while(*str  != 0)
+    {
+      if(*str == '\n')
+	printf("\tCR\n");
+      else
+	printf("\tstore\t%c\n",*str);
+      insert_code(*str);
+      str++;
+    }
+}
+
 
 static struct option long_options[] =
              {

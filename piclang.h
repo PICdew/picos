@@ -44,7 +44,7 @@ extern char PICLANG_load(char nth);
  * Saves the program to EEPROM
  * Returns status of program at save.
  */
-extern char PICLANG_save();
+extern char PICLANG_save(char status);
 
 extern void PICLANG_next();
 
@@ -54,7 +54,7 @@ enum PICLANG_COMMANDS
   {
     PICLANG_ADD=0, PICLANG_SUB, PICLANG_MULT,PICLANG_PUSHL,PICLANG_PUSH,
     PICLANG_POP, PICLANG_INPUT,PICLANG_PRINT,PICLANG_PRINTL,
-    PICLANG_SYSTEM,PICLANG_NUM_COMMANDS
+    PICLANG_SPRINT,PICLANG_SYSTEM,PICLANG_NUM_COMMANDS
   };
 
 #endif //PICLANG_H

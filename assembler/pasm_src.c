@@ -101,6 +101,11 @@ int ex(nodeType *p) {
 	    fprintf(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
 	    break;
 	  }
+	case SPRINT:
+	  ex(p->opr.op[0]);
+	  fprintf(assembly_file,"\tsprint\n");
+	  insert_code(PICLANG_SPRINT);
+	  break;
         default:
             ex(p->opr.op[0]);
             ex(p->opr.op[1]);

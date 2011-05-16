@@ -52,7 +52,7 @@ char PICLANG_load(char nth)
 
 }
 
-char PICLANG_save()
+char PICLANG_save(char saved_status)
 {
   char pos,status;
   if(curr_process.size == 0)
@@ -72,8 +72,7 @@ char PICLANG_save()
 	break;
     }
   pos--;// skip start_address
-  if(curr_process.status == PICLANG_SUCCESS)
-    curr_process.status = PICLANG_SUSPENDED;
+  curr_process.status = saved_status;
   status = curr_process.status;
   eeprom_write(pos,curr_process.status);
   pos--;
@@ -137,7 +136,7 @@ void PICLANG_next()
 
   if(PICLANG_quantum == 0)
     {
-      PICLANG_save();
+      PICLANG_save(PICLANG_SUSPENDED);
       return;
     }
   
@@ -151,7 +150,7 @@ void PICLANG_next()
   switch(command)
     {
     case EOP:
-      PICLANG_save();
+      PICLANG_save(SUCCESS);
       return;
     case PICLANG_ADD:
       PICLANG_pushl(PICLANG_pop() + PICLANG_pop());
@@ -188,6 +187,16 @@ void PICLANG_next()
     case PICLANG_PRINTL:
       IO_putd(PICLANG_pop());
       break;
+    case PICLANG_SPRINT:
+      {
+	char ch = PICLANG_get_next_byte();
+	while(ch != 0)
+	  {
+	    putch(ch);
+	    ch = PICLANG_get_next_byte();
+	  }
+	break;
+      }
     case PICLANG_SYSTEM:
       PICLANG_system = PICLANG_pop();
       PICLANG_quantum = 0;// will suspend for system call
