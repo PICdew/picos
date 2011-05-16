@@ -4,6 +4,7 @@
 #include "page.h"
 #include "error.h"
 #include "piclang.h"
+#include "arg.h"
 #include "io.h"
 #include "utils.h"
 
@@ -187,6 +188,12 @@ void PICLANG_next()
       PICLANG_system = PICLANG_pop();
       PICLANG_quantum = 0;// will suspend for system call
       break;
+	case PICLANG_ARG_SOURCE:
+	  if(ARG_source == ARG_PICLANG)
+	     ARG_source = ARG_SHELL;
+	  else
+		 ARG_source = ARG_PICLANG;
+	  break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       return;
