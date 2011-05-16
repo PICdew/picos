@@ -1,8 +1,10 @@
 #define ARG_SIZE 17
 
+enum {ARG_SHELL,ARG_PICLANG};
 
 char ARG_buffer[ARG_SIZE];
 char ARG_next;// index into ARG_buffer 
+char ARG_source;// source of arguments, i.e. shell or piclang
 #define ARG_EOA() (ARG_next >= ARG_SIZE)
 
 /**

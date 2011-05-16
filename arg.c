@@ -1,5 +1,6 @@
 #include "arg.h"
 #include "error.h"
+#include "piclang.h"
 
 void ARG_clear()
 {
@@ -19,6 +20,9 @@ void ARG_putch(char ch)
 char ARG_next_int()
 {
   char retval = -1;
+  if(ARG_source == ARG_PICLANG)
+	return PICLANG_pop();
+
   if(ARG_next >= ARG_SIZE)
     {
       error_code = ARG_BUFFER_OVERFLOW;
