@@ -1,6 +1,7 @@
 #include <htc.h>
 #include <stdio.h>
 
+#include "defines.h"
 #include "page.h"
 #include "error.h"
 #include "piclang.h"
@@ -182,19 +183,28 @@ void PICLANG_next()
       {
 	IO_puts("%s");
 	putch(PICLANG_pop());
+	IO_flush();
 	break;
       }
     case PICLANG_PRINTL:
       IO_putd(PICLANG_pop());
+      IO_flush();
       break;
     case PICLANG_SPRINT:
       {
 	char ch = PICLANG_get_next_byte();
+	static bit should_flush;
+	if(ch == 0)
+	  should_flush = FALSE;
+	else
+	  should_flush = TRUE;
 	while(ch != 0)
 	  {
 	    putch(ch);
 	    ch = PICLANG_get_next_byte();
 	  }
+	if(should_flush == TRUE)
+	  IO_flush();
 	break;
       }
     case PICLANG_SYSTEM:
