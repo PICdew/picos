@@ -53,6 +53,41 @@ void usart_init()
   TXSTA = (SPEED|NINE_BITS|0x20);
 }
 
+void usart_9send(char addr)
+{
+  TXSTAbits.TX9 = 1;
+  TXSTAbits.TX9D = 1;
+  usart_putch(addr);
+  TXSTAbits.TX9 = 0;
+  TXSTAbits.TX9D = 0;
+}
+
+char usart_9recv(char addr)
+{
+  char recv;
+  RCSTAbits.ADDEN = 1;
+  RCSTAbits.RX9 = 1;
+  while(TRUE)
+    {
+      recv = usart_getch();
+      if(addr == USART_SLAVE || addr == recv)
+	{
+	  RCSTAbits.ADDEN = 0;
+	  RCSTAbits.RX9 = 0;
+	  if(addr == USART_SLAVE)
+	    return recv;
+	  addr = USART_SLAVE;
+	}
+    }
+  return recv;
+}
+
+void usart_9ack(char addr)
+{
+      usart_9send(addr);
+      usart_putch(USART_ACK);
+}
+
 void usart2eeprom(char addr)
 {
   char last;

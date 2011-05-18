@@ -1,12 +1,4 @@
-#ifndef button_bits
-#define button_bits PORTAbits
-#endif
-#ifndef button_port
-#define button_port PORTA
-#endif
-#ifndef button_phase
-#define button_phase 3
-#endif
+
 #ifndef button_debounce_time 
 #define button_debounce_time 10 //ms
 #endif
@@ -14,10 +6,9 @@
 enum{OUT_LCD,OUT_USART,OUT_LCD_USART};
 enum{IN_USART,IN_BTNS,IN_USART_BTNS};
 
-enum{BTN1=0,BTN2,BTN3};
-#define BTN_RTN 4 // masks for &'ing button bits
-#define BTN_DIT 1
-#define BTN_DAT 2
+enum{IO_CMD_LCD=1,IO_CMD_LCD_CLEAR,IO_CMD_SD_READ};
+#define IO_CMD_BREAK1 0xde
+#define IO_CMD_BREAK2 0xad
 
 extern char get_button_state();
 
@@ -31,6 +22,7 @@ extern char morse_to_char(char morse);
 extern char get_command();
 
 extern void clear_output();
+extern void putch(char);
 
 extern void mute_sound();
 extern void tone_440();
@@ -39,3 +31,4 @@ extern void morse_ditdat_sound(char dat_not_dit);
 
 void IO_puts(const char *str);
 void IO_putd(char d);
+extern void IO_flush();

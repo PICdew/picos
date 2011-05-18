@@ -20,6 +20,9 @@
 #define SPEED 0
 #endif
 
+#define USART_ACK 0x6
+#define USART_SLAVE 0
+
 #define USART_have_incoming() RCIF
 #define USART_DEFAULT_TIMEOUT 128;
 volatile char USART_timeout;
@@ -30,6 +33,9 @@ extern void usart_putch(unsigned char);
 extern void usart_puts(const char *str);
 extern char usart_getch(void);
 extern char usart_getche(void);
+void usart_9send(char addr);
+void usart_9ack(char addr);
+char usart_9recv(char addr);
 
 /**
  * Continuously streams usart to eeprom

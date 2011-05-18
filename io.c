@@ -8,21 +8,6 @@
 #include "io.h"
 #include "utils.h"
 
-void putch(char c)
-{ 
-  switch(outdev)
-    {
-    case OUT_LCD_USART:
-      lcd_putch(c);
-    case OUT_USART:
-      usart_putch(c);
-      break;
-    case OUT_LCD:default:
-      lcd_putch(c); 
-      break;
-    }
-}
-
 void IO_putd(char d)
 {
   char hex_val[2];
@@ -42,18 +27,6 @@ void IO_puts(const char *str)
     }
 }
 
-void clear_output()
-{
-  switch(outdev)
-    {
-    case OUT_LCD:case OUT_LCD_USART:
-      lcd_clear();
-      break;
-    case OUT_USART:
-      break;
-    }
-}
-
 char get_button_state()
 {
   char retval = ((button_port & 0b111000) >> button_phase);
@@ -61,8 +34,6 @@ char get_button_state()
   retval &= ((button_port & 0b111000) >> button_phase);
   return ~retval & 7;
 }
-
-
 
 void morse_ditdat_sound(char dat_not_dit)
 {
