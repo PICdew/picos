@@ -16,6 +16,7 @@
 #define KERNEL_MAJOR_VERSION 1
 #define KERNEL_MINOR_VERSION 0
 #define KERNEL_REVISION 0
+#define KERNEL_ID_TAG 0
 
 #endif
 
