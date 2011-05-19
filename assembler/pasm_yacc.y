@@ -67,7 +67,7 @@ stmt:
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
         | SYSTEM '(' expr ',' expr ')' ';'{ $$ = opr(SYSTEM,2,$3,$5);}
         | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
-        | SPRINT '(' expr ')' ';' {$$ = opr(SPRINT,1,$3);}
+        | SPRINT '(' STRING ')' ';' {$$ = opr(SPRINT,1,$3);}
         | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
@@ -87,8 +87,6 @@ stmt_list:
 
 expr:
           INTEGER               { $$ = con($1); }
-        | STRING        {$$ = store_string($1->str.string);}
-        | CR {$$ = store_string("\n");}
         | VARIABLE              { $$ = id($1); }
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
@@ -181,7 +179,7 @@ void yyerror(char *s) {
 
 #define COMPILE_MAX_WIDTH 8//max width
 
-void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignment_check, unsigned char *piclang_bitmap,  int *next_memory_slot)
+void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int *next_memory_slot)
 {
   int clean_skip_assignment_check = skip_assignment_check;
   
@@ -189,19 +187,7 @@ void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignmen
     return;
     switch(code->val)
     {
-    case PICLANG_PUSH:case PICLANG_POP:case PICLANG_INPUT:
-      if(!skip_assignment_check && code->next != NULL && (code->next->val <= 'z' - 'a'))
-	{
-	  if(variable_map[(size_t)code->next->val] == -1)
-	    {
-	      variable_map[(size_t)code->next->val] = *next_memory_slot;
-	      *next_memory_slot += 1;
-	    }
-	  code->next->val = variable_map[(size_t)code->next->val];
-	  skip_assignment_check = TRUE;
-	}
-      break;
-    case PICLANG_SYSTEM:
+     case PICLANG_SYSTEM:
       if(piclang_bitmap != NULL)
 	*piclang_bitmap |= PICLANG_BIT_SYSCALL;
       break;
@@ -209,7 +195,7 @@ void FirstPass(struct compiled_code* code, int *variable_map, int skip_assignmen
   if(clean_skip_assignment_check)
     skip_assignment_check = FALSE;
   
-  FirstPass(code->next,variable_map,skip_assignment_check,piclang_bitmap,next_memory_slot);
+  FirstPass(code->next,skip_assignment_check,piclang_bitmap,next_memory_slot);
 }
 
 
@@ -345,27 +331,28 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 
 nodeType* store_string(const char *str)
 {
-  nodeType *retval = NULL;
+  return NULL;
+  /*nodeType *retval = NULL;
+  size_t i = 0;
   if(str == NULL)
     return;
+
+  i = 0;
+  for(;i<num_strings;i++)
+    {
+      if(
+    }
 
   retval = (nodeType*)malloc(sizeof(nodeType));
   strncpy(retval->str.string,str,strlen(str)+1);
   retval->type = typeStr;
 
+  if(string_list == NULL)
+      string_list = realloc(string_list,++num_strings);
+  string_list[num_strings - 1] = strdup(str);
+
   return retval;
-  
-  /*
-    while(*str  != 0)
-    {
-      if(*str == '\n')
-	printf("\tCR\n");
-      else
-	printf("\tstore\t%c\n",*str);
-      insert_code(*str);
-      str++;
-      }
-      /**/
+  */
 }
 
 
@@ -398,8 +385,6 @@ void print_help()
 
 int main(int argc, char **argv) 
 {
-  int variable_map['z'-'a'+1];
-  int total_memory = 0;
   char hex_buffer[45];
   FILE *hex_file = stdout, *eeprom_file = stdout;
   char opt;
@@ -408,6 +393,10 @@ int main(int argc, char **argv)
 
   assembly_file = stdout;
   the_code_end = the_code = NULL;
+  the_strings = the_strings = NULL;
+  string_list = NULL;num_strings = 0;
+  variable_list = NULL;num_variables = 0;
+
   while(TRUE)
     {    
       opt = getopt_long(argc,argv,"a:e:ho:",long_options,&opt_index);
@@ -453,9 +442,8 @@ int main(int argc, char **argv)
   yyparse();
   insert_code(EOP);
 
-  memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
-  FirstPass(the_code,variable_map,FALSE,&piclang_bitmap,&total_memory);
-  the_code = MakePCB(the_code,the_strings,total_memory,piclang_bitmap);
+  FirstPass(the_code,FALSE,&piclang_bitmap,num_variables);
+  the_code = MakePCB(the_code,the_strings,num_variables,piclang_bitmap);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
 
   if(hex_file == stdout)

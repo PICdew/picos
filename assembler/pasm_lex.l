@@ -42,6 +42,7 @@ unsigned char do_crc(const char *str)
 \"[a-zA-Z.][a-zA-Z0-9 ]*\" {
                               yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
                               strncpy(yylval.nPtr->str.string,&yytext[1],strlen(yytext)-2);
+                              yylval.nPtr->type = typeStr;
                               return STRING;
                          }
 

@@ -867,12 +867,13 @@ YY_RULE_SETUP
 {
                               yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
                               strncpy(yylval.nPtr->str.string,&yytext[1],strlen(yytext)-2);
+                              yylval.nPtr->type = typeStr;
                               return STRING;
                          }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 48 "pasm_lex.l"
+#line 49 "pasm_lex.l"
 {
            yylval.iValue = (int)yytext[1];
            return INTEGER;
@@ -880,7 +881,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 53 "pasm_lex.l"
+#line 54 "pasm_lex.l"
 { 
                  sscanf(yytext,"0x%x",&yylval.iValue);
                   return INTEGER;
@@ -888,7 +889,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 58 "pasm_lex.l"
+#line 59 "pasm_lex.l"
 { 
                  sscanf(yytext,"0x%o",&yylval.iValue);
                   return INTEGER;
@@ -896,7 +897,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 64 "pasm_lex.l"
+#line 65 "pasm_lex.l"
 { 
                 yylval.sIndex = *yytext - 'a';
                 return VARIABLE;
@@ -904,7 +905,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 69 "pasm_lex.l"
+#line 70 "pasm_lex.l"
 {
                 yylval.iValue = atoi(yytext);
                 return INTEGER;
@@ -912,7 +913,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 74 "pasm_lex.l"
+#line 75 "pasm_lex.l"
 {
                 yylval.iValue = atoi(yytext);
                 return INTEGER;
@@ -920,98 +921,98 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 79 "pasm_lex.l"
+#line 80 "pasm_lex.l"
 {
                 return *yytext;
              }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 83 "pasm_lex.l"
+#line 84 "pasm_lex.l"
 return GE;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 84 "pasm_lex.l"
+#line 85 "pasm_lex.l"
 return LE;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 85 "pasm_lex.l"
+#line 86 "pasm_lex.l"
 return EQ;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 86 "pasm_lex.l"
+#line 87 "pasm_lex.l"
 return NE;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 87 "pasm_lex.l"
+#line 88 "pasm_lex.l"
 return WHILE;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 88 "pasm_lex.l"
+#line 89 "pasm_lex.l"
 return IF;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 89 "pasm_lex.l"
+#line 90 "pasm_lex.l"
 return ELSE;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 90 "pasm_lex.l"
+#line 91 "pasm_lex.l"
 return PUTD;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 91 "pasm_lex.l"
+#line 92 "pasm_lex.l"
 return PUTCH;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 92 "pasm_lex.l"
+#line 93 "pasm_lex.l"
 return INPUT;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 93 "pasm_lex.l"
+#line 94 "pasm_lex.l"
 return SYSTEM;
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 94 "pasm_lex.l"
+#line 95 "pasm_lex.l"
 return SPRINT;
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 95 "pasm_lex.l"
+#line 96 "pasm_lex.l"
 return CR;
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 96 "pasm_lex.l"
+#line 97 "pasm_lex.l"
 return EXIT;
 	YY_BREAK
 case 27:
 /* rule 27 can match eol */
 YY_RULE_SETUP
-#line 98 "pasm_lex.l"
+#line 99 "pasm_lex.l"
 ;       /* ignore whitespace */
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 100 "pasm_lex.l"
+#line 101 "pasm_lex.l"
 yyerror("Unknown character");
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 101 "pasm_lex.l"
+#line 102 "pasm_lex.l"
 ECHO;
 	YY_BREAK
-#line 1015 "lex.yy.c"
+#line 1016 "lex.yy.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(C_COMMENT):
 	yyterminate();
@@ -2010,7 +2011,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 101 "pasm_lex.l"
+#line 102 "pasm_lex.l"
 
 
 int yywrap(void) {

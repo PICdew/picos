@@ -1,11 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "pasm.h"
 #include "pasm_yacc.h"
 #include "../piclang.h"
 
 static int lbl;
 extern FILE *assembly_file;
+void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
 
 void insert_code(unsigned char val)
 {
@@ -41,13 +43,64 @@ void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code**
   
 }
 
+int resolve_variable(const int id)
+{
+  int i;
+  if(variable_list == NULL)
+    {
+      variable_list = (int*)malloc(sizeof(int));
+      variable_list[0] = id;
+      num_variables = 1;
+      return 0;
+    }
+  
+  i = 0;
+  for(;i<num_variables;i++)
+    if(variable_list[i] == id)
+      return i;
+  
+  variable_list = (int*)realloc(variable_list,(num_variables+1)*sizeof(int));
+  variable_list[num_variables++] = id;
+  return num_variables - 1;
+  
+}
+
+int resolve_string(const char *str, int *is_new)
+{
+  size_t i,retval;
+  if(string_list == NULL)
+    {
+      string_list = (char**)malloc(sizeof(char*));
+      string_list[0] = strdup(str);
+      num_strings = 1;
+      if(is_new != NULL)
+	*is_new = TRUE;
+      return 0;
+    }
+  
+  if(is_new != NULL)
+    *is_new = FALSE;
+  i = 0;
+  retval = 0;
+  for(;i<num_strings;i++)
+    if(strcmp(string_list[i],str) == 0)
+      return retval;
+    else
+      retval += strlen(string_list[i]) + 1;
+  
+  if(is_new != NULL)
+    *is_new = TRUE;
+  string_list = (char**)realloc(string_list,(num_strings+1)*sizeof(char*));
+  string_list[num_strings++] = strdup(str);
+  return retval;
+}
 
 int ex(nodeType *p) {
     int lbl1, lbl2;
 
     if (!p) return 0;
     switch(p->type) {
-    case typeCon: case STRING:
+    case typeCon:
       fprintf(assembly_file,"\tpushl\t%d\n", p->con.value); 
       insert_code(PICLANG_PUSHL);
       insert_code(p->con.value);
@@ -55,18 +108,29 @@ int ex(nodeType *p) {
     case typeId:        
       fprintf(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
       insert_code(PICLANG_PUSH);
-      insert_code(p->id.i);
+      insert_code(resolve_variable(p->id.i));
       break;
     case typeStr:
       {
 	char *pStr = p->str.string;
-	while(pStr != NULL)
+	if(pStr != NULL)
 	  {
-	    fprintf(assembly_file,"\tstore\t%c\n", *pStr);
-	    insert_string(*pStr);
-	    if(*pStr == 0)
-	      break;
-	    pStr++;
+	    nodeType str_pointer;
+	    int is_new = TRUE;
+	    str_pointer.con.value = resolve_string(pStr,&is_new);
+	    str_pointer.type = typeCon;
+	    if(is_new)
+	      {
+		fprintf(assembly_file,"\tstore\t\"%s\"\n", pStr);
+		while(pStr != NULL)
+		  {
+		    insert_string(*pStr);
+		    if(*pStr == 0)
+		      break;
+		    pStr++;
+		  }
+	      }
+	    ex(&str_pointer);
 	  }
 	break;
       }
@@ -107,7 +171,7 @@ int ex(nodeType *p) {
             break;
         case '=':       
             ex(p->opr.op[1]);
-            fprintf(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(p->opr.op[0]->id.i);
+            fprintf(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(resolve_variable(p->opr.op[0]->id.i));
             break;
         case UMINUS:    
             ex(p->opr.op[0]);
@@ -117,7 +181,7 @@ int ex(nodeType *p) {
 	  //ex(p->opr.op[0]);
 	  fprintf(assembly_file,"\tpushl\t%c\n",p->opr.op[0]->id.i + 'a');
 	  insert_code(PICLANG_PUSHL);
-	  insert_code(p->opr.op[0]->id.i);
+	  insert_code(resolve_variable(p->opr.op[0]->id.i));
 	  fprintf(assembly_file,"\tinput\n");
 	  insert_code( PICLANG_INPUT);
 	  break;
@@ -130,9 +194,9 @@ int ex(nodeType *p) {
 	    break;
 	  }
 	case SPRINT:
+	  ex(p->opr.op[0]);
 	  fprintf(assembly_file,"\tsprint\n");
 	  insert_code(PICLANG_SPRINT);
-	  ex(p->opr.op[0]);
 	  break;
         default:
             ex(p->opr.op[0]);

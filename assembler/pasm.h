@@ -51,4 +51,17 @@ struct compiled_code *the_code;
 struct compiled_code *the_code_end;
 struct compiled_code *the_strings;
 struct compiled_code *the_strings_end;
+char **string_list;
+size_t num_strings;
+int *variable_list;
+size_t num_variables;
 extern void insert_code(unsigned char val);
+
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+
