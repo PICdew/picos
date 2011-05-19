@@ -49,4 +49,6 @@ struct compiled_code
 
 struct compiled_code *the_code;
 struct compiled_code *the_code_end;
+struct compiled_code *the_strings;
+struct compiled_code *the_strings_end;
 extern void insert_code(unsigned char val);

@@ -280,9 +280,11 @@ size_t CountCode(struct compiled_code *the_code)
   return 1 + CountCode(the_code->next);
 }
 
-struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory, unsigned char piclang_bitmap)
+struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
 {
   struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *offset = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  offset->val = 0;
   struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   bitmap->val = piclang_bitmap;
   struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -293,6 +295,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory, 
   status->val = PICLANG_SUCCESS;
   struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   start_address->val = PCB_SIZE;
+  struct compiled_code *string_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   stack->val = 0xff;
   struct compiled_code *end_of_stack = stack;
@@ -307,15 +310,36 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, int total_memory, 
   end_of_stack->next->val = 0;
   end_of_stack = end_of_stack->next;
   size->next = bitmap;
-  bitmap->next = num_pages;
+  bitmap->next = offset;
+  offset->next = num_pages;
   num_pages->next = pc;
   pc->next = status;
   status->next = start_address;
-  start_address->next = stack;
-  
+  start_address->next = string_address;
+  string_address->next = stack;
+  end_of_stack->next = NULL;// temporary to count PCB's size
+  start_address->val = CountCode(size);
+
   end_of_stack->next = the_code;
+  string_address->val = CountCode(size);
+
+  if(the_code == NULL)
+    {
+      fprintf(stderr,"No code to compile!\n");
+      exit -1;
+    }
+  while(the_code->next != NULL)
+    the_code = the_code->next;
+  if(the_strings != NULL)
+    the_code->next = the_strings;
+  else
+    {
+      the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      the_code->next->val = 0;
+    }
   
-  size->val = CountCode(size);
+  size->val =  CountCode(size);
+    
   return size;
 }
 
@@ -431,7 +455,7 @@ int main(int argc, char **argv)
 
   memset(variable_map,-1,('z'-'a'+1)*sizeof(int));
   FirstPass(the_code,variable_map,FALSE,&piclang_bitmap,&total_memory);
-  the_code = MakePCB(the_code,total_memory,piclang_bitmap);
+  the_code = MakePCB(the_code,the_strings,total_memory,piclang_bitmap);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
 
   if(hex_file == stdout)

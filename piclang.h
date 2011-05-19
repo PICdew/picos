@@ -18,15 +18,17 @@ enum PICLANG_STATUS{PICLANG_SUCCESS = 0,PICLANG_UNKNOWN_ERROR,PICLANG_NO_SUCH_PR
 
 typedef struct{
   char size;// size of program
+  char offset;// offset used to find sections of binary
   char bitmap;// flags for the OS, i.e. uses system call arguments?
   char num_pages;
   char pc;// program counter
   char status;// Error status
-  char start_address;// First bit off eeprom used for program (after PCB)
+  char start_address;// First byte of eeprom used for program (after PCB)
+  char string_address;// First byte of string data (null terminated)
   char stack[PICLANG_STACK_SIZE];
   char stack_head;
 }PCB;
-#define PCB_SIZE sizeof(PCB);
+#define PCB_SIZE sizeof(PCB)
 
 extern PCB curr_process;
 volatile char PICLANG_quantum;

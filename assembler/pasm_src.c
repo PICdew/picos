@@ -9,20 +9,35 @@ extern FILE *assembly_file;
 
 void insert_code(unsigned char val)
 {
-  if(the_code == NULL)
+  insert_compiled_code(&the_code,&the_code_end,val);
+}
+
+void insert_string(unsigned char val)
+{
+  insert_compiled_code(&the_strings,&the_strings_end,val);
+}
+
+
+void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val)
+{
+  struct compiled_code *list = *ptrlist;
+  struct compiled_code *list_end = *ptrlist_end;
+  if(list == NULL)
     {
-      the_code = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-      the_code_end = the_code;
-      the_code->val = val;
-      the_code->label = 0;
+      *ptrlist = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      *ptrlist_end = *ptrlist;
+      list = *ptrlist;
+      list->val = val;
+      list->label = 0;
+      list->next = NULL;
       return;
     }
   
-  the_code_end->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  the_code_end->next->label = the_code_end->label + 1;
-  the_code_end = the_code_end->next;
-  the_code_end->next = NULL;
-  the_code_end->val = val;
+  list_end->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  list_end->next->label = list_end->label + 1;
+  *ptrlist_end = list_end->next;
+  (*ptrlist_end)->next = NULL;
+  (*ptrlist_end)->val = val;
   
 }
 
@@ -48,7 +63,7 @@ int ex(nodeType *p) {
 	while(pStr != NULL)
 	  {
 	    fprintf(assembly_file,"\tstore\t%c\n", *pStr);
-	    insert_code(*pStr);
+	    insert_string(*pStr);
 	    if(*pStr == 0)
 	      break;
 	    pStr++;

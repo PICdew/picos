@@ -9,6 +9,8 @@
 #include "io.h"
 #include "utils.h"
 
+#define PICLANG_error(code)  curr_process.status = code
+
 char PICLANG_load(char nth)
 {
   char size = 0,pos = 0,counter = 0;
@@ -25,12 +27,15 @@ char PICLANG_load(char nth)
   if(size == 0)
     return PICLANG_NO_SUCH_PROGRAM;
 
+  curr_process.offset = pos;// offset must equal the address of the first byte.
   curr_process.size = size;
+  eeprom_write(++pos,curr_process.offset);// update offset
   curr_process.bitmap = eeprom_read(++pos);
   curr_process.num_pages = eeprom_read(++pos);
   curr_process.pc = eeprom_read(++pos);
   curr_process.status = eeprom_read(++pos);
   curr_process.start_address = eeprom_read(++pos);
+  curr_process.string_address = eeprom_read(++pos);
 
   counter = 0;
   for(;counter<PICLANG_STACK_SIZE;counter++)
@@ -90,18 +95,25 @@ char PICLANG_save(char saved_status)
 void PICLANG_init()
 {
   curr_process.size = 0;
+  curr_process.offset = 0;
   curr_process.pc = 0;
   curr_process.status = PICLANG_SUSPENDED;
   curr_process.start_address = 0;
+  curr_process.string_address = 0;
   curr_process.stack_head = 0;
   PICLANG_quantum = 0;
 }
 
 char PICLANG_get_next_byte(){
-  return eeprom_read((curr_process.pc++) + curr_process.start_address);
+  char next = curr_process.pc++;
+  if((next + PCB_SIZE) > curr_process.size)
+    {
+      PICLANG_error(PICLANG_PC_OVERFLOW);
+      return EOP;
+    }
+  next += curr_process.start_address + curr_process.offset;
+  return eeprom_read(next);
 }
-
-#define PICLANG_error(code)  curr_process.status = code
 
 void PICLANG_pushl(char val)
 {
@@ -124,11 +136,6 @@ char PICLANG_pop()
   return curr_process.stack[curr_process.stack_head--];
 }
 
-char* PAGE_resolve(char pageloc)
-{
-  return 0;
-}
-
 void PICLANG_next()
 {
   char command;
@@ -141,12 +148,6 @@ void PICLANG_next()
       return;
     }
   
-  if(curr_process.size < curr_process.pc)
-    {
-      PICLANG_error(PICLANG_PC_OVERFLOW);
-      return;
-    }
-
   command = PICLANG_get_next_byte();
   switch(command)
     {
@@ -167,16 +168,17 @@ void PICLANG_next()
       break;
     case PICLANG_PUSH:
       {
-	char *addr = PAGE_resolve(PICLANG_get_next_byte());
-	if(addr != 0)
-	  PICLANG_pushl(*addr);
+	char val = PAGE_get(PICLANG_get_next_byte(),curr_process.offset);
+	if(error_code != SUCCESS)
+	  PICLANG_error(error_code);
+	else
+	  PICLANG_pushl(val);
 	break;
       }
     case PICLANG_POP:
       {
-	char *addr = PAGE_resolve(PICLANG_get_next_byte());
-	if(addr != 0)
-	  *addr = PICLANG_pop();
+	char addr = PICLANG_get_next_byte();
+	PAGE_set(addr,PICLANG_pop(),curr_process.offset);
 	break;
       }
     case PICLANG_PRINT:
@@ -191,8 +193,10 @@ void PICLANG_next()
       break;
     case PICLANG_SPRINT:
       {
-	char ch = PICLANG_get_next_byte();
+	char addr = PICLANG_pop(),ch;
 	static bit should_flush;
+	addr += curr_process.offset + curr_process.string_address;
+	ch = eeprom_read(addr++);
 	if(ch == 0)
 	  should_flush = FALSE;
 	else
@@ -200,7 +204,7 @@ void PICLANG_next()
 	while(ch != 0)
 	  {
 	    putch(ch);
-	    ch = PICLANG_get_next_byte();
+	    ch = eeprom_read(addr++);
 	  }
 	if(should_flush == TRUE)
 	  IO_flush();
