@@ -20,7 +20,7 @@ char PICLANG_load(char nth)
       size = eeprom_read(pos);
       if(counter == nth)
 	break;
-      pos = pos + size + PCB_SIZE;// move to beginning of next PCB
+      pos = pos + size;// move to beginning of next PCB
       counter++;
     }
 
