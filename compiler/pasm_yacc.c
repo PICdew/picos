@@ -2227,6 +2227,11 @@ int main(int argc, char **argv)
       extern FILE *yyin;
       if(input != NULL)
 	yyin = input;
+      if(assembly_file == NULL)
+	{
+	  printf("Assembly:\n");
+	  assembly_file = stdout;
+	}
     }
 
   
