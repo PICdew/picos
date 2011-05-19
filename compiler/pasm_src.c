@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "pasm.h"
 #include "pasm_yacc.h"
 #include "../piclang.h"
@@ -19,6 +20,17 @@ void insert_string(unsigned char val)
   insert_compiled_code(&the_strings,&the_strings_end,val);
 }
 
+int write_assembly(FILE *stream, const char *format, ...)
+{
+  va_list va;
+  int retval;
+  if(stream == NULL)
+    return 0;
+  va_start(va,format);
+  retval = vfprintf(stream,format,va);
+  va_end(va);
+  return retval;
+}
 
 void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val)
 {
@@ -101,12 +113,12 @@ int ex(nodeType *p) {
     if (!p) return 0;
     switch(p->type) {
     case typeCon:
-      fprintf(assembly_file,"\tpushl\t%d\n", p->con.value); 
+      write_assembly(assembly_file,"\tpushl\t%d\n", p->con.value); 
       insert_code(PICLANG_PUSHL);
       insert_code(p->con.value);
       break;
     case typeId:        
-      fprintf(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
+      write_assembly(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
       insert_code(PICLANG_PUSH);
       insert_code(resolve_variable(p->id.i));
       break;
@@ -121,7 +133,7 @@ int ex(nodeType *p) {
 	    str_pointer.type = typeCon;
 	    if(is_new)
 	      {
-		fprintf(assembly_file,"\tstore\t\"%s\"\n", pStr);
+		write_assembly(assembly_file,"\tstore\t\"%s\"\n", pStr);
 		while(pStr != NULL)
 		  {
 		    insert_string(*pStr);
@@ -137,52 +149,52 @@ int ex(nodeType *p) {
     case typeOpr:
         switch(p->opr.oper) {
         case WHILE:
-            fprintf(assembly_file,"L%03d:\n", lbl1 = lbl++);
+            write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
             ex(p->opr.op[0]);
-            fprintf(assembly_file,"\tjz\tL%03d\n", lbl2 = lbl++);
+            write_assembly(assembly_file,"\tjz\tL%03d\n", lbl2 = lbl++);
             ex(p->opr.op[1]);
-            fprintf(assembly_file,"\tjmp\tL%03d\n", lbl1);
-            fprintf(assembly_file,"L%03d:\n", lbl2);
+            write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl1);
+            write_assembly(assembly_file,"L%03d:\n", lbl2);
             break;
         case IF:
             ex(p->opr.op[0]);
             if (p->opr.nops > 2) {
                 /* if else */
-                fprintf(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
+                write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
                 ex(p->opr.op[1]);
-                fprintf(assembly_file,"\tjmp\tL%03d\n", lbl2 = lbl++);
-                fprintf(assembly_file,"L%03d:\n", lbl1);
+                write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl2 = lbl++);
+                write_assembly(assembly_file,"L%03d:\n", lbl1);
                 ex(p->opr.op[2]);
-                fprintf(assembly_file,"L%03d:\n", lbl2);
+                write_assembly(assembly_file,"L%03d:\n", lbl2);
             } else {
                 /* if */
-                fprintf(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
+                write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
                 ex(p->opr.op[1]);
-                fprintf(assembly_file,"L%03d:\n", lbl1);
+                write_assembly(assembly_file,"L%03d:\n", lbl1);
             }
             break;
         case PUTD:     
 	  ex(p->opr.op[0]);
-           fprintf(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
+           write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
             break;
         case PUTCH:
             ex(p->opr.op[0]);
-            fprintf(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
+            write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
             break;
         case '=':       
             ex(p->opr.op[1]);
-            fprintf(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(resolve_variable(p->opr.op[0]->id.i));
+            write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(resolve_variable(p->opr.op[0]->id.i));
             break;
         case UMINUS:    
             ex(p->opr.op[0]);
-            fprintf(assembly_file,"\tneg\n");
+            write_assembly(assembly_file,"\tneg\n");
             break;
 	case INPUT:
 	  //ex(p->opr.op[0]);
-	  fprintf(assembly_file,"\tpushl\t%c\n",p->opr.op[0]->id.i + 'a');
+	  write_assembly(assembly_file,"\tpushl\t%c\n",p->opr.op[0]->id.i + 'a');
 	  insert_code(PICLANG_PUSHL);
 	  insert_code(resolve_variable(p->opr.op[0]->id.i));
-	  fprintf(assembly_file,"\tinput\n");
+	  write_assembly(assembly_file,"\tinput\n");
 	  insert_code( PICLANG_INPUT);
 	  break;
         case SYSTEM:
@@ -190,28 +202,28 @@ int ex(nodeType *p) {
 	    int op_counter = p->opr.nops - 1;
 	    for(;op_counter >= 0 ;op_counter--)
 		ex(p->opr.op[op_counter]);
-	    fprintf(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
+	    write_assembly(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
 	    break;
 	  }
 	case SPRINT:
 	  ex(p->opr.op[0]);
-	  fprintf(assembly_file,"\tsprint\n");
+	  write_assembly(assembly_file,"\tsprint\n");
 	  insert_code(PICLANG_SPRINT);
 	  break;
         default:
             ex(p->opr.op[0]);
             ex(p->opr.op[1]);
             switch(p->opr.oper) {
-            case '+':   fprintf(assembly_file,"\tadd \n"); insert_code(PICLANG_ADD);break;
-            case '-':   fprintf(assembly_file,"\tsub\n");insert_code(PICLANG_SUB); break; 
-            case '*':   fprintf(assembly_file,"\tmul\n");insert_code(PICLANG_MULT); break;
-            case '/':   fprintf(assembly_file,"\tdiv\n"); break;
-            case '<':   fprintf(assembly_file,"\tcompLT\n"); break;
-            case '>':   fprintf(assembly_file,"\tcompGT\n"); break;
-            case GE:    fprintf(assembly_file,"\tcompGE\n"); break;
-            case LE:    fprintf(assembly_file,"\tcompLE\n"); break;
-            case NE:    fprintf(assembly_file,"\tcompNE\n"); break;
-            case EQ:    fprintf(assembly_file,"\tcompEQ\n"); break;
+            case '+':   write_assembly(assembly_file,"\tadd \n"); insert_code(PICLANG_ADD);break;
+            case '-':   write_assembly(assembly_file,"\tsub\n");insert_code(PICLANG_SUB); break; 
+            case '*':   write_assembly(assembly_file,"\tmul\n");insert_code(PICLANG_MULT); break;
+            case '/':   write_assembly(assembly_file,"\tdiv\n"); break;
+            case '<':   write_assembly(assembly_file,"\tcompLT\n"); break;
+            case '>':   write_assembly(assembly_file,"\tcompGT\n"); break;
+            case GE:    write_assembly(assembly_file,"\tcompGE\n"); break;
+            case LE:    write_assembly(assembly_file,"\tcompLE\n"); break;
+            case NE:    write_assembly(assembly_file,"\tcompNE\n"); break;
+            case EQ:    write_assembly(assembly_file,"\tcompEQ\n"); break;
             }
         }
     }

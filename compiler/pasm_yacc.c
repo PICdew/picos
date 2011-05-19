@@ -2181,7 +2181,7 @@ int main(int argc, char **argv)
   int opt_index;
   unsigned char piclang_bitmap = 0;
 
-  assembly_file = stdout;
+  assembly_file = NULL;
   the_code_end = the_code = NULL;
   the_strings = the_strings = NULL;
   string_list = NULL;num_strings = 0;

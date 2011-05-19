@@ -56,7 +56,7 @@ size_t num_strings;
 int *variable_list;
 size_t num_variables;
 extern void insert_code(unsigned char val);
-
+extern int write_assembly(FILE *stream, const char *format, ...);
 
 #ifndef TRUE
 #define TRUE 1
