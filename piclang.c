@@ -181,7 +181,6 @@ void PICLANG_next()
       }
     case PICLANG_PRINT:
       {
-	IO_puts("%s");
 	putch(PICLANG_pop());
 	IO_flush();
 	break;
