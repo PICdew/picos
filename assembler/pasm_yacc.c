@@ -2184,11 +2184,30 @@ nodeType* store_string(const char *str)
 
 static struct option long_options[] =
              {
+	       {"help",0,NULL,'h'},
                {"hex", 1,NULL, 'o'},
 	       {"asm", 1,NULL, 'a'},
 	       {"eeprom",1,NULL, 'e'},
                {0, 0, 0, 0}
              };
+
+void print_help()
+{
+  printf("\n");
+  printf("pasm -- Piclang compiler.\n");
+  printf("Copyright 2011 David Coss, PhD\n");
+  printf("-------------------------------\n");
+  printf("Compiles piclang programs for use with the Pic Operating System.\n");
+  printf("Note: If no source file is provided, the compiler will act as \n\tan interpreter.\n");
+  printf("\n");
+  printf("Usage: pasm [options] [source code]\n\n");
+  printf("Options:\n");
+  printf("--help, -h :\t Displays this dialog.\n");
+  printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");
+  printf("--hex,-o <file> :\t Outputs Intel Hex to the specified file.\n");
+  printf("--eeprom, -e <file> :\t Outputs \"__EEPROM_DATA(...)\" code for use\n");
+  printf("                     \t with the Hi Tech C Compiler.\n");
+}
 
 int main(int argc, char **argv) 
 {
@@ -2202,11 +2221,9 @@ int main(int argc, char **argv)
 
   assembly_file = stdout;
   the_code_end = the_code = NULL;
-  printf("Welcome to the piclang compiler.\n");
-
   while(TRUE)
     {    
-      opt = getopt_long(argc,argv,"a:e:o:",long_options,&opt_index);
+      opt = getopt_long(argc,argv,"a:e:ho:",long_options,&opt_index);
       if(opt == -1)
 	break;
       
@@ -2227,12 +2244,15 @@ int main(int argc, char **argv)
 	  if(eeprom_file == NULL)
 	    eeprom_file = stdout;
 	  break;
+	case 'h':
+	  print_help();
+	  return 0;
 	default:
 	  fprintf(stderr,"WARNING - Unknown flag %c\n",opt);
 	  break;
 	}
     }
-		    
+  printf("Welcome to the piclang compiler.\n");
 
   if(optind < argc)
     {
