@@ -82,13 +82,13 @@ int ex(nodeType *p) {
                 fprintf(assembly_file,"L%03d:\n", lbl1);
             }
             break;
-        case PRINT:     
+        case PUTD:     
 	  ex(p->opr.op[0]);
-           fprintf(assembly_file,"\tprint\n");insert_code(PICLANG_PRINT);
+           fprintf(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
             break;
-        case PRINTL:
+        case PUTCH:
             ex(p->opr.op[0]);
-            fprintf(assembly_file,"\tprintl\n");insert_code(PICLANG_PRINTL);
+            fprintf(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
             break;
         case '=':       
             ex(p->opr.op[1]);

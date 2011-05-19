@@ -45,6 +45,21 @@ unsigned char do_crc(const char *str)
                               return STRING;
                          }
 
+\\. {
+           yylval.iValue = (int)yytext[1];
+           return INTEGER;
+     }
+
+0x[0-9a-fA-F][0-9a-fA-F]* { 
+                 sscanf(yytext,"0x%x",&yylval.iValue);
+                  return INTEGER;
+                 }
+
+0[0-9a-fA-F][0-9a-fA-F]* { 
+                 sscanf(yytext,"0x%o",&yylval.iValue);
+                  return INTEGER;
+                 }
+
 
 [a-z]       { 
                 yylval.sIndex = *yytext - 'a';
@@ -72,7 +87,8 @@ unsigned char do_crc(const char *str)
 "while"         return WHILE;
 "if"            return IF;
 "else"          return ELSE;
-"print"         return PRINT;
+"putd"         return PUTD;
+"putch"         return PUTCH;
 "input"         return INPUT;
 "system"        return SYSTEM;
 "sprint"        return SPRINT;

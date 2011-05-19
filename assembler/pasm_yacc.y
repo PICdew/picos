@@ -41,7 +41,7 @@ int sym[26];                    /* symbol table */
 
 %token <iValue> INTEGER 
 %token <sIndex> VARIABLE
-%token WHILE IF PRINT PRINTL EXIT INPUT SYSTEM SPRINT STRING CR
+%token WHILE IF PUTCH PUTD EXIT INPUT SYSTEM SPRINT STRING CR
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -70,7 +70,8 @@ stmt:
         | SPRINT '(' expr ')' ';' {$$ = opr(SPRINT,1,$3);}
         | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
-        | PRINT '(' expr ')' ';'                 { $$ = opr(PRINT, 1, $3); }
+        | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
+        | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
