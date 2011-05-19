@@ -14,7 +14,7 @@ void ARG_putch(char ch)
 {
   if(ARG_next >= ARG_SIZE)
     ARG_next = 0;
-  ARG_buffer[ARG_next] = ch;
+  ARG_buffer[ARG_next++] = ch;
 }
 
 char ARG_next_int()
