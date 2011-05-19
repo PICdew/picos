@@ -2,9 +2,9 @@
  * This is a sample program that will display the os version (1.0.0)
  */
 sprint("PicOS vs");
-sprint(cr);
-print(1);
-print(46);
-print(0);
-print(46);
-print(0);
+putch(0xa);
+putd(1);
+putch(\.);
+putd(0);
+putch(\.);
+putd(0);
