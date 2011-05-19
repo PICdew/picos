@@ -2,19 +2,29 @@
 #include "error.h"
 #include "piclang.h"
 
+char ARG_buffer[ARG_SIZE];
+
+const char* ARG_get_buffer()
+{
+  if(ARG_next == ARG_SIZE)
+    return "";
+  return &ARG_buffer[ARG_next];
+}
+
 void ARG_clear()
 {
   char i = 0;
   for(;i<ARG_SIZE;i++)
     ARG_buffer[i] = 0;
   ARG_next = ARG_SIZE;
+  ARG_end = 0;
 }
 
 void ARG_putch(char ch)
 {
   if(ARG_next >= ARG_SIZE)
     ARG_next = 0;
-  ARG_buffer[ARG_next++] = ch;
+  ARG_buffer[ARG_end++] = ch;
 }
 
 char ARG_next_int()
