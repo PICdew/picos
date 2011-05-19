@@ -179,7 +179,7 @@ void yyerror(char *s) {
 
 #define COMPILE_MAX_WIDTH 8//max width
 
-void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int *next_memory_slot)
+void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables)
 {
   int clean_skip_assignment_check = skip_assignment_check;
   
@@ -195,7 +195,7 @@ void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned ch
   if(clean_skip_assignment_check)
     skip_assignment_check = FALSE;
   
-  FirstPass(code->next,skip_assignment_check,piclang_bitmap,next_memory_slot);
+  FirstPass(code->next,skip_assignment_check,piclang_bitmap,num_variables);
 }
 
 
@@ -329,33 +329,6 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   return size;
 }
 
-nodeType* store_string(const char *str)
-{
-  return NULL;
-  /*nodeType *retval = NULL;
-  size_t i = 0;
-  if(str == NULL)
-    return;
-
-  i = 0;
-  for(;i<num_strings;i++)
-    {
-      if(
-    }
-
-  retval = (nodeType*)malloc(sizeof(nodeType));
-  strncpy(retval->str.string,str,strlen(str)+1);
-  retval->type = typeStr;
-
-  if(string_list == NULL)
-      string_list = realloc(string_list,++num_strings);
-  string_list[num_strings - 1] = strdup(str);
-
-  return retval;
-  */
-}
-
-
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
@@ -424,8 +397,9 @@ int main(int argc, char **argv)
 	  print_help();
 	  return 0;
 	default:
-	  fprintf(stderr,"WARNING - Unknown flag %c\n",opt);
-	  break;
+	  fprintf(stderr,"ERROR - Unknown flag %c\n",opt);
+	  print_help();
+	  return -1;
 	}
     }
   printf("Welcome to the piclang compiler.\n");
