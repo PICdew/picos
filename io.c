@@ -184,7 +184,6 @@ char get_command()
 	  calculate_crc(&command_hash,ditdat);
 	}
       clear_output();
-      IO_puts("?");
       IO_puts(ARG_buffer);
       ditdat = 0;
     }
