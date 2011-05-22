@@ -16,4 +16,4 @@ char ARG_next_int();
 
 void ARG_putch(char ch);
 char ARG_getch();
-const char* ARG_get_buffer();
+const char* ARG_gets();

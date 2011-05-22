@@ -21,6 +21,8 @@ extern void TIME_init(void);
  */
 extern void TIME_tick(void);
 
+extern void TIME_40msleep(char x);
+
 /**
  * Sets time
  */

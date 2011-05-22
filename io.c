@@ -6,6 +6,7 @@
 #include "lcd.h"
 #include "usart.h"
 #include "io.h"
+#include "picos_time.h"
 #include "utils.h"
 
 void IO_putd(char d)
@@ -30,7 +31,8 @@ void IO_puts(const char *str)
 char get_button_state()
 {
   char retval = ((button_port & 0b111000) >> button_phase);
-  __delay_ms(button_debounce_time);
+  //_delay((unsigned long)(16*1));
+  TIME_40msleep(1);
   retval &= ((button_port & 0b111000) >> button_phase);
   return ~retval & 7;
 }
@@ -125,7 +127,6 @@ char get_command()
   char ditdat = 0;
   char command_hash = 0;
   static bit have_command;
-  char char_counter = 0;
   clear_output();
   ARG_clear();
   IO_puts("$");
@@ -172,24 +173,25 @@ char get_command()
 		
       if(ditdat == 0xa || ditdat == 0xd)
 	break;
-      ARG_putch(ditdat);
-      char_counter++;
-      if(ditdat == ' ')
+    
+	 if(ditdat == ' ')
 	{
-	  have_command = TRUE;
-	  ARG_next = char_counter;
+		have_command =TRUE;
+		ARG_putch(0x0);
 	}
+	else
+		ARG_putch(ditdat);
+
       if(!have_command)
 	{
 	  calculate_crc(&command_hash,ditdat);
 	}
-      clear_output();
-      IO_puts(ARG_get_buffer());
+      
+	  putch(ditdat);
       ditdat = 0;
     }
-  ditdat = ARG_getch();
-  if(ditdat == 0 || ditdat == ' ')
-    ARG_next = ARG_SIZE;
+  
+  ARG_next = 0;
   return command_hash;
 }
 

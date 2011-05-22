@@ -45,3 +45,6 @@ void calculate_crc(char *crc, char newval)
 #endif
   *crc ^= newval;
 }
+
+
+

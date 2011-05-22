@@ -1,15 +1,10 @@
 #include "arg.h"
+#include "string.h"
 #include "error.h"
 #include "piclang.h"
 
 char ARG_buffer[ARG_SIZE];
 
-const char* ARG_get_buffer()
-{
-  if(ARG_next == ARG_SIZE)
-    return "";
-  return &ARG_buffer[ARG_next];
-}
 
 void ARG_clear()
 {
@@ -64,3 +59,14 @@ char ARG_getch()
     }
   return ARG_buffer[ARG_next++];
 }
+
+const char* ARG_gets()
+{
+  const char *next_word;
+  if(ARG_next >= ARG_SIZE)
+    return "";
+  next_word = &ARG_buffer[ARG_next];
+  ARG_next += 1 + strlen(next_word);
+  return next_word;
+}
+

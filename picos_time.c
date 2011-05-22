@@ -117,3 +117,12 @@ void TIME_stdout()
   putch(':');
   IO_putd(TIME_curr.minutes);
 }
+
+void TIME_40msleep(char x)
+{
+	x += TIME_tickCounter;
+	x = x % TIME_PERIOD;
+	
+	while(x != TIME_tickCounter);
+}	
+
