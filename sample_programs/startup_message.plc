@@ -8,3 +8,4 @@ putch(\.);
 putd(0);
 putch(\.);
 putd(0);
+morse("Hello World");

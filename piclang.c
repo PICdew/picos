@@ -65,7 +65,7 @@ char PICLANG_save(char saved_status)
     return PICLANG_NO_SUCH_PROGRAM;
 
   pos = curr_process.start_address + curr_process.offset;
-  if(pos - PCB_SIZE < 0)
+  if(pos < PCB_SIZE)
     return PICLANG_EEPROM_OVERFLOW;
   
   pos--;// move back to stack head
@@ -214,11 +214,20 @@ void PICLANG_next()
       PICLANG_system = PICLANG_pop();
       PICLANG_quantum = 0;// will suspend for system call
       break;
-	case PICLANG_MORSE:
+    case PICLANG_MORSE:
+      {
+	char two[2];
+	char addr;
+	two[1] = 0;
+	addr = PICLANG_pop();
+	two[0] = eeprom_read(addr++);
+	while(two[0] != 0)
 	  {
-		char two[2];two[1] = 0;
-		
+	    morse_sound(two);
+	    two[0] = eeprom_read(addr++);
 	  }
+	break;
+      }
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       return;

@@ -93,6 +93,7 @@ unsigned char do_crc(const char *str)
 "input"         return INPUT;
 "system"        return SYSTEM;
 "sprint"        return SPRINT;
+"morse"         return MORSE;
 "cr"            return CR;
 "quit"          return EXIT;
 

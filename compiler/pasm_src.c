@@ -210,6 +210,11 @@ int ex(nodeType *p) {
 	  write_assembly(assembly_file,"\tsprint\n");
 	  insert_code(PICLANG_SPRINT);
 	  break;
+	case MORSE:
+	  ex(p->opr.op[0]);
+	  write_assembly(assembly_file,"\tmorse\n");
+	  insert_code(PICLANG_MORSE);
+	  break;
         default:
             ex(p->opr.op[0]);
             ex(p->opr.op[1]);
