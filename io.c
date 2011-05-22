@@ -106,16 +106,24 @@ void morse_ditdat_sound_blocking(char encoded)
     }
 }
 
+char morse_decode(char encode)
+{
+  if(encode >= 0x41 && encode <= 0x5A)
+    return morse_encoding[encode - 0x41];
+  else if(encode >= 0x61 && encode <= 0x7A)
+    return morse_encoding[encode - 0x61];
+  else if(encode >= 0x30 && encode <= 0x39)
+    return morse_encoding[encode - 0x17];
+  
+  return morse_encoding['t'-'a'];
+
+}
+
 void morse_sound(const char *str)
 {
   while(*str != 0)
     {
-      if(*str >= 0x41 && *str <= 0x5A)
-	morse_ditdat_sound_blocking(morse_encoding[*str - 0x41]);
-      else if(*str >= 0x61 && *str <= 0x7A)
-	morse_ditdat_sound_blocking(morse_encoding[*str - 0x61]);
-      else if(*str >= 0x30 && *str <= 0x39)
-	morse_ditdat_sound_blocking(morse_encoding[*str - 0x17]);
+      morse_ditdat_sound_blocking(morse_decode(*str));
       str++;
     }
 }
@@ -134,7 +142,7 @@ char get_command()
 
   while(TRUE)
     {
-      if(indev == IN_USART || indev == IN_USART_BTNS)
+      if((indev & IN_USART) != 0)
 	{
 	  char received_char[2];
 	  USART_timeout = 100;
@@ -142,7 +150,7 @@ char get_command()
 	  received_char[0] = ditdat;received_char[1] = 0;
 	  morse_sound(received_char);
 	}
-      if((indev == IN_USART_BTNS && ditdat == 0) || indev == IN_BTNS)
+      if((indev & IN_BTNS) != 0)
 	{
 	  char button_val = '@';
 	  button_val = get_button_state();
