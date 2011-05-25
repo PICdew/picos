@@ -1,26 +1,49 @@
+#ifdef NOT_FOR_PIC
+#define FUSE_USE_VERSION 26
+#include <stdio.h>
+
+typedef unsigned char FS_Unit;
+typedef unsigned char FS_Block;
+
+struct fs_fuse_state {
+  FILE *logfile;
+  char *rootdir;
+  FS_Unit *super_block;
+  FS_Unit *data;
+  size_t data_size;
+};
+#define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
+#endif
+
 enum FS_MAGIC_NUMBERS{ MAGIC_SUPERBLOCK = 0,MAGIC_DIR,MAGIC_DATA };
 #define FS_REVISION_NUM 0
 #define FS_BLOCK_SIZE 16
 
-#define FS_INODE_NUM_POINTERS 3
-typedef struct {
-  unsigned char magic_number;
-  unsigned char uid;
-  unsigned char mode;
-  unsigned char size;
-  unsigned char pointers[FS_INODE_NUM_POINTERS];  
-}FS_INode;
+enum{
+  FS_INode_magic_number = 0,
+  FS_INode_uid,
+  FS_INode_mode,
+  FS_INode_size,
+  FS_INode_pointers,
+  FS_INode_length
+};
+#define FS_INODE_NUM_POINTERS (FS_BLOCK_SIZE - FS_INode_length)
 
-typedef struct{
-  unsigned char data[FS_BLOCK_SIZE];
-}FS_Block;
+enum {
+  FS_SuperBlock_magic_number = 0,
+  FS_SuperBlock_revision_num,
+  FS_SuperBlock_block_size,
+  FS_SuperBlock_num_blocks,
+  FS_SuperBlock_num_free_blocks,
+  FS_SuperBlock_offset,
+  FS_SuperBlock_root_block,
+  FS_SuperBlock_length
+};
 
-typedef struct {
-  unsigned char magic_number;
-  unsigned char revision_num;
-  unsigned char block_size;//size
-  unsigned char num_free_inodes;
-  FS_INode *root_block;
-}FS_SuperBlock;
-
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
 
