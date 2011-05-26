@@ -1,4 +1,3 @@
-#ifdef NOT_FOR_PIC
 #define FUSE_USE_VERSION 26
 #include <stdio.h>
 
@@ -9,11 +8,9 @@ struct fs_fuse_state {
   FILE *logfile;
   char *rootdir;
   FS_Unit *super_block;
-  FS_Unit *data;
   size_t data_size;
 };
 #define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
-#endif
 
 enum FS_MAGIC_NUMBERS{ MAGIC_SUPERBLOCK = 0,MAGIC_DIR,MAGIC_DATA };
 #define FS_REVISION_NUM 0

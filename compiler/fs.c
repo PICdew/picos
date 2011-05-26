@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <getopt.h>
 #include "fs.h"
-
-#ifdef NOT_FOR_PIC
 
 #include <ctype.h>
 #include <stdio.h>
@@ -17,10 +17,8 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
-#endif
 
-
-void FS_mksuperblock(FS_Block *block)
+void FS_mksuperblock(FS_Block *block, size_t num_blocks)
 {
   if(block == NULL)
     return;
@@ -28,7 +26,7 @@ void FS_mksuperblock(FS_Block *block)
   block[FS_SuperBlock_magic_number] = MAGIC_SUPERBLOCK;
   block[FS_SuperBlock_revision_num] = FS_REVISION_NUM;
   block[FS_SuperBlock_block_size] = FS_BLOCK_SIZE;
-  block[FS_SuperBlock_num_blocks] = 256/FS_BLOCK_SIZE;
+  block[FS_SuperBlock_num_blocks] = (FS_Unit)ceil((double)num_blocks/FS_BLOCK_SIZE);
   block[FS_SuperBlock_num_free_blocks] = block[FS_SuperBlock_num_blocks] - 1;
   block[FS_SuperBlock_offset] = 0;
   block[FS_SuperBlock_root_block] = FS_BLOCK_SIZE;
@@ -42,9 +40,6 @@ void FS_mkinode(FS_Block *inode)
 
   inode[FS_INode_magic_number] = MAGIC_DATA;
   inode[FS_INode_uid] = 0;
-#ifdef NOT_FOR_PIC
-  inode[FS_INode_uid] = fuse_get_context()->uid;
-#endif
   inode[FS_INode_mode] = 075;
   inode[FS_INode_size] = 0;
   
@@ -57,8 +52,6 @@ static void FS_error(const char *str)
 {
   fprintf(FS_PRIVATE_DATA->logfile,"FS Error: %s\n",str);
 }
-
-#ifdef NOT_FOR_PIC
 
 FILE* error_file;
 
@@ -160,13 +153,13 @@ static int fs_getattr(const char *path, struct stat *stbuf)
     if(strcmp("/dump",path) == 0)
       {
 	stbuf->st_mode = 0555 | S_IFREG;
-	stbuf->st_size = 256;
+	stbuf->st_size = sb[FS_SuperBlock_num_blocks] * sb[FS_SuperBlock_block_size];
 	return 0;
       }
 
     dir = FS_resolve(dir,path,sb);
     if(dir == NULL)
-      return ENOENT;
+      return -ENOENT;
     
     FS_inode2stat(stbuf,dir);
     
@@ -274,33 +267,33 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
         size = 0;
     return size;
 }
-struct fuse_operations fs_ops = {
-  .readdir = fs_readdir,
-  .getattr = fs_getattr,
-  .opendir = FS_opendir,
-  .open = FS_open,
-  .read = FS_read
-};
 
-
-
-int main(int argc, char **argv)
+static int FS_chmod(const char *path, mode_t mode)
 {
-  int fuse_stat;
-  struct fs_fuse_state the_state;
-  FS_Block *rootdir, *super_block, *data, *testdir;
-
-  if(argc == 1)
-    return -1;
+  FS_Block *inode = NULL;
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  if(strcmp(path,"/") == 0 || strcmp(path,"/dump") == 0)
+    return -EACCES;
   
-  the_state.data = NULL;
-  the_state.logfile = stderr;
-  the_state.rootdir = argv[argc-1];
+  inode = sb + sb[FS_SuperBlock_root_block];
+  inode = FS_resolve(inode,path,sb);
+  if(inode == NULL)
+    return -ENOENT;
+  
+  /*if(inode[FS_INode_uid] != getuid())
+    return -EACCES;*/
+  
+  inode[FS_INode_mode] = ((mode & 0700) >> 3) | (mode & 07);
+  
+  return 0;
+}
 
-  //setup super block
-  super_block = NULL;
-  FS_allocate(&super_block,256);
-  FS_mksuperblock(super_block);
+static FS_Block* FS_format(size_t num_blocks)
+{
+  FS_Block *super_block = NULL, *rootdir = NULL, *data = NULL;
+  FS_Block *testdir = NULL;
+  FS_allocate(&super_block,num_blocks);
+  FS_mksuperblock(super_block,num_blocks);
   
   //setup top most inode
   rootdir = &super_block[FS_BLOCK_SIZE];
@@ -323,15 +316,144 @@ int main(int argc, char **argv)
   strcat(super_block + FS_BLOCK_SIZE*4,"Hello, World!\n");
   testdir[FS_INode_size] = 1+strlen(super_block + FS_BLOCK_SIZE*4);
 
+  return super_block;
+}
+
+static FS_Block* FS_mount(const char *filename)
+{
+  FS_Block *super_block = NULL;
+  FILE *dev = NULL;
+  size_t len = 0;
+  if(access(filename,R_OK) != 0)
+      return NULL;
+  
+  dev = fopen(filename,"r");
+  if(dev == NULL)
+    return NULL;
+  
+  fseek(dev,0,SEEK_END);
+  len = ftell(dev);
+  rewind(dev);
+  
+  if(len % FS_BLOCK_SIZE != 0)
+    {
+      printf("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,FS_BLOCK_SIZE);
+      return NULL;
+    }
+
+  super_block = (FS_Unit*)malloc(len);
+  if(fread(super_block,1,len,dev) != len)
+    {
+      printf("Could not read all of %s\n",filename);
+      free(super_block);
+      return NULL;
+    }
+
+  fclose(dev);
+  return super_block;
+}
+
+struct fuse_operations fs_ops = {
+  .readdir = fs_readdir,
+  .getattr = fs_getattr,
+  .opendir = FS_opendir,
+  .open = FS_open,
+  .read = FS_read,
+  .chmod = FS_chmod
+};
+
+enum {FS_FLAG_LOG=0};
+static const struct option long_opts[] = {
+  {"log",1,NULL,FS_FLAG_LOG},
+  {"load",1,NULL,'l'},
+  {"help",0,NULL,'h'}
+};
+static const char short_opts[] = "hl:";//log is long opt only
+
+static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv)
+{
+  char ch;
+  while((ch = getopt_long(argc,argv,short_opts,long_opts,NULL)) != -1)
+    {
+      switch(ch)
+	{
+	case FS_FLAG_LOG:
+	  the_state->logfile = fopen(optarg,"w+");
+	  if(the_state->logfile == NULL)
+	    {
+	      fprintf(stderr,"Could not open: %s\n",optarg);
+	      fprintf(stderr,"Reason: %s\n",strerror(errno));
+	      exit(errno);
+	    }
+	  break;
+	case 'h':
+	  printf("Help not yet added");
+	  exit(0);
+	case 'l':
+	  the_state->super_block = FS_mount(optarg);
+	  if(the_state->super_block == NULL)
+	    {
+	      fprintf(stderr,"Could not mount: %s\n",optarg);
+	      exit(-1);
+	    }
+	  else
+	    {
+	      printf("Mounted %s\n",optarg);
+	    }
+	  break;
+	default:
+	  fprintf(stderr,"Unknown flag: %c\n",ch);
+	  exit(-1);
+	}
+    }
+}
+
+
+int main(int argc, char **argv)
+{
+  int fuse_stat;
+  struct fs_fuse_state the_state;
+  FS_Block *super_block = NULL;
+  size_t num_blocks = 256;
+  
+  //defaults
+  the_state.super_block = NULL;
+  the_state.logfile = stderr;
+  the_state.rootdir = NULL;
+  FS_parse_args(&the_state,argc,argv);
+  super_block = the_state.super_block;
+
+  //setup super block
+  if(super_block == NULL)
+    super_block = FS_format(num_blocks);
+
   //setup FUSE
+  if(super_block == NULL)
+    {
+      FS_error("Could not format/read super block.");
+      return -1;
+    }
   the_state.super_block = super_block;
   
   #if 1
-  fuse_stat = fuse_main(argc,argv, &fs_ops, &the_state);
+  // Initialize an empty argument list
+  struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
+  if(optind < argc)
+    {
+      fuse_opt_add_arg(&args,argv[0]);
+      fuse_opt_add_arg(&args,argv[optind]);
+      printf("Mount point = %s\n",args.argv[args.argc-1]);
+    }
+  else
+    {
+      printf("No mount point given.\n");
+      exit(-1);
+    }
+  fuse_stat = fuse_main(args.argc,args.argv, &fs_ops, &the_state);
 #else
   fuse_stat = 0;
   FILE *dump = fopen("resolved","w");
-  FS_Block *stuff = FS_resolve(rootdir,argv[argc-1],super_block);
+  FS_Block *stuff = FS_resolve(super_block + FS_BLOCK_SIZE,argv[argc-1],super_block);
   if(stuff == NULL)
     fprintf(dump,"%s\n","NULL POINTER");
   else
@@ -342,6 +464,5 @@ int main(int argc, char **argv)
   return fuse_stat;
 }
 
-#endif
 
 
