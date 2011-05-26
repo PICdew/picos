@@ -17,6 +17,10 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
+static int FS_is_virtual(const char *path)
+{
+  return (strcmp(path,"/") == 0) || (strcmp(path,"/dump") == 0);
+}
 
 void FS_mksuperblock(FS_Block *block, size_t num_blocks)
 {
@@ -202,6 +206,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
       memcpy(d_name,dirent,len);
       d_name[len] = 0;
       filler(buf,d_name,NULL,0);
+      dirent += len + 1;
     }
   free(d_name);
   return 0;
@@ -235,6 +240,84 @@ static int FS_open(const char *path, struct fuse_file_info *fi)
     return -ENOENT;
   return 0;
 }
+
+  static int FS_removefile(const char *path, FS_Block *sb)
+{
+  FS_Block *inode = FS_resolve(sb+sb[FS_SuperBlock_root_block],path,sb);
+  FS_Block *curr_block = NULL;
+  if(FS_is_virtual(path))
+    return -EACCES;
+  
+  if(inode == NULL)
+    return -ENOENT;
+  
+  if(inode[FS_INode_magic_number] == MAGIC_DIR && inode[FS_INode_size] != 0)
+    return -EACCES;
+      
+  sb[FS_SuperBlock_num_free_blocks] += (FS_Unit)ceil((double)inode[FS_INode_size]/FS_BLOCK_SIZE);
+  inode[FS_INode_size] = 0;
+  
+  //attempt to remove entry in directory
+  if(strchr(path,'/') != NULL)
+    {
+      size_t len = strlen(path) - strlen(strrchr(path,'/'))+2;
+      char parent[len];
+      int have_dir_name = FALSE;
+      FS_Block *dirlist = NULL;
+      
+      memset(parent,0,len);
+      strncpy(parent,path,len-1);
+      inode = FS_resolve(sb+sb[FS_SuperBlock_root_block],parent,sb);
+      if(inode != NULL)
+	{
+	 FS_Unit dir_ent = 0;
+	  for(;dir_ent < inode[FS_INode_size];dir_ent++)
+	    {
+	      size_t index = 0;
+	      FS_Block *byte_start;
+	      dirlist = sb + inode[FS_INode_pointers + dir_ent];
+	      byte_start = dirlist;
+	      for(;index < FS_BLOCK_SIZE;index++)
+		{
+		  size_t len = (size_t)dirlist[0];dirlist++;
+		  if(strncmp(dirlist,path + strlen(parent),len) == 0)
+		    {
+		      FS_Block tmp_filelist[FS_BLOCK_SIZE];
+		      have_dir_name = TRUE;
+		      dirlist--;
+		      //shift directory listing
+		      memset(tmp_filelist,0,FS_BLOCK_SIZE);
+		      memcpy(tmp_filelist,dirlist + len + 2,FS_BLOCK_SIZE - (dirlist - byte_start) - len - 2);
+		      memcpy(dirlist,tmp_filelist,FS_BLOCK_SIZE - (dirlist - byte_start));
+		      inode[FS_INode_size]--;
+		      if(byte_start[0] == 0)
+			{
+			  // if directory listing is now empty, remove it from the inode and shift
+			  memset(tmp_filelist,0,FS_BLOCK_SIZE);
+			  memcpy(tmp_filelist,inode + FS_INode_pointers + dir_ent + 1,FS_INODE_NUM_POINTERS - dir_ent - 1);
+			  memcpy(inode + FS_INode_pointers + dir_ent,tmp_filelist,FS_INODE_NUM_POINTERS - dir_ent);
+			  sb[FS_SuperBlock_num_free_blocks]++;
+			}
+		      break;
+		    }
+		  dirlist += len + 1;		      
+		}
+	      if(have_dir_name)
+		break;
+	    }
+	}
+    }
+  
+
+  return 0;
+  
+}
+
+static int FS_unlink(const char *path)
+{
+  return FS_removefile(path, FS_PRIVATE_DATA->super_block);
+}
+
 
 static int FS_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
@@ -272,7 +355,7 @@ static int FS_chmod(const char *path, mode_t mode)
 {
   FS_Block *inode = NULL;
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
-  if(strcmp(path,"/") == 0 || strcmp(path,"/dump") == 0)
+  if(FS_is_virtual(path))
     return -EACCES;
   
   inode = sb + sb[FS_SuperBlock_root_block];
@@ -297,7 +380,6 @@ static FS_Block* FS_format(size_t num_blocks)
   
   //setup top most inode
   rootdir = &super_block[FS_BLOCK_SIZE];
-  super_block[FS_SuperBlock_num_free_blocks]--;
   FS_mkinode(rootdir);
   super_block[FS_SuperBlock_root_block] = FS_BLOCK_SIZE;
 
@@ -308,13 +390,27 @@ static FS_Block* FS_format(size_t num_blocks)
   data = &super_block[ rootdir[FS_INode_pointers] ];
   data[0] = strlen("testfile");
   memcpy(data + 1,"testfile",(size_t)data[0]);
-  data[ 1+ data[0]] = FS_BLOCK_SIZE*3;
+  data = data +((off_t) 1+ data[0]);
+  data[0] = FS_BLOCK_SIZE*3;data++;
+  data[0] = strlen("cat");data++;
+  memcpy(data,"cat",3);data += 3;
+  data[0] = FS_BLOCK_SIZE*5;
   testdir = super_block + FS_BLOCK_SIZE*3;
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
   testdir[FS_INode_pointers] = FS_BLOCK_SIZE*4;
   strcat(super_block + FS_BLOCK_SIZE*4,"Hello, World!\n");
   testdir[FS_INode_size] = 1+strlen(super_block + FS_BLOCK_SIZE*4);
+  
+  testdir = super_block + FS_BLOCK_SIZE*5;
+  FS_mkinode(testdir);
+  testdir[FS_INode_uid] = 123;
+  testdir[FS_INode_pointers] = FS_BLOCK_SIZE*6;
+  strcat(super_block + testdir[FS_INode_pointers],"Meow!\n");
+  testdir[FS_INode_size] = 1+strlen(super_block + testdir[FS_INode_pointers]);
+  rootdir[FS_INode_size]++;
+  
+  super_block[FS_SuperBlock_num_free_blocks] -= 5;
 
   return super_block;
 }
@@ -359,6 +455,7 @@ struct fuse_operations fs_ops = {
   .opendir = FS_opendir,
   .open = FS_open,
   .read = FS_read,
+  .unlink = FS_unlink,
   .chmod = FS_chmod
 };
 
@@ -452,12 +549,9 @@ int main(int argc, char **argv)
   fuse_stat = fuse_main(args.argc,args.argv, &fs_ops, &the_state);
 #else
   fuse_stat = 0;
-  FILE *dump = fopen("resolved","w");
-  FS_Block *stuff = FS_resolve(super_block + FS_BLOCK_SIZE,argv[argc-1],super_block);
-  if(stuff == NULL)
-    fprintf(dump,"%s\n","NULL POINTER");
-  else
-    fwrite(stuff,sizeof(FS_Unit),FS_BLOCK_SIZE,dump);
+  FILE *dump = fopen("debug","w");
+  FS_removefile("/cat",super_block);
+  fwrite(super_block,sizeof(FS_Unit),super_block[FS_SuperBlock_num_blocks] * super_block[FS_SuperBlock_block_size],dump);
   fclose(dump);
 #endif
   printf("fuse_main returned %d\n",fuse_stat);
