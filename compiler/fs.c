@@ -22,6 +22,11 @@ static int FS_is_virtual(const char *path)
   return (strcmp(path,"/") == 0) || (strcmp(path,"/dump") == 0);
 }
 
+FS_Block* FS_getblock(FS_Block *super_block, FS_Unit block_id)
+{
+  return &(super_block[block_id*FS_BLOCK_SIZE]);
+}
+
 void FS_mksuperblock(FS_Block *block, size_t num_blocks)
 {
   if(block == NULL)
@@ -32,10 +37,9 @@ void FS_mksuperblock(FS_Block *block, size_t num_blocks)
   block[FS_SuperBlock_block_size] = FS_BLOCK_SIZE;
   block[FS_SuperBlock_num_blocks] = (FS_Unit)ceil((double)num_blocks/FS_BLOCK_SIZE);
   block[FS_SuperBlock_num_free_blocks] = block[FS_SuperBlock_num_blocks] - 1;
-  block[FS_SuperBlock_offset] = 0;
-  block[FS_SuperBlock_root_block] = FS_BLOCK_SIZE;
+  block[FS_SuperBlock_root_block] = 1;
 
-  block[FS_SuperBlock_free_queue] = 2*FS_BLOCK_SIZE;
+  block[FS_SuperBlock_free_queue] = 2;
 }
 
 void FS_mkinode(FS_Block *inode)
@@ -80,6 +84,7 @@ static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
     {
     case MAGIC_DIR:
       stbuf->st_mode |= S_IFDIR;
+      stbuf->st_size = the_dir[FS_INode_size];
       break;
     case MAGIC_DATA:default:
       stbuf->st_mode |= S_IFREG;
@@ -111,7 +116,7 @@ static FS_Block* FS_resolve(FS_Block *dir, char *path, FS_Block *sb)
       dir_counter = 0;
       for(;dir_counter<num_entries;dir_counter++)
 	{
-	  dirent = sb + dir[FS_INode_pointers + dir_counter];
+	  dirent = FS_getblock(sb,dir[FS_INode_pointers + dir_counter]);
 	  while(dirent != NULL && dirent[0] != 0)
 	    {
 	      size_t len = (size_t)dirent[0];dirent++;
@@ -177,8 +182,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
 {
 
   const struct fs_fuse_state *the_state = FS_PRIVATE_DATA;
-  FS_Block *the_dir = the_state->super_block;
-  the_dir += the_state->super_block[FS_SuperBlock_root_block];
+  FS_Block *the_dir = FS_getblock(the_state->super_block,the_state->super_block[FS_SuperBlock_root_block]);
   size_t dir_counter = 0;
   unsigned char *d_name = NULL, *dirent;
   
@@ -199,7 +203,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   filler(buf, "..", NULL, 0);
 
   dir_counter = 0;
-  dirent = &the_state->super_block[ the_dir[FS_INode_pointers] ];
+  dirent = FS_getblock(the_state->super_block,the_dir[FS_INode_pointers]);
   for(;dir_counter < the_dir[FS_INode_size];dir_counter++)
     {
       size_t len = (size_t)dirent[0];
@@ -277,7 +281,7 @@ static int FS_open(const char *path, struct fuse_file_info *fi)
 	    {
 	      size_t index = 0;
 	      FS_Block *byte_start;
-	      dirlist = sb + inode[FS_INode_pointers + dir_ent];
+	      dirlist = FS_getblock(sb, inode[FS_INode_pointers + dir_ent]);
 	      byte_start = dirlist;
 	      for(;index < FS_BLOCK_SIZE;index++)
 		{
@@ -296,7 +300,7 @@ static int FS_open(const char *path, struct fuse_file_info *fi)
 			{
 			  // if directory listing is now empty, remove it from the inode and shift
 			  memset(tmp_filelist,0,FS_BLOCK_SIZE);
-			  memcpy(tmp_filelist,inode + FS_INode_pointers + dir_ent + 1,FS_INODE_NUM_POINTERS - dir_ent - 1);
+			  memcpy(tmp_filelist,inode + ((off_t)FS_INode_pointers + dir_ent + 1) , FS_INODE_NUM_POINTERS - dir_ent - 1 );
 			  memcpy(inode + FS_INode_pointers + dir_ent,tmp_filelist,FS_INODE_NUM_POINTERS - dir_ent);
 			  sb[FS_SuperBlock_num_free_blocks]++;
 			}
@@ -338,11 +342,11 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       }
     else
       {
-	file = FS_resolve(sb+sb[FS_SuperBlock_root_block],path,sb);
+	file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
 	if(file == NULL)
 	  return -ENOENT;
 	len = (size_t)file[FS_INode_size];
-	file_head = sb + file[FS_INode_pointers];
+	file_head = FS_getblock(sb, file[FS_INode_pointers]);
       }
     if (offset < len) {
         if (offset + size > len)
@@ -360,7 +364,7 @@ static int FS_chmod(const char *path, mode_t mode)
   if(FS_is_virtual(path))
     return -EACCES;
   
-  inode = sb + sb[FS_SuperBlock_root_block];
+  inode = FS_getblock(sb, sb[FS_SuperBlock_root_block]);
   inode = FS_resolve(inode,path,sb);
   if(inode == NULL)
     return -ENOENT;
@@ -377,55 +381,53 @@ static FS_Block* FS_format(size_t num_blocks)
 {
   FS_Block *super_block = NULL, *rootdir = NULL, *data = NULL;
   FS_Block *testdir = NULL;
-  int block_count = 1;
+  int block_count = 2;
   FS_allocate(&super_block,num_blocks);
   FS_mksuperblock(super_block,num_blocks);
   
   //setup top most inode
-  rootdir = &super_block[FS_BLOCK_SIZE];
+  rootdir = FS_getblock(super_block,super_block[FS_SuperBlock_root_block]);
   FS_mkinode(rootdir);
-  super_block[FS_SuperBlock_root_block] = FS_BLOCK_SIZE*(block_count++);
 
   //make a directory
   rootdir[FS_INode_magic_number] = MAGIC_DIR;
   rootdir[FS_INode_size]++;
-  rootdir[FS_INode_pointers] = FS_BLOCK_SIZE*(block_count++);
-  data = &super_block[ rootdir[FS_INode_pointers] ];
+  rootdir[FS_INode_pointers] = block_count++;
+  data = FS_getblock(super_block, rootdir[FS_INode_pointers]);
   data[0] = strlen("testfile");
   memcpy(data + 1,"testfile",(size_t)data[0]);
   data = data +((off_t) 1+ data[0]);
-  data[0] = FS_BLOCK_SIZE*3;data++;
+  data[0] = block_count;data++;
   data[0] = strlen("cat");data++;
   memcpy(data,"cat",3);data += 3;
-  data[0] = FS_BLOCK_SIZE*5;
-  testdir = super_block + FS_BLOCK_SIZE*(block_count++);
+  testdir = FS_getblock(super_block, block_count);
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
-  testdir[FS_INode_pointers] = FS_BLOCK_SIZE*(block_count++);
-  strcat(super_block + FS_BLOCK_SIZE*(block_count),"Hello, World!\n");
-  testdir[FS_INode_size] = 1+strlen(super_block + FS_BLOCK_SIZE*(block_count));
+  testdir[FS_INode_pointers] = block_count++;
+  strcat(FS_getblock(super_block, block_count),"Hello, World!\n");
+  testdir[FS_INode_size] = 1+strlen(FS_getblock(super_block,block_count));
   
-  testdir = super_block + FS_BLOCK_SIZE*(block_count++);
+  data[0] = block_count++;
+  testdir = FS_getblock(super_block, block_count++);
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
-  testdir[FS_INode_pointers] = FS_BLOCK_SIZE*(block_count++);
-  strcat(super_block + testdir[FS_INode_pointers],"Meow!\n");
-  testdir[FS_INode_size] = 1+strlen(super_block + testdir[FS_INode_pointers]);
+  testdir[FS_INode_pointers] = block_count++;
+  strcat(FS_getblock(super_block, testdir[FS_INode_pointers]),"Meow!\n");
+  testdir[FS_INode_size] = 1+strlen(FS_getblock(super_block, testdir[FS_INode_pointers]));
   rootdir[FS_INode_size]++;
 
   super_block[FS_SuperBlock_num_free_blocks] -= block_count -1;
 
-  super_block[FS_SuperBlock_free_queue] = FS_BLOCK_SIZE*block_count;
+  super_block[FS_SuperBlock_free_queue] = block_count;
 
   block_count++;
   while(block_count >= 0)
     {
-      super_block[super_block[FS_SuperBlock_free_queue] + FS_SuperBlock_magic_number + (block_count)*FS_BLOCK_SIZE] = MAGIC_FREE_INODE;
-      super_block[super_block[FS_SuperBlock_free_queue] + FS_INode_pointers + (block_count--)*FS_BLOCK_SIZE] = (block_count+1)*FS_BLOCK_SIZE + super_block[FS_SuperBlock_free_queue];
+      FS_Block *freed = FS_getblock(super_block,super_block[FS_SuperBlock_free_queue] + (block_count--));
+      freed[FS_SuperBlock_magic_number] = MAGIC_FREE_INODE;
+      freed[FS_INode_pointers] = super_block[FS_SuperBlock_free_queue] + (block_count+2);
     }
-  super_block[super_block[FS_SuperBlock_free_queue] + FS_INode_pointers + (block_count)*FS_BLOCK_SIZE] = 0;
-  
-
+ 
   return super_block;
 }
 

@@ -38,7 +38,6 @@ enum {
   FS_SuperBlock_num_blocks,
   FS_SuperBlock_num_free_blocks,
   FS_SuperBlock_free_queue,
-  FS_SuperBlock_offset,
   FS_SuperBlock_root_block,
   FS_SuperBlock_length
 };
