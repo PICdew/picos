@@ -12,7 +12,12 @@ struct fs_fuse_state {
 };
 #define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
 
-enum FS_MAGIC_NUMBERS{ MAGIC_SUPERBLOCK = 0,MAGIC_DIR,MAGIC_DATA };
+enum FS_MAGIC_NUMBERS{ 
+  MAGIC_SUPERBLOCK = 0,
+  MAGIC_DIR,
+  MAGIC_DATA,
+  MAGIC_FREE_INODE
+};
 #define FS_REVISION_NUM 0
 #define FS_BLOCK_SIZE 16
 
@@ -32,6 +37,7 @@ enum {
   FS_SuperBlock_block_size,
   FS_SuperBlock_num_blocks,
   FS_SuperBlock_num_free_blocks,
+  FS_SuperBlock_free_queue,
   FS_SuperBlock_offset,
   FS_SuperBlock_root_block,
   FS_SuperBlock_length

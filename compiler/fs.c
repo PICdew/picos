@@ -34,6 +34,8 @@ void FS_mksuperblock(FS_Block *block, size_t num_blocks)
   block[FS_SuperBlock_num_free_blocks] = block[FS_SuperBlock_num_blocks] - 1;
   block[FS_SuperBlock_offset] = 0;
   block[FS_SuperBlock_root_block] = FS_BLOCK_SIZE;
+
+  block[FS_SuperBlock_free_queue] = 2*FS_BLOCK_SIZE;
 }
 
 void FS_mkinode(FS_Block *inode)
@@ -375,18 +377,19 @@ static FS_Block* FS_format(size_t num_blocks)
 {
   FS_Block *super_block = NULL, *rootdir = NULL, *data = NULL;
   FS_Block *testdir = NULL;
+  int block_count = 1;
   FS_allocate(&super_block,num_blocks);
   FS_mksuperblock(super_block,num_blocks);
   
   //setup top most inode
   rootdir = &super_block[FS_BLOCK_SIZE];
   FS_mkinode(rootdir);
-  super_block[FS_SuperBlock_root_block] = FS_BLOCK_SIZE;
+  super_block[FS_SuperBlock_root_block] = FS_BLOCK_SIZE*(block_count++);
 
   //make a directory
   rootdir[FS_INode_magic_number] = MAGIC_DIR;
   rootdir[FS_INode_size]++;
-  rootdir[FS_INode_pointers] = FS_BLOCK_SIZE*2;
+  rootdir[FS_INode_pointers] = FS_BLOCK_SIZE*(block_count++);
   data = &super_block[ rootdir[FS_INode_pointers] ];
   data[0] = strlen("testfile");
   memcpy(data + 1,"testfile",(size_t)data[0]);
@@ -395,22 +398,33 @@ static FS_Block* FS_format(size_t num_blocks)
   data[0] = strlen("cat");data++;
   memcpy(data,"cat",3);data += 3;
   data[0] = FS_BLOCK_SIZE*5;
-  testdir = super_block + FS_BLOCK_SIZE*3;
+  testdir = super_block + FS_BLOCK_SIZE*(block_count++);
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
-  testdir[FS_INode_pointers] = FS_BLOCK_SIZE*4;
-  strcat(super_block + FS_BLOCK_SIZE*4,"Hello, World!\n");
-  testdir[FS_INode_size] = 1+strlen(super_block + FS_BLOCK_SIZE*4);
+  testdir[FS_INode_pointers] = FS_BLOCK_SIZE*(block_count++);
+  strcat(super_block + FS_BLOCK_SIZE*(block_count),"Hello, World!\n");
+  testdir[FS_INode_size] = 1+strlen(super_block + FS_BLOCK_SIZE*(block_count));
   
-  testdir = super_block + FS_BLOCK_SIZE*5;
+  testdir = super_block + FS_BLOCK_SIZE*(block_count++);
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
-  testdir[FS_INode_pointers] = FS_BLOCK_SIZE*6;
+  testdir[FS_INode_pointers] = FS_BLOCK_SIZE*(block_count++);
   strcat(super_block + testdir[FS_INode_pointers],"Meow!\n");
   testdir[FS_INode_size] = 1+strlen(super_block + testdir[FS_INode_pointers]);
   rootdir[FS_INode_size]++;
+
+  super_block[FS_SuperBlock_num_free_blocks] -= block_count -1;
+
+  super_block[FS_SuperBlock_free_queue] = FS_BLOCK_SIZE*block_count;
+
+  block_count++;
+  while(block_count >= 0)
+    {
+      super_block[super_block[FS_SuperBlock_free_queue] + FS_SuperBlock_magic_number + (block_count)*FS_BLOCK_SIZE] = MAGIC_FREE_INODE;
+      super_block[super_block[FS_SuperBlock_free_queue] + FS_INode_pointers + (block_count--)*FS_BLOCK_SIZE] = (block_count+1)*FS_BLOCK_SIZE + super_block[FS_SuperBlock_free_queue];
+    }
+  super_block[super_block[FS_SuperBlock_free_queue] + FS_INode_pointers + (block_count)*FS_BLOCK_SIZE] = 0;
   
-  super_block[FS_SuperBlock_num_free_blocks] -= 5;
 
   return super_block;
 }
