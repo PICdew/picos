@@ -479,9 +479,48 @@ enum {FS_FLAG_LOG=0};
 static const struct option long_opts[] = {
   {"log",1,NULL,FS_FLAG_LOG},
   {"load",1,NULL,'l'},
-  {"help",0,NULL,'h'}
+  {"help",0,NULL,'h'},
+  {0,0,0,0}
 };
 static const char short_opts[] = "hl:";//log is long opt only
+
+static void print_help()
+{
+  const struct option *opts = long_opts;
+  printf("PIC FileSystem\n");
+  printf("Usage: ./fs [options] <mount point>\n");
+  printf("Options:\n");
+  
+  while(opts->name != NULL)
+    {
+      printf("--%s",opts->name);
+      if(opts->val >= 'a' && opts->val <= 'z')
+	printf(", -%c ",opts->val);
+      else
+	printf("      ");
+      if(opts->has_arg)
+	printf("<ARG>  ");
+      else
+	printf("       ");
+     
+      switch(opts->val)
+	{
+	case FS_FLAG_LOG:
+	  printf("Specify a log file.");
+	  break;
+	case 'l':
+	  printf("Load a specific filesystem image.");
+	  break;
+	case 'h':
+	  printf("This message.");
+	  break;
+	default:
+	  break;
+	}
+      printf("\n");
+      opts++;
+    }
+}
 
 static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv)
 {
@@ -500,7 +539,7 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	    }
 	  break;
 	case 'h':
-	  printf("Help not yet added");
+	  print_help();
 	  exit(0);
 	case 'l':
 	  the_state->super_block = FS_mount(optarg);
