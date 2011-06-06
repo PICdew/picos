@@ -14,8 +14,26 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
+
+static void log_msg(const char *format, ...)
+{
+    va_list ap;
+    if(FS_PRIVATE_DATA->verbose_log == TRUE)
+      {
+	va_start(ap, format);
+	vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
+      }
+}
+
+static void error_log(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
+}
 
 static int FS_is_virtual(const char *path)
 {
@@ -58,13 +76,6 @@ void FS_mkinode(FS_Block *inode)
     inode[FS_INode_pointers + i] = 0;
 }
 
-static void FS_error(const char *str)
-{
-  fprintf(FS_PRIVATE_DATA->logfile,"FS Error: %s\n",str);
-}
-
-FILE* error_file;
-
 int FS_allocate(FS_Block **data,size_t num_blocks)
 {
   if(data == NULL)
@@ -76,6 +87,7 @@ int FS_allocate(FS_Block **data,size_t num_blocks)
 
 static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
 {
+  log_msg("inode2stat\n");
   if(stbuf == NULL || the_dir == NULL)
     return;
 
@@ -109,6 +121,7 @@ static FS_Block* FS_resolve(FS_Block *dir, char *path, FS_Block *sb)
   rw_path = (char*)malloc((strlen(path)+1)*sizeof(char));
   strcpy(rw_path,path);
   token = strtok(rw_path,"/");
+  log_msg("%s/\n",token);
   while(token != NULL)
     {
       moved_up = FALSE;
@@ -123,13 +136,15 @@ static FS_Block* FS_resolve(FS_Block *dir, char *path, FS_Block *sb)
 	      FS_Unit d_name[FS_BLOCK_SIZE];
 	      memcpy(d_name,dirent,len);
 	      d_name[len] = 0;dirent += len;
+	      log_msg("%s ?= %s\n",d_name,token);
 	      if(strcmp(d_name,token) == 0)
 		{
-		  dir = sb + dirent[0];
+		  dir = FS_getblock(sb,dirent[0]);
 		  moved_up = TRUE;
 		  if(dir[FS_INode_magic_number] != MAGIC_DIR)
 		    {
 		      free(rw_path);
+		      log_msg("Found %s at 0x%x\n",path,dir[0]);
 		      return dir;
 		    }
 		  break;
@@ -147,6 +162,11 @@ static FS_Block* FS_resolve(FS_Block *dir, char *path, FS_Block *sb)
     }
   
   free(rw_path);
+  if(dir != NULL)
+    log_msg("Found %s\n",path);
+  else
+    log_msg("Could not find %s\n",path);
+  
   return dir;
 }
 
@@ -156,7 +176,9 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 {
     int res = 0;
     const FS_Block *sb = FS_PRIVATE_DATA->super_block;
-    const FS_Block *dir = sb + sb[FS_SuperBlock_root_block];
+    const FS_Block *dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+
+    log_msg("fs_getattr (%s)\n",path);
 
     if(strcmp(path,"/") == 0)
       FS_inode2stat(stbuf,dir);
@@ -182,13 +204,13 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
 {
 
   const struct fs_fuse_state *the_state = FS_PRIVATE_DATA;
+  log_msg(the_state->logfile,"In readdir\n");
   FS_Block *the_dir = FS_getblock(the_state->super_block,the_state->super_block[FS_SuperBlock_root_block]);
   size_t dir_counter = 0;
   unsigned char *d_name = NULL, *dirent;
   
   (void)offset;
   (void)fi;
-
   if(strcmp(path,"/") != 0)
     the_dir = FS_resolve(the_dir,path,the_state->super_block);
   else
@@ -224,6 +246,8 @@ static int FS_opendir(const char *path, struct fuse_file_info *fi)
   FS_Block *the_dir = the_state->super_block;
   the_dir += the_state->super_block[FS_SuperBlock_root_block];
 
+  log_msg(the_state->logfile,"Opendir\n");fflush(the_state->logfile);
+
   if(strcmp(path,"/") != 0)
     the_dir = FS_resolve(the_dir,path,the_state->super_block);
   
@@ -237,9 +261,11 @@ static int FS_opendir(const char *path, struct fuse_file_info *fi)
 static int FS_open(const char *path, struct fuse_file_info *fi)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
-  FS_Block *file = FS_resolve(sb+sb[FS_SuperBlock_root_block],path,sb);
+  FS_Block *file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
   size_t len;
-  
+
+  log_msg("FS_open (%s, 0x%x)\n",path,file);
+
   if(strcmp(path,"/dump") == 0)
     return 0;
   if(file == NULL)
@@ -347,6 +373,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 	  return -ENOENT;
 	len = (size_t)file[FS_INode_size];
 	file_head = FS_getblock(sb, file[FS_INode_pointers]);
+	log_msg("%s is %d bytes long starting at %x, %x\n",path,len,file[0],file[1]);
       }
     if (offset < len) {
         if (offset + size > len)
@@ -354,6 +381,8 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
         memcpy(buf, file_head + offset, size);
     } else
         size = 0;
+
+    log_msg("Read %d lines of %s\n",size,path);
     return size;
 }
 
@@ -403,11 +432,11 @@ static FS_Block* FS_format(size_t num_blocks)
   testdir = FS_getblock(super_block, block_count);
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
-  testdir[FS_INode_pointers] = block_count++;
+  testdir[FS_INode_pointers] = ++block_count;
   strcat(FS_getblock(super_block, block_count),"Hello, World!\n");
   testdir[FS_INode_size] = 1+strlen(FS_getblock(super_block,block_count));
   
-  data[0] = block_count++;
+  data[0] = ++block_count;
   testdir = FS_getblock(super_block, block_count++);
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
@@ -449,14 +478,14 @@ static FS_Block* FS_mount(const char *filename)
   
   if(len % FS_BLOCK_SIZE != 0)
     {
-      printf("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,FS_BLOCK_SIZE);
+      error_log(FS_PRIVATE_DATA->logfile,"File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,FS_BLOCK_SIZE);
       return NULL;
     }
 
   super_block = (FS_Unit*)malloc(len);
   if(fread(super_block,1,len,dev) != len)
     {
-      printf("Could not read all of %s\n",filename);
+      error_log(FS_PRIVATE_DATA->logfile,"Could not read all of %s\n",filename);
       free(super_block);
       return NULL;
     }
@@ -479,6 +508,7 @@ enum {FS_FLAG_LOG=0};
 static const struct option long_opts[] = {
   {"log",1,NULL,FS_FLAG_LOG},
   {"load",1,NULL,'l'},
+  {"verbose",0,NULL,'v'},
   {"help",0,NULL,'h'},
   {0,0,0,0}
 };
@@ -514,6 +544,9 @@ static void print_help()
 	case 'h':
 	  printf("This message.");
 	  break;
+	case 'v':
+	  printf("Verbose. Without this flag, only errors are written to the log. Default: disabled");
+	  break;
 	default:
 	  break;
 	}
@@ -530,7 +563,7 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
       switch(ch)
 	{
 	case FS_FLAG_LOG:
-	  the_state->logfile = fopen(optarg,"w+");
+	  the_state->logfile = fopen(optarg,"w");
 	  if(the_state->logfile == NULL)
 	    {
 	      fprintf(stderr,"Could not open: %s\n",optarg);
@@ -550,8 +583,11 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	    }
 	  else
 	    {
-	      printf("Mounted %s\n",optarg);
+	      fprintf(FS_PRIVATE_DATA->logfile,"Mounted %s\n",optarg);
 	    }
+	  break;
+	case 'v':
+	  FS_PRIVATE_DATA->verbose_log = TRUE;
 	  break;
 	default:
 	  fprintf(stderr,"Unknown flag: %c\n",ch);
@@ -564,16 +600,18 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 int main(int argc, char **argv)
 {
   int fuse_stat;
-  struct fs_fuse_state the_state;
+  struct fs_fuse_state *the_state;
   FS_Block *super_block = NULL;
   size_t num_blocks = 256;
   
+  the_state = calloc(1,sizeof(struct fs_fuse_state));
   //defaults
-  the_state.super_block = NULL;
-  the_state.logfile = stderr;
-  the_state.rootdir = NULL;
-  FS_parse_args(&the_state,argc,argv);
-  super_block = the_state.super_block;
+  the_state->super_block = NULL;
+  the_state->logfile = stderr;
+  the_state->rootdir = NULL;
+  FS_parse_args(the_state,argc,argv);
+  setvbuf(the_state->logfile, NULL, _IOLBF, 0);
+  super_block = the_state->super_block;
 
   //setup super block
   if(super_block == NULL)
@@ -582,10 +620,10 @@ int main(int argc, char **argv)
   //setup FUSE
   if(super_block == NULL)
     {
-      FS_error("Could not format/read super block.");
+      error_log("Could not format/read super block.");
       return -1;
     }
-  the_state.super_block = super_block;
+  the_state->super_block = super_block;
   
   #if 1
   // Initialize an empty argument list
@@ -594,14 +632,14 @@ int main(int argc, char **argv)
     {
       fuse_opt_add_arg(&args,argv[0]);
       fuse_opt_add_arg(&args,argv[optind]);
-      printf("Mount point = %s\n",args.argv[args.argc-1]);
+      fprintf(the_state->logfile,"Mount point = %s\n",args.argv[args.argc-1]);
     }
   else
     {
-      printf("No mount point given.\n");
+      fprintf(the_state->logfile,"No mount point given.\n");
       exit(-1);
     }
-  fuse_stat = fuse_main(args.argc,args.argv, &fs_ops, &the_state);
+  fuse_stat = fuse_main(args.argc,args.argv, &fs_ops, the_state);
 #else
   fuse_stat = 0;
   FILE *dump = fopen("debug","w");
@@ -609,7 +647,9 @@ int main(int argc, char **argv)
   fwrite(super_block,sizeof(FS_Unit),super_block[FS_SuperBlock_num_blocks] * super_block[FS_SuperBlock_block_size],dump);
   fclose(dump);
 #endif
-  printf("fuse_main returned %d\n",fuse_stat);
+  time_t starttime = time(NULL);
+  if(fuse_stat == 0)
+    fprintf(the_state->logfile,"fuse mounted %s on %s\n",args.argv[args.argc-1],ctime(&starttime));
   return fuse_stat;
 }
 

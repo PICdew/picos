@@ -4,13 +4,16 @@
 typedef unsigned char FS_Unit;
 typedef unsigned char FS_Block;
 
+
 struct fs_fuse_state {
   FILE *logfile;
+  int verbose_log;
   char *rootdir;
   FS_Unit *super_block;
   size_t data_size;
 };
 #define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
+
 
 enum FS_MAGIC_NUMBERS{ 
   MAGIC_SUPERBLOCK = 0,
