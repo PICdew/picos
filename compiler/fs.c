@@ -512,7 +512,7 @@ static const struct option long_opts[] = {
   {"help",0,NULL,'h'},
   {0,0,0,0}
 };
-static const char short_opts[] = "hl:";//log is long opt only
+static const char short_opts[] = "hl:v";//log is long opt only
 
 static void print_help()
 {
@@ -583,11 +583,11 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	    }
 	  else
 	    {
-	      fprintf(FS_PRIVATE_DATA->logfile,"Mounted %s\n",optarg);
+	      fprintf(stderr,"Mounted %s\n",optarg);
 	    }
 	  break;
 	case 'v':
-	  FS_PRIVATE_DATA->verbose_log = TRUE;
+	  the_state->verbose_log = TRUE;
 	  break;
 	default:
 	  fprintf(stderr,"Unknown flag: %c\n",ch);
