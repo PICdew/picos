@@ -35,14 +35,29 @@ static void error_log(const char *format, ...)
     vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
 }
 
+static FS_Block* FS_getblock(FS_Block *super_block, FS_Unit block_id)
+{
+  return &(super_block[block_id*FS_BLOCK_SIZE]);
+}
+
+
+static void FS_free_block(FS_Block *sb, FS_Unit block_id)
+{
+  FS_Block *free_block;
+  if(sb == NULL || block_id >= sb[FS_SuperBlock_num_blocks])
+    return;
+  free_block = FS_getblock(sb,block_id);
+  log_msg("Freeing contents of block %x\n",block_id);
+  memset(free_block,0,FS_BLOCK_SIZE*sizeof(FS_Unit));
+  free_block[FS_INode_magic_number] = MAGIC_FREE_INODE;
+  free_block[FS_INode_pointers] = sb[FS_SuperBlock_free_queue];
+  sb[FS_SuperBlock_free_queue] = block_id;
+  sb[FS_SuperBlock_num_free_blocks]++;
+}
+
 static int FS_is_virtual(const char *path)
 {
   return (strcmp(path,"/") == 0) || (strcmp(path,"/dump") == 0);
-}
-
-FS_Block* FS_getblock(FS_Block *super_block, FS_Unit block_id)
-{
-  return &(super_block[block_id*FS_BLOCK_SIZE]);
 }
 
 void FS_mksuperblock(FS_Block *block, size_t num_blocks)
@@ -199,14 +214,121 @@ static int fs_getattr(const char *path, struct stat *stbuf)
     return res;
 }
 
+static int FS_access(const char *path, int mode)
+{
+  struct stat status;
+  int retval = fs_getattr(path,&status);
+  mode_t good_mode = 07;
+  log_msg("FS_access %s mode 0%o\n",path,mode);
+  if(retval != 0)
+      return retval;
+  
+  if(status.st_uid == getuid())
+    good_mode |= 0700;
+  if(status.st_gid == getgid())
+    good_mode |= 070;
+
+  if(mode & R_OK != 0 && ((good_mode && 0444) & status.st_mode == 0))
+    return -EACCES;
+  
+  if(mode & W_OK != 0 && ((good_mode && 0222) & status.st_mode ==0))
+    return -EACCES;
+
+  if(mode & X_OK != 0 && ((good_mode && 0111) & status.st_mode ==0))
+    return -EACCES;
+
+  return 0;
+}
+
+static int FS_truncate(const char *path, off_t new_size)
+{
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+  off_t old_size;
+  int needed_blocks;
+  file_head = FS_resolve(file_head,path,sb);
+  if(file_head == NULL)
+    return -ENOENT;
+
+  switch(file_head[FS_INode_magic_number])
+    {
+    case MAGIC_DIR:
+      return -EISDIR;
+    case MAGIC_DATA:
+      break;
+    case MAGIC_FREE_INODE:default:
+      return -EIO;
+    }
+
+  old_size = file_head[FS_INode_size];
+  log_msg("FS_truncate (%s, old size: %d)\n",path,file_head[FS_INode_size]);
+  
+  if(old_size < new_size)
+    {
+      needed_blocks = (int)ceil(1.0*new_size/FS_BLOCK_SIZE);
+      log_msg("Enlarging file. Need %d blocks. ",needed_blocks);
+      needed_blocks -= (int)ceil(old_size/FS_BLOCK_SIZE);
+      log_msg("Enlarging file. Have %d blocks.\n",(int)ceil(old_size/FS_BLOCK_SIZE));
+      FS_Unit pointer = 0;
+      if(needed_blocks > sb[FS_SuperBlock_num_free_blocks])
+	{
+	  error_log("Not enough blocks. Need: %d Have: %d",needed_blocks,sb[FS_SuperBlock_num_free_blocks]);
+	  return -ENOSPC;
+	}
+      while(pointer < FS_INODE_NUM_POINTERS)
+	if(file_head[FS_INode_pointers + pointer] == 0)
+	  break;
+	else
+	  pointer++;
+      if(pointer >= FS_INODE_NUM_POINTERS)
+	{
+	  error_log("No more blocks allowed for this file\n");
+	  return -ENOSPC;
+	}
+      
+      while(needed_blocks > 0)
+	{
+	  FS_Block *new_node;
+	  file_head[FS_INode_pointers + pointer++] = sb[FS_SuperBlock_free_queue];
+	  new_node = FS_getblock(sb,sb[FS_SuperBlock_free_queue]);
+	  sb[FS_SuperBlock_free_queue] = new_node[FS_INode_pointers];
+	  sb[FS_SuperBlock_num_free_blocks]--;
+	  memset(new_node,0,FS_BLOCK_SIZE*sizeof(FS_Unit));
+	  if(pointer >= FS_INODE_NUM_POINTERS)
+	    {
+	      error_log("No more blocks allowed for this file\n");
+	      return -ENOSPC;
+	    }
+	  needed_blocks--;
+	}
+      file_head[FS_INode_size] = new_size;
+      return 0;
+    }
+
+  //In this case we need to shrink the file.
+  log_msg("Shrinking file\n");
+  needed_blocks = (int)ceil(new_size/FS_BLOCK_SIZE);
+  for(;needed_blocks < FS_INODE_NUM_POINTERS;needed_blocks++)
+    {
+      if(file_head[FS_INode_pointers + needed_blocks] == 0)
+	continue;
+      FS_free_block(sb, file_head[FS_INode_pointers + needed_blocks]);
+      file_head[FS_INode_pointers + needed_blocks] = 0;
+      }
+  
+  file_head[FS_INode_size] = new_size;
+  return 0;
+  
+}
+
 int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
 	       struct fuse_file_info *fi)
 {
 
   const struct fs_fuse_state *the_state = FS_PRIVATE_DATA;
-  log_msg(the_state->logfile,"In readdir\n");
+  log_msg("FS_readdir (%s)\n",path);
   FS_Block *the_dir = FS_getblock(the_state->super_block,the_state->super_block[FS_SuperBlock_root_block]);
-  size_t dir_counter = 0;
+  size_t dir_counter = 0,pointer_counter = FS_INode_pointers,dirent_len = 0;
   unsigned char *d_name = NULL, *dirent;
   
   (void)offset;
@@ -225,16 +347,25 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   filler(buf, "..", NULL, 0);
 
   dir_counter = 0;
-  dirent = FS_getblock(the_state->super_block,the_dir[FS_INode_pointers]);
   for(;dir_counter < the_dir[FS_INode_size];dir_counter++)
     {
-      size_t len = (size_t)dirent[0];
+      size_t len;
+      if(dirent_len % FS_BLOCK_SIZE == 0)
+	dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
+      len = (size_t)dirent[0];
+      if(len == 0)
+	{
+	  dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
+	  len = (size_t)dirent[0];
+	}
       d_name = (unsigned char*)realloc(d_name,(len+1)*sizeof(unsigned char));
       dirent += 1;
       memcpy(d_name,dirent,len);
       d_name[len] = 0;
       filler(buf,d_name,NULL,0);
       dirent += len + 1;
+      dirent_len += len + 2;
+      log_msg("dirlen = %d\n",dirent_len);
     }
   free(d_name);
   return 0;
@@ -246,7 +377,7 @@ static int FS_opendir(const char *path, struct fuse_file_info *fi)
   FS_Block *the_dir = the_state->super_block;
   the_dir += the_state->super_block[FS_SuperBlock_root_block];
 
-  log_msg(the_state->logfile,"Opendir\n");fflush(the_state->logfile);
+  log_msg("FS_opendir (%s)\n",path);
 
   if(strcmp(path,"/") != 0)
     the_dir = FS_resolve(the_dir,path,the_state->super_block);
@@ -267,7 +398,7 @@ static int FS_mkfile(const char *path, mode_t mode)
   const char filename[FS_BLOCK_SIZE-2];
   memset(filename,0,sizeof(char)*(FS_BLOCK_SIZE-2));
   
-  log_msg("FS_mkfile (%s) mode 0%o\n",path,mode);
+  log_msg("FS_mkfile (%s) mode 0%d\n",path,mode & 0777);
   
   if(file != NULL)
     {
@@ -326,8 +457,19 @@ static int FS_mkfile(const char *path, mode_t mode)
   
   for(;pointer < FS_INODE_NUM_POINTERS;pointer++)
     {
-      FS_Unit *dir_list = FS_getblock(sb,file[FS_INode_pointers + pointer]);
+      FS_Unit *dir_list;
       FS_Unit size = FS_BLOCK_SIZE, count = 0;
+      if(file[FS_INode_pointers + pointer] == 0)
+	{
+	  file[FS_INode_pointers + pointer] = sb[FS_SuperBlock_free_queue];
+	  dir_list = FS_getblock(sb,file[FS_INode_pointers + pointer]);
+	  sb[FS_SuperBlock_free_queue] = dir_list[FS_INode_pointers];
+	  sb[FS_SuperBlock_num_free_blocks]--;
+	  memset(dir_list,0,FS_BLOCK_SIZE*sizeof(FS_Unit));
+	}
+      else
+	dir_list = FS_getblock(sb,file[FS_INode_pointers + pointer]);
+
       while(count < FS_BLOCK_SIZE)
 	{
 	  if(*dir_list == 0)
@@ -360,6 +502,7 @@ static int FS_mkfile(const char *path, mode_t mode)
 
 static int FS_mknod(const char *path, mode_t mode, dev_t dev)
 {
+  log_msg("FS_mknod (%s)\n",path);
   return FS_mkfile(path,mode);
 }
 
@@ -378,21 +521,7 @@ static int FS_open(const char *path, struct fuse_file_info *fi)
   return 0;
 }
 
-static void FS_free_block(FS_Block *sb, FS_Unit block_id)
-{
-  FS_Block *free_block;
-  if(sb == NULL || block_id >= sb[FS_SuperBlock_num_blocks])
-    return;
-  free_block = FS_getblock(sb,block_id);
-  log_msg("Freeing contents of block %x\n",free_block);
-  memset(free_block,0,FS_BLOCK_SIZE*sizeof(FS_Unit));
-  free_block[FS_INode_magic_number] = MAGIC_FREE_INODE;
-  free_block[FS_INode_pointers] = sb[FS_SuperBlock_free_queue];
-  sb[FS_SuperBlock_free_queue] = block_id;
-  sb[FS_SuperBlock_num_free_blocks]++;
-}
-
-  static int FS_removefile(const char *path, FS_Block *sb)
+static int FS_removefile(const char *path, FS_Block *sb)
 {
   FS_Block *top_dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
   FS_Block *inode = FS_resolve(top_dir,path,sb);
@@ -406,7 +535,6 @@ static void FS_free_block(FS_Block *sb, FS_Unit block_id)
   if(inode[FS_INode_magic_number] == MAGIC_DIR && inode[FS_INode_size] != 0)
     return -EACCES;
       
-  sb[FS_SuperBlock_num_free_blocks] += (FS_Unit)ceil((double)inode[FS_INode_size]/FS_BLOCK_SIZE);
   inode[FS_INode_size] = 0;
   
   //attempt to remove entry in directory
@@ -459,10 +587,8 @@ static void FS_free_block(FS_Block *sb, FS_Unit block_id)
 		      if(byte_start[0] == 0)
 			{
 			  // if directory listing is now empty, remove it from the inode and shift
-			  memset(tmp_filelist,0,FS_BLOCK_SIZE);
-			  memcpy(tmp_filelist,inode + ((off_t)FS_INode_pointers + dir_ent + 1) , FS_INODE_NUM_POINTERS - dir_ent - 1 );
-			  memcpy(inode + FS_INode_pointers + dir_ent,tmp_filelist,FS_INODE_NUM_POINTERS - dir_ent);
-			  sb[FS_SuperBlock_num_free_blocks]++;
+			  FS_free_block(sb,inode[FS_INode_pointers + dir_ent]);
+			  inode[FS_INode_pointers + dir_ent] = 0;
 			}
 		      break;
 		    }
@@ -481,6 +607,14 @@ static void FS_free_block(FS_Block *sb, FS_Unit block_id)
 
 static int FS_unlink(const char *path)
 {
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+  log_msg("FS_unlink (%s)\n",path);
+  file_head = FS_resolve(file_head,path,sb);
+  if(file_head == NULL)
+    return -ENOENT;
+  if((file_head[FS_INode_mode] & 02 == 0))
+    return -EACCES;
   return FS_removefile(path, FS_PRIVATE_DATA->super_block);
 }
 
@@ -489,7 +623,12 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+  FS_Unit data_ptr = 0;
+  FS_Block *data_block = NULL;
+  size_t amount_written = 0;
   file_head = FS_resolve(file_head,path,sb);
+  
+  log_msg("FS_write (file = %s, text = %s, size = %d, offset = %d)\n",path,buf,size,offset);
   
   if(file_head == NULL)
     {
@@ -500,47 +639,89 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
     }
   if(file_head == NULL)
     return 0;
-  return size;
+  if(file_head[FS_INode_size] != offset + size)
+    {
+      int retval;
+      log_msg("expanding to write. new size: %d\n",offset+size);
+      retval = FS_truncate(path,offset + size);
+      if(retval != 0)
+	return retval;
+    }
+  
+  if(offset >= 0)
+    {
+      data_ptr = (FS_Unit)floor(offset/FS_BLOCK_SIZE);
+      if(data_ptr > FS_INODE_NUM_POINTERS)
+	{
+	  error_log("Offset exceeds inode space.\n");
+	  return -EFAULT;
+	}
+    }
+  
+  while(file_head[FS_INode_pointers + data_ptr] != 0 && data_ptr < FS_INODE_NUM_POINTERS)
+    {
+      data_block = FS_getblock(sb,file_head[FS_INode_pointers + data_ptr]);
+      if(size > FS_BLOCK_SIZE)
+	{
+	  memcpy(data_block,buf,FS_BLOCK_SIZE*sizeof(char));
+	  amount_written += FS_BLOCK_SIZE;
+	  buf += FS_BLOCK_SIZE;
+	  size -= FS_BLOCK_SIZE;
+	}
+      else
+	{
+	  memcpy(data_block,buf,size*sizeof(char));
+	  amount_written += size;
+	  break;
+	}
+	       
+      data_ptr++;
+    }
+
+  return amount_written;
 }
 
 static int FS_read(const char *path, char *buf, size_t size, off_t offset,
-                      struct fuse_file_info *fi)
+		   struct fuse_file_info *fi)
 {
-    size_t len;
-    int retval = 0;
-    (void) fi;
+  size_t len;
+  int retval = 0;
+  (void) fi;
 
-    FS_Block *sb = FS_PRIVATE_DATA->super_block;
-    FS_Block *file_head = sb;
-    FS_Block *file = NULL;
-    if(strcmp(path,"/dump") == 0)
-      {
-	len = sb[FS_SuperBlock_num_blocks]*sb[FS_SuperBlock_block_size];
-      }
-    else
-      {
-	file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
-	if(file == NULL)
-	  return -ENOENT;
-	len = (size_t)file[FS_INode_size];
-	file_head = FS_getblock(sb, file[FS_INode_pointers]);
-	log_msg("%s is %d bytes long starting at %x, %x\n",path,len,file[0],file[1]);
-      }
-    if (offset < len) {
-        if (offset + size > len)
-            size = len - offset;
-        memcpy(buf, file_head + offset, size);
-    } else
-        size = 0;
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  FS_Block *file_head = sb;
+  FS_Block *file = NULL;
+  log_msg("FS_read (%s)\n",path);
+  if(strcmp(path,"/dump") == 0)
+    {
+      len = sb[FS_SuperBlock_num_blocks]*sb[FS_SuperBlock_block_size];
+    }
+  else
+    {
+      file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
+      if(file == NULL)
+	return -ENOENT;
+      len = (size_t)file[FS_INode_size];
+      file_head = FS_getblock(sb, file[FS_INode_pointers]);
+      log_msg("%s is %d bytes long starting at %x, %x\n",path,len,file[0],file[1]);
+    }
+  if (offset < len) {
+    if (offset + size > len)
+      size = len - offset;
+    memcpy(buf, file_head + offset, size);
+  } else
+    size = 0;
 
-    log_msg("Read %d lines of %s\n",size,path);
-    return size;
+  log_msg("Read %d lines of %s\n",size,path);
+  return size;
 }
 
 static int FS_chmod(const char *path, mode_t mode)
 {
   FS_Block *inode = NULL;
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
+
+  log_msg("FS_chmod (%s)\n",path);
   if(FS_is_virtual(path))
     return -EACCES;
   
@@ -645,16 +826,53 @@ static FS_Block* FS_mount(const char *filename)
   return super_block;
 }
 
+static int FS_flush(const char *buf,struct fuse_file_info *info)
+{
+  log_msg("FS_flush (%s)\n",buf);
+  return 0;
+}
+
+/*static int FS_create(const char *buf,mode_t mode, struct fuse_file_info *info)
+{
+  log_msg("FS_create (%s)\n",buf);
+  return 0;
+  }*/
+
+static int FS_release(const char *path, struct fuse_file_info *fi)
+{
+  log_msg("FS_release (%s)\n",path);
+  return 0;
+}
+
+static int FS_utime(const char *path, const struct timespec *times)
+{
+  log_msg("FS_utime (%s)\n",path);
+  return 0;
+}
+
+static int FS_fsync(const char *path, int thing, struct fuse_file_info *fi)
+{
+  log_msg("FS_fsync (%s)\n",path);
+  return 0;
+}
+
 struct fuse_operations fs_ops = {
+  .access = FS_access,
   .readdir = fs_readdir,
   .getattr = fs_getattr,
   .opendir = FS_opendir,
   .mknod = FS_mknod,
+  .flush = FS_flush,
   .write = FS_write,
   .open = FS_open,
   .read = FS_read,
+  .release = FS_release,
+  .truncate = FS_truncate,
   .unlink = FS_unlink,
-  .chmod = FS_chmod
+  .chmod = FS_chmod,
+  /*.create = FS_create,*/
+  .utime = FS_utime,
+  .fsync = FS_fsync
 };
 
 enum {FS_FLAG_LOG=0};
