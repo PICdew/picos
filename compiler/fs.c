@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include "fs.h"
+#include "pasm.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -57,8 +58,45 @@ static void FS_free_block(FS_Block *sb, FS_Unit block_id)
 
 static int FS_is_virtual(const char *path)
 {
-  return (strcmp(path,"/") == 0) || (strcmp(path,"/dump") == 0);
+  return (strcmp(path,"/") == 0) || (strcmp(path,"/dump") == 0) 
+    || (strcmp(path,"/eeprom") == 0);
 }
+
+static FILE* FS_read_eeprom(const FS_Block *sb,int *len)
+{
+  char hex_buffer[45];
+  FILE *eeprom_file = tmpfile();
+  struct compiled_code *code = NULL, *code_end = NULL;
+  int dummy_len = 0;
+  size_t num_bytes,curr_byte = 0;
+  if(sb == NULL)
+    return NULL;
+  if(len == NULL)
+    len = &dummy_len;
+
+  num_bytes = sb[FS_SuperBlock_block_size]*sb[FS_SuperBlock_num_blocks];
+  
+  for(;curr_byte < num_bytes;curr_byte++)
+    insert_compiled_code(&code,&code_end,sb[curr_byte]);
+  
+  log_msg("code 0x%x end 0x%x\n",code,code_end);
+  memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));
+  log_msg("wrote %d\n",fprintf(eeprom_file,":020000040000FA\n"));
+  //FPrintCode(eeprom_file,code,0,hex_buffer,0x4200,0,PRINT_HEX);
+  log_msg("wrote %d\n",fprintf(eeprom_file,":00000001FF\n"));
+  FreeCode(code);
+  
+  fseek(eeprom_file,0,SEEK_END);
+  *len = ftell(eeprom_file);
+  rewind(eeprom_file);
+  //  eeprom = (FS_Block*)malloc(num_bytes);
+  //  eeprom = fgets(eeprom,num_bytes,eeprom_file);
+  
+  //  fclose(eeprom_file);
+
+  return eeprom_file;
+}
+
 
 void FS_mksuperblock(FS_Block *block, size_t num_blocks)
 {
@@ -198,13 +236,21 @@ static int fs_getattr(const char *path, struct stat *stbuf)
     if(strcmp(path,"/") == 0)
       FS_inode2stat(stbuf,dir);
 
-    if(strcmp("/dump",path) == 0)
+    if(strcmp(path,"/dump") == 0)
       {
 	stbuf->st_mode = 0555 | S_IFREG;
 	stbuf->st_size = sb[FS_SuperBlock_num_blocks] * sb[FS_SuperBlock_block_size];
 	return 0;
       }
-
+    else if(strcmp(path,"/eeprom") == 0)
+      {
+	int len;
+	FILE *eeprom = FS_read_eeprom(sb,&len);
+	stbuf->st_mode = 0555 | S_IFREG;
+	stbuf->st_size = len;
+	fclose(eeprom);
+	return 0;
+      }
     dir = FS_resolve(dir,path,sb);
     if(dir == NULL)
       return -ENOENT;
@@ -338,6 +384,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   else
     {
       filler(buf,"dump",NULL,0);
+      filler(buf,"eeprom",NULL,0);
     }
 
   if(the_state == NULL)
@@ -514,7 +561,7 @@ static int FS_open(const char *path, struct fuse_file_info *fi)
 
   log_msg("FS_open (%s, 0x%x)\n",path,file);
 
-  if(strcmp(path,"/dump") == 0)
+  if(FS_is_virtual(path) && strcmp(path,"/") != 0)
     return 0;
   if(file == NULL)
     return -ENOENT;
@@ -681,20 +728,31 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
   return amount_written;
 }
 
+
 static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 		   struct fuse_file_info *fi)
 {
-  size_t len;
-  int retval = 0;
+  int len;
+  int retval = 0, reading_eeprom = FALSE;
   (void) fi;
 
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = sb;
   FS_Block *file = NULL;
   log_msg("FS_read (%s)\n",path);
-  if(strcmp(path,"/dump") == 0)
+  if(strcmp(path,"/dump") == 0 )
     {
       len = sb[FS_SuperBlock_num_blocks]*sb[FS_SuperBlock_block_size];
+    }
+  else if(strcmp(path,"/eeprom") == 0)
+    {
+      FILE *eeprom_file = FS_read_eeprom(sb,&len);
+      if(offset != 0)
+	fseek(eeprom_file,offset,SEEK_SET);
+      log_msg("eeprom length = %d\n",len);
+      buf = fgets(buf,size,eeprom_file);
+      fclose(eeprom_file);
+      return len;
     }
   else
     {
@@ -712,7 +770,10 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
   } else
     size = 0;
 
-  log_msg("Read %d lines of %s\n",size,path);
+  log_msg("Read %d bytes of %s\n",size,path);
+  if(reading_eeprom == TRUE)
+    free(file);
+
   return size;
 }
 
@@ -967,14 +1028,14 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
     }
 }
 
-
+FILE *assembly_file;
 int main(int argc, char **argv)
 {
   int fuse_stat;
   struct fs_fuse_state *the_state;
   FS_Block *super_block = NULL;
   size_t num_blocks = 256;
-  
+  assembly_file = tmpfile();
   the_state = calloc(1,sizeof(struct fs_fuse_state));
   //defaults
   the_state->super_block = NULL;

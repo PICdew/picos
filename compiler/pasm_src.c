@@ -5,20 +5,10 @@
 #include "pasm.h"
 #include "pasm_yacc.h"
 #include "../piclang.h"
+#include "page.h"
 
-static int lbl;
 extern FILE *assembly_file;
-void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
 
-void insert_code(unsigned char val)
-{
-  insert_compiled_code(&the_code,&the_code_end,val);
-}
-
-void insert_string(unsigned char val)
-{
-  insert_compiled_code(&the_strings,&the_strings_end,val);
-}
 
 int write_assembly(FILE *stream, const char *format, ...)
 {
@@ -55,182 +45,169 @@ void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code**
   
 }
 
-int resolve_variable(const int id)
+
+void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type)
 {
-  int i;
-  if(variable_list == NULL)
+  if(code == NULL)
+    return;
+
+  switch(print_type)
     {
-      variable_list = (int*)malloc(sizeof(int));
-      variable_list[0] = id;
-      num_variables = 1;
-      return 0;
+    case PRINT_EEPROM_DATA:
+      sprintf(&buffer[5*col],",0x%02x",code->val & 0xff);
+      break;
+    case PRINT_HEX:default:
+      sprintf(&buffer[4*col],"%04x",(code->val << 8) & 0xff00);
+      break;
     }
-  
-  i = 0;
-  for(;i<num_variables;i++)
-    if(variable_list[i] == id)
-      return i;
-  
-  variable_list = (int*)realloc(variable_list,(num_variables+1)*sizeof(int));
-  variable_list[num_variables++] = id;
-  return num_variables - 1;
-  
-}
-
-int resolve_string(const char *str, int *is_new)
-{
-  size_t i,retval;
-  if(string_list == NULL)
+  checksum += (code->val & 0xff);
+  col++;
+  if(col >= COMPILE_MAX_WIDTH || code->next == NULL)
     {
-      string_list = (char**)malloc(sizeof(char*));
-      string_list[0] = strdup(str);
-      num_strings = 1;
-      if(is_new != NULL)
-	*is_new = TRUE;
-      return 0;
-    }
-  
-  if(is_new != NULL)
-    *is_new = FALSE;
-  i = 0;
-  retval = 0;
-  for(;i<num_strings;i++)
-    if(strcmp(string_list[i],str) == 0)
-      return retval;
-    else
-      retval += strlen(string_list[i]) + 1;
-  
-  if(is_new != NULL)
-    *is_new = TRUE;
-  string_list = (char**)realloc(string_list,(num_strings+1)*sizeof(char*));
-  string_list[num_strings++] = strdup(str);
-  return retval;
-}
-
-int ex(nodeType *p) {
-    int lbl1, lbl2;
-
-    if (!p) return 0;
-    switch(p->type) {
-    case typeCon:
-      write_assembly(assembly_file,"\tpushl\t%d\n", p->con.value); 
-      insert_code(PICLANG_PUSHL);
-      insert_code(p->con.value);
-      break;
-    case typeId:        
-      write_assembly(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
-      insert_code(PICLANG_PUSH);
-      insert_code(resolve_variable(p->id.i));
-      break;
-    case typeStr:
-      {
-	char *pStr = p->str.string;
-	if(pStr != NULL)
+      checksum += (2*col & 0xff) + (start_address & 0xff) + ((start_address & 0xff00) >> 8);
+      checksum = (~checksum & 0xff);
+      checksum++;
+      switch(print_type)
+	{
+	case PRINT_EEPROM_DATA:
 	  {
-	    nodeType str_pointer;
-	    int is_new = TRUE;
-	    str_pointer.con.value = resolve_string(pStr,&is_new);
-	    str_pointer.type = typeCon;
-	    if(is_new)
+	    int counter = 0;
+	    fprintf(hex_file,"__EEPROM_DATA(");
+	    if(strlen(buffer) > 1)
+	      fprintf(hex_file,"%s",&buffer[1]);
+	    if(col % 8 != 0)
 	      {
-		write_assembly(assembly_file,"\tstore\t\"%s\"\n", pStr);
-		while(pStr != NULL)
-		  {
-		    insert_string(*pStr);
-		    if(*pStr == 0)
-		      break;
-		    pStr++;
-		  }
+		for(;counter < 8-(col % 8);counter++)
+		  fprintf(hex_file,",0xff");
 	      }
-	    ex(&str_pointer);
-	  }
-	break;
-      }
-    case typeOpr:
-        switch(p->opr.oper) {
-        case WHILE:
-            write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
-            ex(p->opr.op[0]);
-            write_assembly(assembly_file,"\tjz\tL%03d\n", lbl2 = lbl++);
-            ex(p->opr.op[1]);
-            write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl1);
-            write_assembly(assembly_file,"L%03d:\n", lbl2);
-            break;
-        case IF:
-            ex(p->opr.op[0]);
-            if (p->opr.nops > 2) {
-                /* if else */
-                write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
-                ex(p->opr.op[1]);
-                write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl2 = lbl++);
-                write_assembly(assembly_file,"L%03d:\n", lbl1);
-                ex(p->opr.op[2]);
-                write_assembly(assembly_file,"L%03d:\n", lbl2);
-            } else {
-                /* if */
-                write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
-                ex(p->opr.op[1]);
-                write_assembly(assembly_file,"L%03d:\n", lbl1);
-            }
-            break;
-        case PUTD:     
-	  ex(p->opr.op[0]);
-           write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
-            break;
-        case PUTCH:
-            ex(p->opr.op[0]);
-            write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
-            break;
-        case '=':       
-            ex(p->opr.op[1]);
-            write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(resolve_variable(p->opr.op[0]->id.i));
-            break;
-        case UMINUS:    
-            ex(p->opr.op[0]);
-            write_assembly(assembly_file,"\tneg\n");
-            break;
-	case INPUT:
-	  //ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tpushl\t%c\n",p->opr.op[0]->id.i + 'a');
-	  insert_code(PICLANG_PUSHL);
-	  insert_code(resolve_variable(p->opr.op[0]->id.i));
-	  write_assembly(assembly_file,"\tinput\n");
-	  insert_code( PICLANG_INPUT);
-	  break;
-        case SYSTEM:
-	  {
-	    int op_counter = p->opr.nops - 1;
-	    for(;op_counter >= 0 ;op_counter--)
-		ex(p->opr.op[op_counter]);
-	    write_assembly(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
+	    fprintf(hex_file,");\n");
 	    break;
 	  }
-	case SPRINT:
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tsprint\n");
-	  insert_code(PICLANG_SPRINT);
+	case PRINT_HEX:default:
+	  fprintf(hex_file,":%02x%04x00%s%02x\n",col*2,start_address,buffer,checksum);
 	  break;
-	case MORSE:
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tmorse\n");
-	  insert_code(PICLANG_MORSE);
-	  break;
-        default:
-            ex(p->opr.op[0]);
-            ex(p->opr.op[1]);
-            switch(p->opr.oper) {
-            case '+':   write_assembly(assembly_file,"\tadd \n"); insert_code(PICLANG_ADD);break;
-            case '-':   write_assembly(assembly_file,"\tsub\n");insert_code(PICLANG_SUB); break; 
-            case '*':   write_assembly(assembly_file,"\tmul\n");insert_code(PICLANG_MULT); break;
-            case '/':   write_assembly(assembly_file,"\tdiv\n"); break;
-            case '<':   write_assembly(assembly_file,"\tcompLT\n"); break;
-            case '>':   write_assembly(assembly_file,"\tcompGT\n"); break;
-            case GE:    write_assembly(assembly_file,"\tcompGE\n"); break;
-            case LE:    write_assembly(assembly_file,"\tcompLE\n"); break;
-            case NE:    write_assembly(assembly_file,"\tcompNE\n"); break;
-            case EQ:    write_assembly(assembly_file,"\tcompEQ\n"); break;
-            }
-        }
+	}
+      memset(buffer,0,45*sizeof(char));
+      col = 0;
+      checksum = 0;
+      start_address += 0x10;
     }
-    return 0;
+    
+  
+  FPrintCode(hex_file,code->next,col,buffer,start_address,checksum,print_type);
 }
+
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, unsigned char *piclang_bitmap, int num_variables)
+{
+  char hex_buffer[45];
+  
+  FirstPass(the_code,FALSE,&piclang_bitmap,num_variables);
+  *the_code = MakePCB(*the_code,the_strings,num_variables,piclang_bitmap);
+  memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
+  fprintf(hex_file,":020000040000FA\n");
+  FPrintCode(hex_file,*the_code,0,hex_buffer,0x4200,0,PRINT_HEX);
+  fprintf(hex_file,":00000001FF\n");
+  FPrintCode(eeprom_file,*the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
+
+}
+
+void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables)
+{
+  int clean_skip_assignment_check = skip_assignment_check;
+  
+  if(code == NULL)
+    return;
+    switch(code->val)
+    {
+     case PICLANG_SYSTEM:
+      if(piclang_bitmap != NULL)
+	*piclang_bitmap |= PICLANG_BIT_SYSCALL;
+      break;
+    }
+  if(clean_skip_assignment_check)
+    skip_assignment_check = FALSE;
+  
+  FirstPass(code->next,skip_assignment_check,piclang_bitmap,num_variables);
+}
+
+struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
+{
+  struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *offset = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  offset->val = 0;
+  struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  bitmap->val = piclang_bitmap;
+  struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  num_pages->val = (unsigned char)ceil(1.0*total_memory/PAGE_SIZE);
+  struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  pc->val = 0;
+  struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  status->val = PICLANG_SUCCESS;
+  struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  start_address->val = PCB_SIZE;
+  struct compiled_code *string_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  stack->val = 0xff;
+  struct compiled_code *end_of_stack = stack;
+  size_t stack_counter = 1;
+  for(;stack_counter < PICLANG_STACK_SIZE;stack_counter++)
+    {
+      end_of_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      end_of_stack = end_of_stack->next;
+      end_of_stack->val = 0xff;
+    }
+  end_of_stack->next  = (struct compiled_code*)malloc(sizeof(struct compiled_code));// this is the stack head pointer.
+  end_of_stack->next->val = 0;
+  end_of_stack = end_of_stack->next;
+  size->next = bitmap;
+  bitmap->next = offset;
+  offset->next = num_pages;
+  num_pages->next = pc;
+  pc->next = status;
+  status->next = start_address;
+  start_address->next = string_address;
+  string_address->next = stack;
+  end_of_stack->next = NULL;// temporary to count PCB's size
+  start_address->val = CountCode(size);
+
+  end_of_stack->next = the_code;
+  string_address->val = CountCode(size);
+
+  if(the_code == NULL)
+    {
+      fprintf(stderr,"No code to compile!\n");
+      exit -1;
+    }
+  while(the_code->next != NULL)
+    the_code = the_code->next;
+  if(the_strings != NULL)
+    the_code->next = the_strings;
+  else
+    {
+      the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      the_code->next->val = 0;
+    }
+  
+  size->val =  CountCode(size);
+    
+  return size;
+}
+
+
+
+void FreeCode(struct compiled_code* code)
+{
+  if(code == NULL)
+    return;
+  FreeCode(code->next);
+  free(code);
+}
+
+size_t CountCode(struct compiled_code *the_code)
+{
+  if(the_code == NULL)
+    return 0;
+  return 1 + CountCode(the_code->next);
+}
+
+

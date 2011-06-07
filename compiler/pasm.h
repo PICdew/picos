@@ -47,16 +47,17 @@ struct compiled_code
   struct compiled_code *next;
 };
 
-struct compiled_code *the_code;
-struct compiled_code *the_code_end;
-struct compiled_code *the_strings;
-struct compiled_code *the_strings_end;
-char **string_list;
-size_t num_strings;
-int *variable_list;
-size_t num_variables;
-extern void insert_code(unsigned char val);
+void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
 extern int write_assembly(FILE *stream, const char *format, ...);
+
+enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
+size_t CountCode(struct compiled_code *the_code);
+void FreeCode(struct compiled_code* code);
+struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap);
+void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables);
+void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type);
+#define COMPILE_MAX_WIDTH 8//max width
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, unsigned char *piclang_bitmap, int num_variables);
 
 #ifndef TRUE
 #define TRUE 1
