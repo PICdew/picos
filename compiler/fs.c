@@ -947,20 +947,24 @@ struct fuse_operations fs_ops = {
   .fsync = FS_fsync
 };
 
-enum {FS_FLAG_LOG=0};
 static const struct option long_opts[] = {
-  {"log",1,NULL,FS_FLAG_LOG},
-  {"load",1,NULL,'l'},
+  {"log",1,NULL,'l'},
+  {"mount",1,NULL,'m'},
   {"verbose",0,NULL,'v'},
   {"help",0,NULL,'h'},
   {0,0,0,0}
 };
-static const char short_opts[] = "hl:v";//log is long opt only
+static const char short_opts[] = "hl:m:v";
 
 static void print_help()
 {
   const struct option *opts = long_opts;
-  printf("PIC FileSystem\n");
+  printf("fs -- PIC file system mount tool, using libfuse.\n");
+  printf("Copyright 2011 David Coss, PhD\n");
+  printf("-------------------------------\n");
+  printf("Mounts a file system on a given mount point.\n");
+  printf("If no image file is specified, a fresh filesystem is used.\n");
+  printf("\n");
   printf("Usage: ./fs [options] <mount point>\n");
   printf("Options:\n");
   
@@ -978,11 +982,11 @@ static void print_help()
      
       switch(opts->val)
 	{
-	case FS_FLAG_LOG:
+	case 'l':
 	  printf("Specify a log file.");
 	  break;
-	case 'l':
-	  printf("Load a specific filesystem image.");
+	case 'm':
+	  printf("Mount a specific filesystem image.");
 	  break;
 	case 'h':
 	  printf("This message.");
@@ -1005,7 +1009,7 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
     {
       switch(ch)
 	{
-	case FS_FLAG_LOG:
+	case 'l':
 	  the_state->logfile = fopen(optarg,"w");
 	  if(the_state->logfile == NULL)
 	    {
@@ -1017,7 +1021,7 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	case 'h':
 	  print_help();
 	  exit(0);
-	case 'l':
+	case 'm':
 	  the_state->super_block = FS_mount(optarg);
 	  if(the_state->super_block == NULL)
 	    {

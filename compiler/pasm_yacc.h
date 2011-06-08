@@ -91,7 +91,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 49 "pasm_yacc.y"
+#line 50 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
     char sIndex;                /* symbol table index */

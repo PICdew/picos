@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <math.h>
 #include <getopt.h>
+#include <errno.h>
 #include "pasm.h"
 #include "../piclang.h"
 #include "utils.h"
@@ -195,13 +196,14 @@ void yyerror(char *s) {
 
 
 
-
+static const char short_options[] = "a:b:e:ho:";
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
                {"hex", 1,NULL, 'o'},
 	       {"asm", 1,NULL, 'a'},
 	       {"eeprom",1,NULL, 'e'},
+	       {"binary",1,NULL,'b'},
                {0, 0, 0, 0}
              };
 
@@ -216,20 +218,22 @@ void print_help()
   printf("\n");
   printf("Usage: pasm [options] [source code]\n\n");
   printf("Options:\n");
-  printf("--help, -h :\t Displays this dialog.\n");
+  printf("--help, -h :\t\t Displays this dialog.\n");
   printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");
   printf("--hex,-o <file> :\t Outputs Intel Hex to the specified file.\n");
   printf("--eeprom, -e <file> :\t Outputs \"__EEPROM_DATA(...)\" code for use\n");
   printf("                     \t with the Hi Tech C Compiler.\n");
+  printf("--binary, -b <file> :\t Outputs a binary file containing the compiled program.\n");
 }
 
 int main(int argc, char **argv) 
 {
   char hex_buffer[45];
-  FILE *hex_file = stdout, *eeprom_file = stdout;
+  FILE *hex_file = stdout, *eeprom_file = stdout, *binary_file = NULL;
   char opt;
   int opt_index;
   unsigned char piclang_bitmap = 0;
+  struct compiled_code *curr_code = NULL;
 
   assembly_file = NULL;
   the_code_end = the_code = NULL;
@@ -239,7 +243,7 @@ int main(int argc, char **argv)
 
   while(TRUE)
     {    
-      opt = getopt_long(argc,argv,"a:e:ho:",long_options,&opt_index);
+      opt = getopt_long(argc,argv,short_options,long_options,&opt_index);
       if(opt == -1)
 	break;
       
@@ -254,6 +258,14 @@ int main(int argc, char **argv)
 	  assembly_file = fopen(optarg,"w");
 	  if(assembly_file == NULL)
 	    assembly_file = stdout;
+	  break;
+	case 'b':
+	  binary_file = fopen(optarg,"w");
+	  if(binary_file == NULL)
+	    {
+	      fprintf(stderr,"Could not open %s for writing.\n",optarg);
+	      exit(ENOENT);
+	    }
 	  break;
 	case 'e':
 	  eeprom_file = fopen(optarg,"w");
@@ -291,6 +303,16 @@ int main(int argc, char **argv)
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
   pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,num_variables);
+
+  if(binary_file != NULL)
+    {
+      curr_code = the_code;
+      while(curr_code != NULL)
+	{
+	  fputc(curr_code->val,binary_file);
+	  curr_code = curr_code->next;
+	}
+    }
   
   FreeCode(the_code);
   return 0;
