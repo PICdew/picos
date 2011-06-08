@@ -767,7 +767,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 	return -ENOENT;
       len = (size_t)file[FS_INode_size];
       file_head = FS_getblock(sb, file[FS_INode_pointers]);
-      log_msg("%s is %d bytes long starting at %x, %x\n",path,len,file[0],file[1]);
+      log_msg("%s is %d bytes long starting at 0x%x\n",path,len,file[FS_INode_pointers]);
     }
   if (offset < len) {
     if (offset + size > len)
@@ -777,7 +777,6 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
     size = 0;
 
   log_msg("Read %d bytes of %s\n",size,path);
-  free(file);
 
   return size;
 }
