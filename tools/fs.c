@@ -744,6 +744,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = sb;
   FS_Block *file = NULL;
+  FS_Unit data_ptr = 0;
   log_msg("FS_read (%s)\n",path);
   if(strcmp(path,"/dump") == 0 )
     {
@@ -766,19 +767,35 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       if(file == NULL)
 	return -ENOENT;
       len = (size_t)file[FS_INode_size];
-      file_head = FS_getblock(sb, file[FS_INode_pointers]);
       log_msg("%s is %d bytes long starting at 0x%x\n",path,len,file[FS_INode_pointers]);
     }
   if (offset < len) {
     if (offset + size > len)
       size = len - offset;
-    memcpy(buf, file_head + offset, size);
+    data_ptr = (FS_Unit)floor(offset/FS_BLOCK_SIZE);
+    file_head = FS_getblock(sb, file[FS_INode_pointers + data_ptr]);
+    file_head += offset % FS_BLOCK_SIZE;
+    log_msg("Reading block %d offset by %d\n",data_ptr,offset % FS_BLOCK_SIZE);
+    while(size > 0)
+      {
+	int write_amount = (size > FS_BLOCK_SIZE) ? FS_BLOCK_SIZE : size;
+	write_amount -= offset;
+	offset = 0;
+	log_msg("Copying %d bytes from 0x%x to 0x%x\n",write_amount,file_head,buf);
+	memcpy(buf,file_head, write_amount);
+	buf += write_amount;
+	data_ptr++;
+	file_head = FS_getblock(sb, file[FS_INode_pointers + data_ptr]);
+	retval += write_amount;
+	size -= write_amount;
+      }
+    
   } else
-    size = 0;
+    retval = 0;
 
   log_msg("Read %d bytes of %s\n",size,path);
 
-  return size;
+  return retval;
 }
 
 static int FS_chmod(const char *path, mode_t mode)
