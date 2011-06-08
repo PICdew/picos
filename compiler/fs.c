@@ -820,38 +820,28 @@ static FS_Block* FS_format(size_t num_blocks)
   rootdir[FS_INode_size]++;
   rootdir[FS_INode_pointers] = block_count++;
   data = FS_getblock(super_block, rootdir[FS_INode_pointers]);
-  data[0] = strlen("testfile");
-  memcpy(data + 1,"testfile",(size_t)data[0]);
+  data[0] = strlen("README");
+  memcpy(data + 1,"README",(size_t)data[0]);
   data = data +((off_t) 1+ data[0]);
   data[0] = block_count;data++;
-  data[0] = strlen("cat");data++;
-  memcpy(data,"cat",3);data += 3;
   testdir = FS_getblock(super_block, block_count);
   FS_mkinode(testdir);
   testdir[FS_INode_uid] = 123;
   testdir[FS_INode_pointers] = ++block_count;
-  strcat(FS_getblock(super_block, block_count),"Hello, World!\n");
-  testdir[FS_INode_size] = 1+strlen(FS_getblock(super_block,block_count));
+  strcat(FS_getblock(super_block, block_count++),"Formatted PICFS\n");
+  sprintf(FS_getblock(super_block, block_count++),"%d Blocks\n", super_block[FS_SuperBlock_num_blocks]);
+  sprintf(FS_getblock(super_block, block_count++),"%d byte blocks\n", super_block[FS_SuperBlock_block_size]);
+  testdir[FS_INode_size] = 3*FS_BLOCK_SIZE;
   
-  data[0] = ++block_count;
-  testdir = FS_getblock(super_block, block_count++);
-  FS_mkinode(testdir);
-  testdir[FS_INode_uid] = 123;
-  testdir[FS_INode_pointers] = block_count++;
-  strcat(FS_getblock(super_block, testdir[FS_INode_pointers]),"Meow!\n");
-  testdir[FS_INode_size] = 1+strlen(FS_getblock(super_block, testdir[FS_INode_pointers]));
-  rootdir[FS_INode_size]++;
-
-  super_block[FS_SuperBlock_num_free_blocks] -= block_count -1;
+  super_block[FS_SuperBlock_num_free_blocks] = super_block[FS_SuperBlock_num_blocks] - block_count;
 
   super_block[FS_SuperBlock_free_queue] = block_count;
 
-  block_count++;
-  while(block_count >= 0)
+  while(block_count < super_block[FS_SuperBlock_num_blocks])
     {
-      FS_Block *freed = FS_getblock(super_block,super_block[FS_SuperBlock_free_queue] + (block_count--));
+      FS_Block *freed = FS_getblock(super_block,block_count++);
       freed[FS_SuperBlock_magic_number] = MAGIC_FREE_INODE;
-      freed[FS_INode_pointers] = super_block[FS_SuperBlock_free_queue] + (block_count+2);
+      freed[FS_INode_pointers] = block_count;
     }
  
   return super_block;
