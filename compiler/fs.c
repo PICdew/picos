@@ -829,8 +829,8 @@ static FS_Block* FS_format(size_t num_blocks)
   testdir[FS_INode_uid] = 123;
   testdir[FS_INode_pointers] = ++block_count;
   strcat(FS_getblock(super_block, block_count++),"Formatted PICFS\n");
-  sprintf(FS_getblock(super_block, block_count++),"%d Blocks\n", super_block[FS_SuperBlock_num_blocks]);
-  sprintf(FS_getblock(super_block, block_count++),"%d byte blocks\n", super_block[FS_SuperBlock_block_size]);
+  sprintf(FS_getblock(super_block, block_count),"%d Blocks\n", super_block[FS_SuperBlock_num_blocks]);testdir[FS_INode_pointers + 1] = block_count++;
+  sprintf(FS_getblock(super_block, block_count),"%d byte blocks\n", super_block[FS_SuperBlock_block_size]);testdir[FS_INode_pointers + 2] = block_count++;
   testdir[FS_INode_size] = 3*FS_BLOCK_SIZE;
   
   super_block[FS_SuperBlock_num_free_blocks] = super_block[FS_SuperBlock_num_blocks] - block_count;
@@ -911,6 +911,22 @@ static int FS_fsync(const char *path, int thing, struct fuse_file_info *fi)
   return 0;
 }
 
+static int FS_statfs(const char *path, struct statvfs *statv)
+{
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  statv->f_bsize = sb[FS_SuperBlock_block_size];
+  statv->f_frsize = sb[FS_SuperBlock_block_size];
+  statv->f_blocks = sb[FS_SuperBlock_num_blocks] - 2;//super block + first inode
+  statv->f_bfree = sb[FS_SuperBlock_num_free_blocks];
+  statv->f_bavail = statv->f_bfree;
+  statv->f_files = (FS_getblock(sb,sb[FS_SuperBlock_root_block]))[FS_INode_size];
+  statv->f_ffree = sb[FS_SuperBlock_num_free_blocks];
+  statv->f_favail = statv->f_ffree;
+  statv->f_namemax = statv->f_bsize - 2;
+  
+  return 0;
+}
+
 struct fuse_operations fs_ops = {
   .access = FS_access,
   .readdir = fs_readdir,
@@ -922,6 +938,7 @@ struct fuse_operations fs_ops = {
   .open = FS_open,
   .read = FS_read,
   .release = FS_release,
+  .statfs = FS_statfs,
   .truncate = FS_truncate,
   .unlink = FS_unlink,
   .chmod = FS_chmod,
