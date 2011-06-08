@@ -62,39 +62,42 @@ static int FS_is_virtual(const char *path)
     || (strcmp(path,"/eeprom") == 0);
 }
 
-static FILE* FS_read_eeprom(const FS_Block *sb,int *len)
+static int FS_read_eeprom(const FS_Block *sb,FILE *eeprom_file)
 {
   char hex_buffer[45];
-  FILE *eeprom_file = tmpfile();
   struct compiled_code *code = NULL, *code_end = NULL;
-  int dummy_len = 0;
+  int len = 0;
   size_t num_bytes,curr_byte = 0;
   if(sb == NULL)
     return NULL;
-  if(len == NULL)
-    len = &dummy_len;
-
+  if(eeprom_file == NULL)
+    eeprom_file = FS_PRIVATE_DATA->logfile;
+  
   num_bytes = sb[FS_SuperBlock_block_size]*sb[FS_SuperBlock_num_blocks];
   
   for(;curr_byte < num_bytes;curr_byte++)
     insert_compiled_code(&code,&code_end,sb[curr_byte]);
   
-  log_msg("code 0x%x end 0x%x\n",code,code_end);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));
-  log_msg("wrote %d\n",fprintf(eeprom_file,":020000040000FA\n"));
-  //FPrintCode(eeprom_file,code,0,hex_buffer,0x4200,0,PRINT_HEX);
-  log_msg("wrote %d\n",fprintf(eeprom_file,":00000001FF\n"));
+  fputs(":020000040000FA\n",eeprom_file);
+  FPrintCode(eeprom_file,code,0,hex_buffer,0x4200,0,PRINT_HEX);
+  fputs(":00000001FF\n",eeprom_file);
   FreeCode(code);
-  
-  fseek(eeprom_file,0,SEEK_END);
-  *len = ftell(eeprom_file);
-  rewind(eeprom_file);
+
+  if(eeprom_file != FS_PRIVATE_DATA->logfile)
+    {
+      fseek(eeprom_file,0,SEEK_END);
+      len = ftell(eeprom_file);
+      rewind(eeprom_file);
+    }
+  else
+    len = 0;
   //  eeprom = (FS_Block*)malloc(num_bytes);
   //  eeprom = fgets(eeprom,num_bytes,eeprom_file);
   
   //  fclose(eeprom_file);
 
-  return eeprom_file;
+  return len;
 }
 
 
@@ -244,8 +247,8 @@ static int fs_getattr(const char *path, struct stat *stbuf)
       }
     else if(strcmp(path,"/eeprom") == 0)
       {
-	int len;
-	FILE *eeprom = FS_read_eeprom(sb,&len);
+	FILE *eeprom = tmpfile();
+	int len = FS_read_eeprom(sb,eeprom);
 	stbuf->st_mode = 0555 | S_IFREG;
 	stbuf->st_size = len;
 	fclose(eeprom);
@@ -657,6 +660,8 @@ static int FS_unlink(const char *path)
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
   log_msg("FS_unlink (%s)\n",path);
+  if(strcmp(path,"/dump") == 0 || strcmp(path,"/eeprom") == 0)
+    return -EACCES;
   file_head = FS_resolve(file_head,path,sb);
   if(file_head == NULL)
     return -ENOENT;
@@ -733,7 +738,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 		   struct fuse_file_info *fi)
 {
   int len;
-  int retval = 0, reading_eeprom = FALSE;
+  int retval = 0;
   (void) fi;
 
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
@@ -746,11 +751,12 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
     }
   else if(strcmp(path,"/eeprom") == 0)
     {
-      FILE *eeprom_file = FS_read_eeprom(sb,&len);
+      FILE *eeprom_file = tmpfile();
+      len = FS_read_eeprom(sb,eeprom_file);
       if(offset != 0)
 	fseek(eeprom_file,offset,SEEK_SET);
       log_msg("eeprom length = %d\n",len);
-      buf = fgets(buf,size,eeprom_file);
+      buf = fread(buf,sizeof(char),len,eeprom_file);
       fclose(eeprom_file);
       return len;
     }
@@ -771,8 +777,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
     size = 0;
 
   log_msg("Read %d bytes of %s\n",size,path);
-  if(reading_eeprom == TRUE)
-    free(file);
+  free(file);
 
   return size;
 }
