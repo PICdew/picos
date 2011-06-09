@@ -876,7 +876,7 @@ static FS_Block* FS_format(struct fs_fuse_state *the_state)
   return super_block;
 }
 
-static FS_Block* FS_mount(const char *filename)
+static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
 {
   FS_Block *super_block = NULL;
   FILE *dev = NULL;
@@ -892,9 +892,9 @@ static FS_Block* FS_mount(const char *filename)
   len = ftell(dev);
   rewind(dev);
   
-  if(len % FS_BLOCK_SIZE != 0)
+  if(len % the_state->block_size != 0)
     {
-      error_log("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,FS_BLOCK_SIZE);
+      error_log("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,the_state->block_size);
       return NULL;
     }
 
@@ -1069,7 +1069,7 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	  print_help();
 	  exit(0);
 	case 'm':
-	  the_state->super_block = FS_mount(optarg);
+	  the_state->super_block = FS_mount(optarg,the_state);
 	  if(the_state->super_block == NULL)
 	    {
 	      fprintf(stderr,"Could not mount: %s\n",optarg);
