@@ -57,6 +57,20 @@ static void FS_free_block(FS_Block *sb, FS_Unit block_id)
   sb[FS_SuperBlock_num_free_blocks]++;
 }
 
+static FS_Unit FS_malloc(FS_Block *sb)
+{
+  FS_Block retval = sb[FS_SuperBlock_free_queue], *new_node=NULL;
+  if(sb[FS_SuperBlock_num_free_blocks] == 0 || retval == 0)
+      return retval;
+
+  new_node = FS_getblock(sb,retval);
+  log_msg("malloced %d\n",retval);
+  sb[FS_SuperBlock_free_queue] = new_node[FS_INode_pointers];
+  sb[FS_SuperBlock_num_free_blocks]--;
+  memset(new_node,0,FS_BLOCK_SIZE*sizeof(FS_Unit));
+  return retval;
+}
+
 static int FS_is_virtual(const char *path)
 {
   return (strcmp(path,"/") == 0) 
@@ -164,7 +178,7 @@ void FS_mkinode(FS_Block *inode, FS_Unit block_size)
   inode[FS_INode_uid] = 0;
   inode[FS_INode_mode] = 075;
   inode[FS_INode_size] = 0;
-  
+  inode[FS_INode_pointers] = 0;
   i = 0;
   for(;i<num_pointers;i++)
     inode[FS_INode_pointers + i] = 0;
@@ -181,6 +195,7 @@ int FS_allocate(FS_Block **data,size_t num_blocks,size_t block_size)
 
 static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
 {
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
   log_msg("inode2stat\n");
   if(stbuf == NULL || the_dir == NULL)
     return;
@@ -195,6 +210,11 @@ static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
     case MAGIC_DATA:default:
       stbuf->st_mode |= S_IFREG;
       stbuf->st_size = the_dir[FS_INode_size];
+      while(the_dir[FS_INode_indirect] != 0)
+	{
+	  the_dir = FS_getblock(sb,the_dir[FS_INode_indirect]);
+	  stbuf->st_size += the_dir[FS_INode_size];
+	}
     }
     
   stbuf->st_nlink = 1;
@@ -339,7 +359,7 @@ static int FS_access(const char *path, int mode)
 static int FS_truncate(const char *path, off_t new_size)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
-  FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+  FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]), *main_inode;
   off_t old_size;
   int needed_blocks;
   file_head = FS_resolve(file_head,path,sb);
@@ -375,34 +395,41 @@ static int FS_truncate(const char *path, off_t new_size)
 	if(file_head[FS_INode_pointers + pointer] == 0)
 	  break;
 	else
-	  pointer++;
-      if(pointer >= FS_INODE_NUM_POINTERS)
-	{
-	  error_log("No more blocks allowed for this file\n");
-	  return -ENOSPC;
-	}
+	  {
+	    pointer++;
+	    file_head[FS_INode_size]++;
+	  }
       
+      main_inode = file_head;
       while(needed_blocks > 0)
 	{
-	  FS_Block *new_node;
-	  file_head[FS_INode_pointers + pointer++] = sb[FS_SuperBlock_free_queue];
-	  new_node = FS_getblock(sb,sb[FS_SuperBlock_free_queue]);
-	  sb[FS_SuperBlock_free_queue] = new_node[FS_INode_pointers];
-	  sb[FS_SuperBlock_num_free_blocks]--;
-	  memset(new_node,0,FS_BLOCK_SIZE*sizeof(FS_Unit));
-	  if(pointer >= FS_INODE_NUM_POINTERS)
+	  if(pointer == FS_INODE_NUM_POINTERS)
 	    {
-	      error_log("No more blocks allowed for this file\n");
-	      return -ENOSPC;
+	      file_head[FS_INode_size] = pointer*FS_BLOCK_SIZE;
+	      file_head[FS_INode_indirect] = FS_malloc(sb);
+	      if(file_head[FS_INode_indirect] == 0)
+		{
+		  error_log("Ran out of space when allocating an indirect inode\n");
+		  return -ENOSPC;
+		}
+	      log_msg("Allocated an indirect node at %x\n",file_head[FS_INode_indirect]);
+	      file_head = FS_getblock(sb,file_head[FS_INode_indirect]);
+	      FS_mkinode(file_head,sb[FS_SuperBlock_block_size]);
+	      pointer = 0;
 	    }
+	  file_head[FS_INode_pointers + pointer++] = FS_malloc(sb);
+	  log_msg("Saving %d to %d\n",file_head[FS_INode_pointers + pointer - 1],pointer - 1);
 	  needed_blocks--;
 	}
-      file_head[FS_INode_size] = new_size;
+      file_head[FS_INode_size] += new_size % FS_BLOCK_SIZE;
       return 0;
     }
 
   //In this case we need to shrink the file.
   log_msg("Shrinking file\n");
+  error_log("FINISH shrinking in truncate!!!\n");
+  return -ENOSPC;
+#if 0
   needed_blocks = (int)ceil(new_size/FS_BLOCK_SIZE);
   for(;needed_blocks < FS_INODE_NUM_POINTERS;needed_blocks++)
     {
@@ -414,7 +441,7 @@ static int FS_truncate(const char *path, off_t new_size)
   
   file_head[FS_INode_size] = new_size;
   return 0;
-  
+#endif  
 }
 
 int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
@@ -758,8 +785,15 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
 	}
     }
   
-  while(file_head[FS_INode_pointers + data_ptr] != 0 && data_ptr < FS_INODE_NUM_POINTERS)
+  while(amount_written != size)
     {
+      if(data_ptr >= FS_INODE_NUM_POINTERS)
+	{
+	  if(file_head[FS_INode_indirect] == 0)
+	    break;
+	  file_head = FS_getblock(sb,file_head[FS_INode_indirect]);
+	  data_ptr = 0;
+	}
       data_block = FS_getblock(sb,file_head[FS_INode_pointers + data_ptr]);
       if(size > FS_BLOCK_SIZE)
 	{
@@ -1107,6 +1141,11 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	      fprintf(stderr,"Could not read block size: %s\n",optarg);
 	      exit(-1);
 	    }
+	    if(tempint > 0xff)
+	      {
+		printf("Block size cannot exceed 255 bytes due to size of address variables.\n");
+		exit( EFAULT);
+	      }
 	    the_state->block_size = (FS_Unit)(tempint & 0xff);
 	    break;	
 	  }
@@ -1141,6 +1180,11 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	      {
 		fprintf(stderr,"Could not read specified number of blocks: %s\n",optarg);
 		exit(-1);
+	      }
+	    if(tempint > 0xff)
+	      {
+		printf("Cannot use more than 255 blocks due to size of address variables.\n");
+		exit( EFAULT);
 	      }
 	    the_state->num_blocks = (FS_Unit)(tempint & 0xff);
 	    break;
@@ -1220,6 +1264,7 @@ int main(int argc, char **argv)
     fprintf(the_state->logfile,"fuse mounted %s on %s\n",args.argv[args.argc-1],ctime(&starttime));
   return fuse_stat;
 }
+
 
 
 

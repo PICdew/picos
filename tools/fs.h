@@ -32,6 +32,7 @@ enum{
   FS_INode_uid,
   FS_INode_mode,
   FS_INode_size,
+  FS_INode_indirect,
   FS_INode_pointers,
   FS_INode_length
 };
