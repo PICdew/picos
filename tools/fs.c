@@ -59,11 +59,13 @@ static void FS_free_block(FS_Block *sb, FS_Unit block_id)
 
 static int FS_is_virtual(const char *path)
 {
-  return (strcmp(path,"/") == 0) || (strcmp(path,"/dump") == 0) 
-    || (strcmp(path,"/eeprom") == 0);
+  return (strcmp(path,"/") == 0) 
+    || (strcmp(path,"/dump") == 0) 
+    || (strcmp(path,"/eeprom") == 0)
+    || (strcmp(path,"/picc") == 0);
 }
 
-static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
+static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
 {
   char hex_buffer[45];
   struct compiled_code *code = NULL, *code_end = NULL;
@@ -80,9 +82,7 @@ static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
     insert_compiled_code(&code,&code_end,sb[curr_byte]);
   
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));
-  fputs(":020000040000FA\n",eeprom_file);
-  FPrintCode(eeprom_file,code,0,hex_buffer,0x4200,0,PRINT_HEX);
-  fputs(":00000001FF\n",eeprom_file);
+  FPrintCode(eeprom_file,code,0,hex_buffer,0x4200,0,type);
   FreeCode(code);
 
   if(eeprom_file != FS_PRIVATE_DATA->logfile)
@@ -101,6 +101,39 @@ static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
   return len;
 }
 
+static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
+{
+  int len;
+  fputs(":020000040000FA\n",eeprom_file);
+  FS_compile(sb,eeprom_file, PRINT_HEX);
+  fputs(":00000001FF\n",eeprom_file);
+  if(eeprom_file != FS_PRIVATE_DATA->logfile)
+    {
+      fseek(eeprom_file,0,SEEK_END);
+      len = ftell(eeprom_file);
+      rewind(eeprom_file);
+    }
+  else
+    len = 0;
+  
+  return len;
+}
+
+static int FS_read_picc(FS_Block *sb,FILE *c_file)
+{
+  int len;
+  FS_compile(sb,c_file, PRINT_EEPROM_DATA);
+  if(c_file != FS_PRIVATE_DATA->logfile)
+    {
+      fseek(c_file,0,SEEK_END);
+      len = ftell(c_file);
+      rewind(c_file);
+    }
+  else
+    len = 0;
+  
+  return len;
+}
 
 void FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
 {
@@ -259,6 +292,15 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 	fclose(eeprom);
 	return 0;
       }
+    else if(strcmp(path,"/picc") == 0)
+      {
+	FILE *picc = tmpfile();
+	int len = FS_read_picc(sb,picc);
+	stbuf->st_mode = 0555 | S_IFREG;
+	stbuf->st_size = len;
+	fclose(picc);
+	return 0;
+      }
     dir = FS_resolve(dir,path,sb);
     if(dir == NULL)
       return -ENOENT;
@@ -393,6 +435,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
     {
       filler(buf,"dump",NULL,0);
       filler(buf,"eeprom",NULL,0);
+      filler(buf,"picc",NULL,0);
     }
 
   if(the_state == NULL)
@@ -665,7 +708,7 @@ static int FS_unlink(const char *path)
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
   log_msg("FS_unlink (%s)\n",path);
-  if(strcmp(path,"/dump") == 0 || strcmp(path,"/eeprom") == 0)
+  if(FS_is_virtual(path))
     return -EACCES;
   file_head = FS_resolve(file_head,path,sb);
   if(file_head == NULL)
@@ -768,6 +811,17 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       if(offset != 0)
 	fseek(eeprom_file,offset,SEEK_SET);
       log_msg("eeprom length = %d\n",len);
+      size = fread(buf,sizeof(char),len,eeprom_file);
+      fclose(eeprom_file);
+      return len;
+    }
+  else if(strcmp(path,"/picc") == 0)
+    {
+      FILE *eeprom_file = tmpfile();
+      len = FS_read_picc(sb,eeprom_file);
+      if(offset != 0)
+	fseek(eeprom_file,offset,SEEK_SET);
+      log_msg("picc length = %d\n",len);
       size = fread(buf,sizeof(char),len,eeprom_file);
       fclose(eeprom_file);
       return len;
@@ -945,9 +999,9 @@ static int FS_statfs(const char *path, struct statvfs *statv)
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   statv->f_bsize = sb[FS_SuperBlock_block_size];
   statv->f_frsize = sb[FS_SuperBlock_block_size];
-  statv->f_blocks = sb[FS_SuperBlock_num_blocks] - 2;//super block + first inode
+  statv->f_blocks = sb[FS_SuperBlock_num_blocks];
   statv->f_bfree = sb[FS_SuperBlock_num_free_blocks];
-  statv->f_bavail = statv->f_bfree;
+  statv->f_bavail = statv->f_bfree;//super block + first inode
   statv->f_files = (FS_getblock(sb,sb[FS_SuperBlock_root_block]))[FS_INode_size];
   statv->f_ffree = sb[FS_SuperBlock_num_free_blocks];
   statv->f_favail = statv->f_ffree;

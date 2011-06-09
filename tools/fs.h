@@ -15,6 +15,7 @@ struct fs_fuse_state {
 #define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
 #define FS_BLOCK_SIZE (((struct fs_fuse_state*)fuse_get_context()->private_data)->block_size)
 
+
 #endif//not for pic
 
 enum FS_MAGIC_NUMBERS{ 
