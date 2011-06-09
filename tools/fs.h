@@ -10,9 +10,10 @@ struct fs_fuse_state {
   int verbose_log;
   char *rootdir;
   FS_Unit *super_block;
-  size_t data_size;
+  FS_Unit num_blocks,block_size;
 };
 #define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
+#define FS_BLOCK_SIZE (((struct fs_fuse_state*)fuse_get_context()->private_data)->block_size)
 
 
 enum FS_MAGIC_NUMBERS{ 
@@ -21,8 +22,8 @@ enum FS_MAGIC_NUMBERS{
   MAGIC_DATA,
   MAGIC_FREE_INODE
 };
+
 #define FS_REVISION_NUM 0
-#define FS_BLOCK_SIZE 16
 
 enum{
   FS_INode_magic_number = 0,

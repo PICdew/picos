@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <math.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
 
@@ -62,14 +63,14 @@ static int FS_is_virtual(const char *path)
     || (strcmp(path,"/eeprom") == 0);
 }
 
-static int FS_read_eeprom(const FS_Block *sb,FILE *eeprom_file)
+static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
 {
   char hex_buffer[45];
   struct compiled_code *code = NULL, *code_end = NULL;
   int len = 0;
   size_t num_bytes,curr_byte = 0;
   if(sb == NULL)
-    return NULL;
+    return 0;
   if(eeprom_file == NULL)
     eeprom_file = FS_PRIVATE_DATA->logfile;
   
@@ -101,24 +102,28 @@ static int FS_read_eeprom(const FS_Block *sb,FILE *eeprom_file)
 }
 
 
-void FS_mksuperblock(FS_Block *block, size_t num_blocks)
+void FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
 {
-  if(block == NULL)
+  size_t num_blocks,block_size;
+  if(block == NULL || the_state == NULL)
     return;
 
+  num_blocks = the_state->num_blocks;
+  block_size = the_state->block_size;
   block[FS_SuperBlock_magic_number] = MAGIC_SUPERBLOCK;
   block[FS_SuperBlock_revision_num] = FS_REVISION_NUM;
-  block[FS_SuperBlock_block_size] = FS_BLOCK_SIZE;
-  block[FS_SuperBlock_num_blocks] = (FS_Unit)ceil((double)num_blocks/FS_BLOCK_SIZE);
+  block[FS_SuperBlock_block_size] = block_size;
+  block[FS_SuperBlock_num_blocks] = num_blocks;
   block[FS_SuperBlock_num_free_blocks] = block[FS_SuperBlock_num_blocks] - 1;
   block[FS_SuperBlock_root_block] = 1;
 
   block[FS_SuperBlock_free_queue] = 2;
 }
 
-void FS_mkinode(FS_Block *inode)
+void FS_mkinode(FS_Block *inode, FS_Unit block_size)
 {
   size_t i;
+  size_t num_pointers = block_size - FS_INode_length;
   if(inode == NULL)
     return;
 
@@ -128,16 +133,16 @@ void FS_mkinode(FS_Block *inode)
   inode[FS_INode_size] = 0;
   
   i = 0;
-  for(;i<FS_INODE_NUM_POINTERS;i++)
+  for(;i<num_pointers;i++)
     inode[FS_INode_pointers + i] = 0;
 }
 
-int FS_allocate(FS_Block **data,size_t num_blocks)
+int FS_allocate(FS_Block **data,size_t num_blocks,size_t block_size)
 {
   if(data == NULL)
     return -1;
 
-  *data = (FS_Block*)realloc(*data,num_blocks*FS_BLOCK_SIZE*sizeof(FS_Unit));
+  *data = (FS_Block*)realloc(*data,num_blocks*block_size*sizeof(FS_Unit));
   return 0;
 }
 
@@ -163,7 +168,7 @@ static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
 }
 
 
-static FS_Block* FS_resolve(FS_Block *dir, char *path, FS_Block *sb)
+static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
 {
   char *rw_path;
   char *token;
@@ -231,8 +236,8 @@ static FS_Block* FS_resolve(FS_Block *dir, char *path, FS_Block *sb)
 static int fs_getattr(const char *path, struct stat *stbuf)
 {
     int res = 0;
-    const FS_Block *sb = FS_PRIVATE_DATA->super_block;
-    const FS_Block *dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+    FS_Block *sb = FS_PRIVATE_DATA->super_block;
+    FS_Block *dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
 
     log_msg("fs_getattr (%s)\n",path);
 
@@ -445,7 +450,7 @@ static int FS_mkfile(const char *path, mode_t mode)
   FS_Block *file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
   FS_Unit pointer = 0;
   const char *delim = NULL;
-  const char filename[FS_BLOCK_SIZE-2];
+  char filename[FS_BLOCK_SIZE-2];
   memset(filename,0,sizeof(char)*(FS_BLOCK_SIZE-2));
   
   log_msg("FS_mkfile (%s) mode 0%d\n",path,mode & 0777);
@@ -539,7 +544,7 @@ static int FS_mkfile(const char *path, mode_t mode)
 	  file = FS_getblock(sb,*dir_list);
 	  sb[FS_SuperBlock_free_queue] = file[FS_INode_pointers];
 	  sb[FS_SuperBlock_num_free_blocks]--;
-	  FS_mkinode(file);
+	  FS_mkinode(file,FS_BLOCK_SIZE);
 	  log_msg("created %s\n", filename);
 	  return 0;
 	}
@@ -748,7 +753,13 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
   log_msg("FS_read (%s)\n",path);
   if(strcmp(path,"/dump") == 0 )
     {
-      len = sb[FS_SuperBlock_num_blocks]*sb[FS_SuperBlock_block_size];
+      len = (2+sb[FS_SuperBlock_num_blocks])*sb[FS_SuperBlock_block_size];
+      log_msg("Filesystem length: %d Requesting: %d\n",len,size);
+      if(size+offset > len)
+	size = len-offset;
+      memcpy(buf,&sb[offset], size);
+      log_msg("Read %d bytes of the raw file system.\n",size);
+      return size;
     }
   else if(strcmp(path,"/eeprom") == 0)
     {
@@ -757,7 +768,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       if(offset != 0)
 	fseek(eeprom_file,offset,SEEK_SET);
       log_msg("eeprom length = %d\n",len);
-      buf = fread(buf,sizeof(char),len,eeprom_file);
+      size = fread(buf,sizeof(char),len,eeprom_file);
       fclose(eeprom_file);
       return len;
     }
@@ -798,7 +809,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
   return retval;
 }
 
-static int FS_chmod(const char *path, mode_t mode)
+static int FS_chmod(char *path, mode_t mode)
 {
   FS_Block *inode = NULL;
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
@@ -820,35 +831,36 @@ static int FS_chmod(const char *path, mode_t mode)
   return 0;
 }
 
-static FS_Block* FS_format(size_t num_blocks)
+static FS_Block* FS_format(struct fs_fuse_state *the_state)
 {
   FS_Block *super_block = NULL, *rootdir = NULL, *data = NULL;
   FS_Block *testdir = NULL;
   int block_count = 2;
-  FS_allocate(&super_block,num_blocks);
-  FS_mksuperblock(super_block,num_blocks);
+  int num_blocks = the_state->num_blocks, block_size = the_state->block_size;
+  FS_allocate(&super_block,num_blocks,the_state->block_size);
+  FS_mksuperblock(super_block,the_state);
   
   //setup top most inode
-  rootdir = FS_getblock(super_block,super_block[FS_SuperBlock_root_block]);
-  FS_mkinode(rootdir);
+  rootdir = &super_block[block_size*super_block[FS_SuperBlock_root_block]];
+  FS_mkinode(rootdir, the_state->block_size);
 
   //make a directory
   rootdir[FS_INode_magic_number] = MAGIC_DIR;
   rootdir[FS_INode_size]++;
   rootdir[FS_INode_pointers] = block_count++;
-  data = FS_getblock(super_block, rootdir[FS_INode_pointers]);
+  data = &super_block[block_size*rootdir[FS_INode_pointers]];
   data[0] = strlen("README");
   memcpy(data + 1,"README",(size_t)data[0]);
   data = data +((off_t) 1+ data[0]);
   data[0] = block_count;data++;
-  testdir = FS_getblock(super_block, block_count);
-  FS_mkinode(testdir);
+  testdir = &super_block[block_size*block_count];
+  FS_mkinode(testdir, the_state->block_size);
   testdir[FS_INode_uid] = 123;
   testdir[FS_INode_pointers] = ++block_count;
-  strcat(FS_getblock(super_block, block_count++),"Formatted PICFS\n");
-  sprintf(FS_getblock(super_block, block_count),"%d Blocks\n", super_block[FS_SuperBlock_num_blocks]);testdir[FS_INode_pointers + 1] = block_count++;
-  sprintf(FS_getblock(super_block, block_count),"%d byte blocks\n", super_block[FS_SuperBlock_block_size]);testdir[FS_INode_pointers + 2] = block_count++;
-  testdir[FS_INode_size] = 3*FS_BLOCK_SIZE;
+  strcat(&super_block[block_size*block_count++],"Formatted PICFS\n");
+  sprintf(&super_block[block_count*block_size],"%d Blocks\n", super_block[FS_SuperBlock_num_blocks]);testdir[FS_INode_pointers + 1] = block_count++;
+  sprintf(&super_block[block_size*block_count],"%d byte blocks\n", super_block[FS_SuperBlock_block_size]);testdir[FS_INode_pointers + 2] = block_count++;
+  testdir[FS_INode_size] = 3*block_size;
   
   super_block[FS_SuperBlock_num_free_blocks] = super_block[FS_SuperBlock_num_blocks] - block_count;
 
@@ -856,7 +868,7 @@ static FS_Block* FS_format(size_t num_blocks)
 
   while(block_count < super_block[FS_SuperBlock_num_blocks])
     {
-      FS_Block *freed = FS_getblock(super_block,block_count++);
+      FS_Block *freed = &super_block[block_size*block_count++];
       freed[FS_SuperBlock_magic_number] = MAGIC_FREE_INODE;
       freed[FS_INode_pointers] = block_count;
     }
@@ -882,14 +894,14 @@ static FS_Block* FS_mount(const char *filename)
   
   if(len % FS_BLOCK_SIZE != 0)
     {
-      error_log(FS_PRIVATE_DATA->logfile,"File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,FS_BLOCK_SIZE);
+      error_log("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,FS_BLOCK_SIZE);
       return NULL;
     }
 
   super_block = (FS_Unit*)malloc(len);
   if(fread(super_block,1,len,dev) != len)
     {
-      error_log(FS_PRIVATE_DATA->logfile,"Could not read all of %s\n",filename);
+      error_log("Could not read all of %s\n",filename);
       free(super_block);
       return NULL;
     }
@@ -965,13 +977,15 @@ struct fuse_operations fs_ops = {
 };
 
 static const struct option long_opts[] = {
+  {"block_size",1,NULL,'b'},
   {"log",1,NULL,'l'},
   {"mount",1,NULL,'m'},
+  {"num_blocks",1,NULL,'n'},
   {"verbose",0,NULL,'v'},
   {"help",0,NULL,'h'},
   {0,0,0,0}
 };
-static const char short_opts[] = "hl:m:v";
+static const char short_opts[] = "b:hl:m:n:v";
 
 static void print_help()
 {
@@ -999,12 +1013,17 @@ static void print_help()
      
       switch(opts->val)
 	{
+	case 'b':
+	  printf("Sepcify the size of a block, in bytes. Default: 16 bytes");
+	  break;
 	case 'l':
 	  printf("Specify a log file.");
 	  break;
 	case 'm':
 	  printf("Mount a specific filesystem image.");
 	  break;
+	case 'n':
+	  printf("Specify the number of blocks to be created. Default: 16");
 	case 'h':
 	  printf("This message.");
 	  break;
@@ -1026,6 +1045,17 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
     {
       switch(ch)
 	{
+	case 'b':
+	  {
+	    int tempint;
+	    if(sscanf(optarg,"%d",&tempint) != 1)
+	    {
+	      fprintf(stderr,"Could not read block size: %s\n",optarg);
+	      exit(-1);
+	    }
+	    the_state->block_size = (FS_Unit)(tempint & 0xff);
+	    break;	
+	  }
 	case 'l':
 	  the_state->logfile = fopen(optarg,"w");
 	  if(the_state->logfile == NULL)
@@ -1050,6 +1080,17 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	      fprintf(stderr,"Mounted %s\n",optarg);
 	    }
 	  break;
+	case 'n':
+	  {
+	    int tempint;
+	    if(sscanf(optarg,"%d",&tempint) != 1)
+	      {
+		fprintf(stderr,"Could not read specified number of blocks: %s\n",optarg);
+		exit(-1);
+	      }
+	    the_state->num_blocks = (FS_Unit)(tempint & 0xff);
+	    break;
+	  }
 	case 'v':
 	  the_state->verbose_log = TRUE;
 	  break;
@@ -1060,26 +1101,35 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
     }
 }
 
+void FS_default_state(struct fs_fuse_state *the_state)
+{
+  if(the_state == NULL)
+    return;
+  the_state->super_block = NULL;
+  the_state->logfile = stderr;
+  the_state->rootdir = NULL;
+  the_state->verbose_log = FALSE;
+  the_state->num_blocks = 16;
+  the_state->block_size = 16;
+}
+
 FILE *assembly_file;
 int main(int argc, char **argv)
 {
   int fuse_stat;
   struct fs_fuse_state *the_state;
   FS_Block *super_block = NULL;
-  size_t num_blocks = 256;
   assembly_file = tmpfile();
   the_state = calloc(1,sizeof(struct fs_fuse_state));
   //defaults
-  the_state->super_block = NULL;
-  the_state->logfile = stderr;
-  the_state->rootdir = NULL;
+  FS_default_state(the_state);
   FS_parse_args(the_state,argc,argv);
   setvbuf(the_state->logfile, NULL, _IOLBF, 0);
   super_block = the_state->super_block;
 
   //setup super block
   if(super_block == NULL)
-    super_block = FS_format(num_blocks);
+    super_block = FS_format(the_state);
 
   //setup FUSE
   if(super_block == NULL)
