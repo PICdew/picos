@@ -36,7 +36,7 @@ enum{
   FS_INode_pointers,
   FS_INode_length
 };
-#define FS_INODE_NUM_POINTERS (FS_BLOCK_SIZE - FS_INode_length)
+#define FS_INODE_NUM_POINTERS (FS_BLOCK_SIZE - FS_INode_pointers)
 
 enum {
   FS_SuperBlock_magic_number = 0,
