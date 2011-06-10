@@ -193,6 +193,37 @@ int FS_allocate(FS_Block **data,size_t num_blocks,size_t block_size)
   return 0;
 }
 
+static int FS_file_size(FS_Block *the_dir)
+{
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  size_t datacount = 0, filesize = 0;
+   
+  if(the_dir == NULL)
+    return 0;
+  while(1)
+    {
+      if(the_dir[FS_INode_indirect] == 0)
+	{
+	  for(;datacount < FS_INODE_NUM_POINTERS;datacount++)
+	    if(the_dir[FS_INode_pointers + datacount] == 0)
+	      break;
+  
+	  if(datacount != 0)
+	    filesize += (datacount-1)*FS_BLOCK_SIZE + the_dir[FS_INode_size];
+	  break;
+	}
+      else
+	{
+	  filesize += FS_BLOCK_SIZE*FS_INODE_NUM_POINTERS;
+	}
+      the_dir = FS_getblock(sb,the_dir[FS_INode_indirect]);
+    }
+
+  return filesize;
+  
+}
+
+
 static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
@@ -209,12 +240,8 @@ static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
       break;
     case MAGIC_DATA:default:
       stbuf->st_mode |= S_IFREG;
-      stbuf->st_size = the_dir[FS_INode_size];
-      while(the_dir[FS_INode_indirect] != 0)
-	{
-	  the_dir = FS_getblock(sb,the_dir[FS_INode_indirect]);
-	  stbuf->st_size += the_dir[FS_INode_size];
-	}
+      stbuf->st_size = FS_file_size(the_dir);
+      break;
     }
     
   stbuf->st_nlink = 1;
@@ -283,7 +310,6 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
   
   return dir;
 }
-
 
 
 static int fs_getattr(const char *path, struct stat *stbuf)
@@ -421,7 +447,7 @@ static int FS_truncate(const char *path, off_t new_size)
 	  log_msg("Saving %d to %d\n",file_head[FS_INode_pointers + pointer - 1],pointer - 1);
 	  needed_blocks--;
 	}
-      file_head[FS_INode_size] += new_size % FS_BLOCK_SIZE;
+      file_head[FS_INode_size] = new_size % FS_BLOCK_SIZE;
       return 0;
     }
 
@@ -865,26 +891,30 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
       if(file == NULL)
 	return -ENOENT;
-      len = (size_t)file[FS_INode_size];
+      len = (size_t)FS_file_size(file);
       log_msg("%s is %d bytes long starting at 0x%x\n",path,len,file[FS_INode_pointers]);
     }
   if (offset < len) {
     if (offset + size > len)
       size = len - offset;
-    data_ptr = (FS_Unit)floor(offset/FS_BLOCK_SIZE);
-    file_head = FS_getblock(sb, file[FS_INode_pointers + data_ptr]);
-    file_head += offset % FS_BLOCK_SIZE;
-    log_msg("Reading block %d offset by %d\n",data_ptr,offset % FS_BLOCK_SIZE);
+    data_ptr = 0;
     while(size > 0)
       {
 	int write_amount = (size > FS_BLOCK_SIZE) ? FS_BLOCK_SIZE : size;
+	file_head = FS_getblock(sb, file[FS_INode_pointers + data_ptr]);
 	write_amount -= offset;
 	offset = 0;
 	log_msg("Copying %d bytes from 0x%x to 0x%x\n",write_amount,file_head,buf);
+	log_msg("Reading block %d\n",file[FS_INode_pointers+ data_ptr]);
 	memcpy(buf,file_head, write_amount);
 	buf += write_amount;
 	data_ptr++;
-	file_head = FS_getblock(sb, file[FS_INode_pointers + data_ptr]);
+	if(data_ptr >= FS_INODE_NUM_POINTERS)
+	  {
+	    file = FS_getblock(sb,file[FS_INode_indirect]);
+	    data_ptr = 0;
+	  }
+
 	retval += write_amount;
 	size -= write_amount;
       }
@@ -948,7 +978,7 @@ static FS_Block* FS_format(struct fs_fuse_state *the_state)
   strcat(&super_block[block_size*block_count++],"Formatted PICFS\n");
   sprintf(&super_block[block_count*block_size],"%d Blocks\n", super_block[FS_SuperBlock_num_blocks]);testdir[FS_INode_pointers + 1] = block_count++;
   sprintf(&super_block[block_size*block_count],"%d byte blocks\n", super_block[FS_SuperBlock_block_size]);testdir[FS_INode_pointers + 2] = block_count++;
-  testdir[FS_INode_size] = 3*block_size;
+  testdir[FS_INode_size] = 1+strlen("%d byte blocks\n");
   
   super_block[FS_SuperBlock_num_free_blocks] = super_block[FS_SuperBlock_num_blocks] - block_count;
 
