@@ -19,33 +19,35 @@ void crtme(unsigned int *crt,unsigned int p, unsigned int q, unsigned int exp)
 }
 
 void rsa_message(unsigned int *cipher,const char *message,
-		 unsigned int *keys, int should_encrypt)
+		 unsigned int *keys, int pos)
 {
   unsigned int curr;
-  size_t pos = 0;
   if(cipher == NULL || keys == NULL || message == NULL)
     return;
   while(message != NULL && strlen(message) != 0)
     {
       curr = ((unsigned int) *message);
-      if(should_encrypt)// salt
-	  curr += pos;
-      cipher[pos++] = rsa(curr,keys);
-      if(should_encrypt == 0)// unsalted
-	cipher[pos - 1] -= pos + 1;
+      if(pos > 0)
+	curr += pos;
+      cipher[(size_t)abs(pos) - 1] = rsa(curr,keys);
+      if(pos < 0)// unsalted
+	cipher[(size_t)abs(pos) - 1] += pos;
       if(strlen(message) == 1)
 	message = NULL;
       else
 	message++;
+      if(pos < 0)
+	pos--;
+      else if(pos > 0)
+	pos++;
     }
       
 }
 
 void rsa_stream(unsigned int *cipher,const char *message,
-		 unsigned int *keys, int should_encrypt)
+		unsigned int *keys, int pos)
 {
   unsigned int curr;
-  size_t pos = 0;
   char block[RSA_BLOCK_SIZE];
   if(cipher == NULL || keys == NULL || message == NULL)
     return;
@@ -53,15 +55,19 @@ void rsa_stream(unsigned int *cipher,const char *message,
     {
       strncpy(block,message,RSA_BLOCK_SIZE);
       sscanf(block,"%8u",&curr);
-      if(should_encrypt)
+      if(pos > 0)
 	curr += pos;
-      cipher[pos++] = rsa(curr,keys);
-      if(should_encrypt == 0)
-	cipher[pos - 1] -= pos - 1;
+      cipher[(size_t)abs(pos) - 1] = rsa(curr,keys);
+      if(pos < 0)
+	cipher[(size_t)abs(pos) - 1] += pos;
       if(strlen(message) < RSA_BLOCK_SIZE )
 	message = NULL;
       else
 	message += RSA_BLOCK_SIZE;
+      if(pos < 0)
+	pos--;
+      else if(pos > 0)
+	pos++;
     }
       
 }
@@ -181,7 +187,7 @@ int main(int argc, char **argv)
 	  cipher_only = 1;
 	  break;
 	case 'd':
-	  should_encrypt = 0;
+	  should_encrypt = -1;
 	  break;
 	case RSA_DECRYPT_KEY:
 	  sscanf(optarg,"%u",&d);
@@ -232,9 +238,14 @@ int main(int argc, char **argv)
   else
     {
       unsigned int *keys;
-      size_t num_blocks = (size_t)ceil(strlen(message)/2);
-      unsigned int cipher[num_blocks];
-      if(should_encrypt)
+      size_t num_blocks = strlen(message);
+      unsigned int *cipher;
+      
+      if(use_stream)
+	num_blocks /= RSA_BLOCK_SIZE;
+      
+      cipher = (unsigned int)malloc(sizeof(unsigned int)*num_blocks);
+      if(should_encrypt > 0)
 	keys = crte;
       else
 	keys = crt;
@@ -244,9 +255,17 @@ int main(int argc, char **argv)
       else
 	rsa_message(cipher,message,keys,should_encrypt);
       if(output_stream)
-	printf("%08u%08u%08u%08u",cipher[0],cipher[1],cipher[2],cipher[3]);
+	{
+	  size_t i = 0;
+	  for(;i<num_blocks;i++)
+	    printf("%08u",cipher[i]);
+	}
       else
-	printf("%c%c%c%c",0xff&cipher[0],(char)0xff&cipher[1],(char)0xff&cipher[2],(char)0xff&cipher[3]);
+	{
+	  size_t i = 0;
+	  for(;i<num_blocks;i++)
+	    printf("%c",0xff&cipher[i]);
+	}
 
       return c;
     }
