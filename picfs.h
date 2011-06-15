@@ -2,8 +2,10 @@
 
 #define PICFS_FILENAME_MAX (FS_BUFFER_SIZE-2)
 
-signed char picfs_open(const char *name);
-char picfs_close(char fh);
-char picfs_read(char fh);
+typedef char file_t;// file handle type
 
-char picfs_is_open(char fh); 
+signed char picfs_open(const char *name);
+char picfs_close(file_t fh);
+char picfs_read(file_t fh);
+
+char picfs_is_open(file_t fh); 

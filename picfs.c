@@ -109,7 +109,7 @@ signed char picfs_open(const char *name)
 
 }
 
-char picfs_read(char fh)
+char picfs_read(file_t fh)
 {
   char inode,ptr,nextnode;
   char addr[4];
@@ -147,7 +147,7 @@ char picfs_read(char fh)
   return picfs_buffer_block(ptr);
 }
 
-char picfs_close(char fh)
+char picfs_close(file_t fh)
 {
   if(ISOPEN(fh))
     return PICFS_EBADF;
@@ -158,7 +158,7 @@ char picfs_close(char fh)
   return 0;
 }
 
-char picfs_is_open(char fh)
+char picfs_is_open(file_t fh)
 {
   if(ISOPEN(fh))
     return TRUE;
