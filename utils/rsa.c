@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 #include <getopt.h>
+#include <errno.h>
+#include <unistd.h>
 #include "../rsa.h"
 
 #define RSA_BLOCK_SIZE 8
@@ -44,6 +46,30 @@ void rsa_message(unsigned int *cipher,const char *message,
       
 }
 
+int load_key(unsigned int *crt,const char *filename)
+{
+  FILE *key;
+  size_t idx;
+  if(access(filename,R_OK) != 0)
+    return errno;
+  
+  if(crt == NULL)
+    return -1;
+  
+  key = fopen(filename,"r");
+  idx = 0;
+  while(idx < 5)
+    {
+      char tmp;
+      if(fscanf(key,"%c",&tmp) != 1)
+	return -2;
+      crt[idx++] = (unsigned int)tmp & 0xff;
+    }
+
+  return 0;
+}
+
+
 void rsa_stream(unsigned int *cipher,const char *message,
 		unsigned int *keys, int pos)
 {
@@ -79,14 +105,16 @@ void print_crt(unsigned int *crt)
   printf("crt[] = {%u,%u,%u,%u,%u};\n",crt[0], crt[1], crt[2], crt[3], crt[4]);
 }
 
-enum {RSA_ENCRYPT_KEY,RSA_DECRYPT_KEY};
+enum {RSA_ENCRYPT_KEY = 1,RSA_DECRYPT_KEY,RSA_ENCRYPT_EXP,RSA_DECRYPT_EXP};
 struct option long_opts[] =
   {
     {"cipher-only",0,NULL,'c'},
     {"decrypt",0,NULL,'d'},
     {"encrypt",0,NULL,'e'},
-    {"encrypt-key",1,RSA_ENCRYPT_KEY},
+    {"encrypt-key",1,NULL,RSA_ENCRYPT_KEY},
     {"decrypt-key",1,NULL,RSA_DECRYPT_KEY},
+    {"encrypt-exp",1,NULL,RSA_ENCRYPT_EXP},
+    {"decrypt-exp",1,NULL,RSA_DECRYPT_EXP},
     {"help",0,NULL,'h'},
     {"message",1,NULL,'m'},
     {"p",1,NULL,'p'},
@@ -138,6 +166,12 @@ void print_help()
 	case RSA_DECRYPT_KEY:
 	  printf("Specify the decryption key.");
 	  break;
+	case RSA_ENCRYPT_EXP:
+	  printf("Specify the encryption exponent.");
+	  break;
+	case RSA_DECRYPT_EXP:
+	  printf("Specify the decryption exponent.");
+	  break;
 	case 'h':
 	  printf("Display this message.");
 	  break;
@@ -145,11 +179,11 @@ void print_help()
 	  printf("Character string message to encrypt/decrypt.");
 	  break;
 	case 'p':
-	  printf("Specify the larger prime factor of the modulus.");
-	  break;
-	case 'q':
-	  printf("Specify the smaller prime factor of the modulus.");
-	  break;
+          printf("Specify the larger prime factor of the modulus.");
+          break;
+        case 'q':
+          printf("Specify the smaller prime factor of the modulus.");
+          break;
 	case 's':
 	  printf("Use an input stream rather than character string.");
 	  break;
@@ -172,7 +206,8 @@ int main(int argc, char **argv)
   unsigned int c;
   const char *message = strdup("Hello, World!");
   int should_encrypt = 1, use_stream = 0, output_stream = 0;
-  int cipher_only = 0;
+  int cipher_only = 0, make_keys = 1;
+  FILE *ekeyfile = NULL, *dkeyfile = NULL;
   
   char optval;
   
@@ -189,11 +224,47 @@ int main(int argc, char **argv)
 	case 'd':
 	  should_encrypt = -1;
 	  break;
+	case RSA_ENCRYPT_EXP:
+	  if(sscanf(optarg,"%u",&e) != 1)
+	    {
+	      printf("Could not read integer: %s\n",optarg);
+	      exit(-1);
+	    }
+	  break;
+	case RSA_DECRYPT_EXP:
+	  if(sscanf(optarg,"%u",&d) != 1)
+	    {
+	      printf("Could not read integer: %s\n",optarg);
+	      exit(-1);
+	    }
+	  break;
 	case RSA_DECRYPT_KEY:
-	  sscanf(optarg,"%u",&d);
+	  if(access(optarg,F_OK) == 0)
+	    {
+	      int retval;
+	      if((retval = load_key(crt,optarg)) != 0)
+		{
+		  printf("Could not load decryption key.\nReason(%d): %s\n",retval,strerror(retval));
+		  exit(errno);
+		}
+	      make_keys = 0;
+	    }
+	  else
+	    dkeyfile = fopen(optarg,"w");
 	  break;
 	case RSA_ENCRYPT_KEY:
-	  sscanf(optarg,"%u",&e);
+	  if(access(optarg,F_OK) == 0)
+	    {
+	      int retval;
+	      if((retval = load_key(crte,optarg)) != 0)
+		{
+		  printf("Could not load decryption key.\nReason(%d): %s",errno,strerror(errno));
+		  exit(errno);
+		}
+	      make_keys = 0;
+	    }
+	  else
+	    ekeyfile = fopen(optarg,"w");
 	  break;
 	case 'h':
 	  print_help();
@@ -220,8 +291,29 @@ int main(int argc, char **argv)
 	}
     }
   
-  crtme(crt,p,q,d);
-  crtme(crte,p,q,e);
+  if(make_keys)
+    {
+      crtme(crt,p,q,d);
+      crtme(crte,p,q,e);
+    }
+
+  if(make_keys || ekeyfile != NULL || dkeyfile != NULL)
+    {
+      if(ekeyfile != NULL)
+	{
+	  size_t i = 0;
+	  for(;i<5;i++)
+	    fwrite(crte + i,sizeof(char),1,ekeyfile);
+	  fclose(ekeyfile);
+	}
+      if(dkeyfile != NULL)
+	{
+	  size_t i = 0;
+	  for(;i<5;i++)
+	    fwrite(crt + i,sizeof(char),1,dkeyfile);
+	  fclose(dkeyfile);
+	}
+    }
 
   if(!cipher_only)
     {
@@ -244,7 +336,7 @@ int main(int argc, char **argv)
       if(use_stream)
 	num_blocks /= RSA_BLOCK_SIZE;
       
-      cipher = (unsigned int)malloc(sizeof(unsigned int)*num_blocks);
+      cipher = (unsigned int*)malloc(sizeof(unsigned int)*num_blocks);
       if(should_encrypt > 0)
 	keys = crte;
       else
