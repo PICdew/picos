@@ -9,6 +9,8 @@
 #include "picos_time.h"
 #include "utils.h"
 
+extern char getch(void);
+
 void IO_putd(char d)
 {
   char hex_val[2];
@@ -142,40 +144,7 @@ char get_command()
 
   while(TRUE)
     {
-      if((indev & IN_USART) != 0)
-	{
-	  char received_char[2];
-	  USART_timeout = 100;
-	  ditdat = usart_getch();
-	  received_char[0] = ditdat;received_char[1] = 0;
-	  morse_sound(received_char);
-	}
-      if((indev & IN_BTNS) != 0)
-	{
-	  char button_val = '@';
-	  button_val = get_button_state();
-	  while((button_val & BTN_RTN) == 0)
-	    {
-	      if((button_val & BTN_DIT) != 0)
-		{
-		  ditdat = (ditdat << 1) + 1;
-		  morse_ditdat_sound(FALSE);
-		  __delay_ms(400);
-		}
-	      else if((button_val & BTN_DAT) != 0)
-		{
-		  ditdat = (ditdat+1) << 1;
-		  morse_ditdat_sound(TRUE);
-		  __delay_ms(400);
-		}
-	      button_val = get_button_state();
-	      if((button_val & BTN_RTN) != 0)
-		{
-		  ditdat = morse_to_char(ditdat);
-		  __delay_ms(400);
-		}
-	    }
-	}
+      ditdat = getch();
       if(ditdat == 0)
 	continue;
 		
