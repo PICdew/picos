@@ -1,7 +1,10 @@
 #include "arg.h"
 #include "string.h"
 #include "error.h"
+
+#ifndef NO_PICLANG
 #include "piclang.h"
+#endif
 
 char ARG_buffer[ARG_SIZE];
 
@@ -25,8 +28,10 @@ void ARG_putch(char ch)
 char ARG_next_int()
 {
   char retval = -1;
+#ifndef NO_PICLANG
   if(ARG_source == ARG_PICLANG)
 	return PICLANG_pop();
+#endif
 
   if(ARG_next >= ARG_SIZE)
     {
