@@ -1,13 +1,20 @@
-#include <htc.h>
-#include <string.h>
-
-#include "defines.h"
 #include "arg.h"
 #include "lcd.h"
 #include "usart.h"
 #include "io.h"
 #include "picos_time.h"
 #include "utils.h"
+
+#include <htc.h>
+#include <string.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
+#define __delay_ms(X) 1;
+#define __delay_us(X) 1;
 
 extern char getch(void);
 
@@ -181,18 +188,5 @@ char morse_to_char(char morse)
 }
 
 
-void tone_440()
-{
-  PR2 = 0x8d ;
-  CCPR1L = 0;
-  TRISC5 = 0;
-  T2CON = 0b00000111 ;
-  CCP1CON = 0x3c;
-  CCPR1L = 0x46;
-}
 
-void mute_sound()
-{
-  CCP1CON = 0;
-}
 

@@ -1,8 +1,9 @@
+#include "sd.h"
+#include "error.h"
+
 #include <htc.h>
 #include <stddef.h>
 #include <stdio.h>
-#include "sd.h"
-#include "error.h"
 
 char SPI_sendrecv(char data)
 {
@@ -141,19 +142,5 @@ void SD_read(char *addr, char *buffer, char n)
   SPI_sendrecv(0xFF);
   SPI_sendrecv(0xFF);
   SD_CS = 1;
-}
-
-void SD_init(void)
-{
-  TRISB6 = 0;// Clk
-  TRISB4 = 1;// SDI
-  TRISC6 = 0;// CS
-  TRISC7 = 0;// SDO
-  //SPI init
-  SSPCON = 0b110000;// Clk high on idle, full throttle (Fosc/4) master mode
-  SD_CS = 1;
-
-  SD_restart(1);
-	
 }
 

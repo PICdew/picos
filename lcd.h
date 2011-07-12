@@ -3,10 +3,6 @@
  *	See lcd.c for more info
  */
 
-#define LCD_WIDTH 8
-#define LCD_EOF 16
-
-
 // Keeps track of the position on the lcd.
 // Zero indexed mod LCD_WIDTH
 char lcd_pos;
@@ -53,4 +49,6 @@ extern void lcd_putch(char);
  * Set the cursor position 
  */
 #define	lcd_cursor(x)	lcd_write(((x)&0x7F)|0x80)
+
+#define	LCD_STROBE()	((LCD_EN = 1),(LCD_EN=0))
 

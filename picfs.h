@@ -1,3 +1,6 @@
+#ifndef PICFS_H
+#define PICFS_H
+
 #include "fs.h"
 
 #define PICFS_FILENAME_MAX (FS_BUFFER_SIZE-2)
@@ -17,3 +20,5 @@ char picfs_seek(file_t fh, offset_t offset, char whence);
 offset_t picfs_tell(file_t fh);
 void picfs_rewind(file_t fh);
 char picfs_is_open(file_t fh); 
+
+#endif

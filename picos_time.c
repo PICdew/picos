@@ -1,35 +1,19 @@
-#include <htc.h>
-#include <stddef.h>
-#include <stdio.h>
-
 #include "io.h"
 #include "utils.h"
 #include "picos_time.h"
 
+#include <htc.h>
+#include <stddef.h>
+#include <stdio.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+
 static TIME_t TIME_curr;
 
-void TIME_init(void){
-	T0CS = 0;	// Clear to enable timer mode.
-	PSA = 0;	// Clear to assign prescaler to Timer 0.
 
-	PS2 = 1;	// Set up prescaler to 1:256.  
-	PS1 = 1;
-	PS0 = 1;
-
-	INTCON = 0;	// Clear interrupt flag bits.
-	T0IE = 1;	// Set Timer 0 to 0.  
-	TMR0 = 0;
-
-	TIME_curr.hours = 12;
-	TIME_curr.minutes = 34;
-	TIME_curr.seconds = 56;
-	TIME_curr.month = 6;
-	TIME_curr.day = 29;
-	TIME_curr.year = 0;
-	
-	ei();	// Global interrupts enabled
-
-}
 
 void TIME_tick(void)
 {

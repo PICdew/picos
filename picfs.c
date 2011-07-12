@@ -1,8 +1,13 @@
-#include <htc.h>
-#include <string.h>
 #include "picfs.h"
 #include "error.h"
 #include "sd.h"
+
+#include <htc.h>
+#include <string.h>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 extern FS_Unit picfs_buffer[];
 #define ISOPEN(fh) ((fh & ~picfs_fh_bitmap) == 0)
