@@ -1,13 +1,16 @@
 #include <htc.h>
 #include <stdio.h>
 
-#include "defines.h"
 #include "page.h"
 #include "error.h"
 #include "piclang.h"
 #include "arg.h"
 #include "io.h"
 #include "utils.h"
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #define PICLANG_error(code)  curr_process.status = code
 
