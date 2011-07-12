@@ -1,3 +1,6 @@
+#ifndef FS_H
+#define FS_H
+
 #define FUSE_USE_VERSION 26
 #include <stdio.h>
 
@@ -55,4 +58,6 @@ enum {
 #ifndef TRUE
 #define TRUE 1
 #endif
+
+#endif FS_H
 
