@@ -7,6 +7,12 @@
 typedef unsigned char FS_Unit;
 typedef unsigned char FS_Block;
 
+const char FS_proc_filename[] = "/proc";
+const char FS_dump_filename[] = "/proc/dump";
+const char FS_eeprom_filename[] = "/proc/eeprom";
+const char FS_picc_filename[] = "/proc/picc";
+const char FS_readme_filename[] = "/proc/README";
+
 #ifdef NOT_FOR_PIC
 struct fs_fuse_state {
   FILE *logfile;

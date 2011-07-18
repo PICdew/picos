@@ -74,9 +74,7 @@ static FS_Unit FS_malloc(FS_Block *sb)
 static int FS_is_virtual(const char *path)
 {
   return (strcmp(path,"/") == 0) 
-    || (strcmp(path,"/dump") == 0) 
-    || (strcmp(path,"/eeprom") == 0)
-    || (strcmp(path,"/picc") == 0);
+    || (strncmp(path,FS_proc_filename,strlen(FS_proc_filename)) == 0);
 }
 
 static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
@@ -322,27 +320,33 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 
     if(strcmp(path,"/") == 0)
       FS_inode2stat(stbuf,dir);
-
-    if(strcmp(path,"/dump") == 0)
+    else if(strcmp(path,FS_proc_filename) == 0)
       {
-	stbuf->st_mode = 0555 | S_IFREG;
+	stbuf->st_mode = 0555 | S_IFDIR;
+	stbuf->st_uid = 0;
+	stbuf->st_size = 0;
+	return 0;
+      }
+    else if(strcmp(path,FS_dump_filename) == 0)
+      {
+	stbuf->st_mode = 0444 | S_IFREG;
 	stbuf->st_size = sb[FS_SuperBlock_num_blocks] * sb[FS_SuperBlock_block_size];
 	return 0;
       }
-    else if(strcmp(path,"/eeprom") == 0)
+    else if(strcmp(path,FS_eeprom_filename) == 0)
       {
 	FILE *eeprom = tmpfile();
 	int len = FS_read_eeprom(sb,eeprom);
-	stbuf->st_mode = 0555 | S_IFREG;
+	stbuf->st_mode = 0444 | S_IFREG;
 	stbuf->st_size = len;
 	fclose(eeprom);
 	return 0;
       }
-    else if(strcmp(path,"/picc") == 0)
+    else if(strcmp(path,FS_picc_filename) == 0)
       {
 	FILE *picc = tmpfile();
 	int len = FS_read_picc(sb,picc);
-	stbuf->st_mode = 0555 | S_IFREG;
+	stbuf->st_mode = 0444 | S_IFREG;
 	stbuf->st_size = len;
 	fclose(picc);
 	return 0;
@@ -482,14 +486,19 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   
   (void)offset;
   (void)fi;
-  if(strcmp(path,"/") != 0)
-    the_dir = FS_resolve(the_dir,path,the_state->super_block);
-  else
+  
+  if(strncmp(path,FS_proc_filename,sizeof(FS_proc_filename)) == 0)
     {
       filler(buf,"dump",NULL,0);
       filler(buf,"eeprom",NULL,0);
       filler(buf,"picc",NULL,0);
+      return 0;
     }
+  else if(strcmp(path,"/") == 0)
+    filler(buf,&FS_proc_filename[1],NULL,0);
+  else
+    the_dir = FS_resolve(the_dir,path,the_state->super_block);
+
 
   if(the_state == NULL)
     return -ENOENT;
@@ -530,8 +539,10 @@ static int FS_opendir(const char *path, struct fuse_file_info *fi)
 
   log_msg("FS_opendir (%s)\n",path);
 
-  if(strcmp(path,"/") != 0)
-    the_dir = FS_resolve(the_dir,path,the_state->super_block);
+  if(FS_is_virtual(path))
+    return 0;
+
+  the_dir = FS_resolve(the_dir,path,the_state->super_block);
   
   if(the_dir == NULL)
     return ENOENT;
@@ -854,7 +865,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
   FS_Block *file = NULL;
   FS_Unit data_ptr = 0;
   log_msg("FS_read (%s)\n",path);
-  if(strcmp(path,"/dump") == 0 )
+  if(strcmp(path,FS_dump_filename) == 0 )
     {
       len = (2+sb[FS_SuperBlock_num_blocks])*sb[FS_SuperBlock_block_size];
       log_msg("Filesystem length: %d Requesting: %d\n",len,size);
@@ -864,7 +875,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       log_msg("Read %d bytes of the raw file system.\n",size);
       return size;
     }
-  else if(strcmp(path,"/eeprom") == 0)
+  else if(strcmp(path,FS_eeprom_filename) == 0)
     {
       FILE *eeprom_file = tmpfile();
       len = FS_read_eeprom(sb,eeprom_file);
@@ -875,7 +886,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       fclose(eeprom_file);
       return len;
     }
-  else if(strcmp(path,"/picc") == 0)
+  else if(strcmp(path,FS_picc_filename) == 0)
     {
       FILE *eeprom_file = tmpfile();
       len = FS_read_picc(sb,eeprom_file);
