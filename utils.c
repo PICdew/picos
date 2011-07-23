@@ -46,5 +46,13 @@ void calculate_crc(char *crc, char newval)
   *crc ^= newval;
 }
 
-
+char TEMPERATURE_read()
+{
+	char temp;
+	GO_nDONE = 1;
+	while(GO_nDONE)continue;
+	temp = ADRESL - 81;
+	temp = temp >> 2;
+	return temp;			
+}
 

@@ -4,6 +4,8 @@
 
 extern void hex_to_word(char *two_chars, char hex);
 extern void calculate_crc(char *crc, char newval);
+extern char TEMPERATURE_read();
+
 
 #define DelayuS(x) _delay((unsigned long)(x))
 #define DelaymS(x) _delay((unsigned long)((x)*(1000L)))

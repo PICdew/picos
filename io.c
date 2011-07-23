@@ -13,9 +13,6 @@
 #endif
 
 
-#define __delay_ms(X) 1;
-#define __delay_us(X) 1;
-
 extern char getch(void);
 
 void IO_putd(char d)
