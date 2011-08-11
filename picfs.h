@@ -12,7 +12,7 @@ enum {PICFS_SET, PICFS_CURR, PICFS_END,PICFS_REVERSE};
 
 #define ST_SIZE 0 // size is 2 bytes, big endian
 
-
+signed char picfs_mount(const char *mount_point, char *addr);
 signed char picfs_open(const char *name);
 char picfs_close(file_t fh);
 char picfs_read(file_t fh);

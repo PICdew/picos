@@ -2,6 +2,10 @@
 #include <htc.h>
 #endif
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stddef.h>
 
 void hex_to_word(char *two_chars, char hex)

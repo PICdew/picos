@@ -22,6 +22,12 @@ extern FS_Unit picfs_buffer[];
 
 char picfs_fh_bitmap;//1 = free, 0 = used
 
+signed char picfs_mount(const char *mount_point, char *addr)
+{
+  picfs_fh_bitmap = 0xff;
+  return 0;
+}
+
 /**
  * Resolves a block id to its SD address
  */
