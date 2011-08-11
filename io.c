@@ -37,7 +37,6 @@ void IO_puts(const char *str)
 char get_button_state()
 {
   char retval = ((button_port & 0b111000) >> button_phase);
-  //_delay((unsigned long)(16*1));
   TIME_40msleep(1);
   retval &= ((button_port & 0b111000) >> button_phase);
   return ~retval & 7;
@@ -100,6 +99,7 @@ void morse_ditdat_sound_blocking(char encoded)
 {
   char count = (encoded & 7);
   char i = 0;
+  
   for(;i < count;i++)
     {
       tone_440();

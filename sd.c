@@ -1,6 +1,10 @@
 #include "sd.h"
 #include "error.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <htc.h>
 #include <stddef.h>
 #include <stdio.h>

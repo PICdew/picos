@@ -1,6 +1,7 @@
 #include "picfs.h"
 #include "error.h"
 #include "sd.h"
+#include "io.h"
 
 #include <htc.h>
 #include <string.h>
@@ -11,10 +12,12 @@
 
 extern FS_Unit picfs_buffer[];
 char picfs_fh_bitmap = 0xff;
-char picfs_mtab_bitmap = 0x3f;// six entries in the table
 #define ISOPEN(fh) ((fh & ~picfs_fh_bitmap) == 0)
 #define FS_BLOCK_SIZE FS_BUFFER_SIZE
-#define PICFS_PATHNAME_MAX 256
+
+char picfs_mtab_bitmap = 0x3f;// six entries in the table
+#define MTAB_ENTRY_MAX 6
+#define SIZE_picfs_mtab_entry 4
 
 // In order from least to most significant byte, the 
 // data in eeprom for the file handle is:
@@ -23,14 +26,7 @@ char picfs_mtab_bitmap = 0x3f;// six entries in the table
 // of next get offset
 #define FILE_HANDLE_SIZE 3
 
-// Max size of mount table entry in SRAM in bytes
-#define MAX_MTAB_SIZE 512
 
-typedef struct{
-  char sd_addr[4];
-  char mount_point[PICFS_PATHNAME_MAX];
-}picfs_mtab_entry;
-static const unsigned int SIZE_picfs_mtab_entry = sizeof(picfs_mtab_entry);
 
 static signed char picfs_get_free_handle( char *bitmap )
 {
@@ -56,8 +52,7 @@ static signed char picfs_get_free_handle( char *bitmap )
 
   *bitmap &= ~((char)new_fh);
 
-  if(new_fh == 1)
-    new_fh--;
+  new_fh--;
   
   return new_fh;
 }
@@ -66,15 +61,18 @@ static signed char picfs_get_free_handle( char *bitmap )
 
 
 /**
+ * Mounts the SD card fs onto the lowest available mount point.
+ *
+ * Returns the mount point if successful
  *
  * On error, error_code is set and -1 is returned
  */
-signed char picfs_mount(const char *mount_point, char *sd_addr)
+signed char picfs_mount(const char *sd_addr)
 {
-  unsigned int addr, filename_size;
   signed char mtab_entry;
+  unsigned int addr;
 
-  if(mount_point == NULL)
+  if(sd_addr == NULL)
     {
       error_code = PICFS_EINVAL;
       return -1;
@@ -93,30 +91,28 @@ signed char picfs_mount(const char *mount_point, char *sd_addr)
     }
   
   addr = SIZE_picfs_mtab_entry * mtab_entry;
-  if(mount_point[0] == '/')
-    mount_point++;
-  filename_size = strlen(mount_point);
-  if(filename_size > PICFS_FILENAME_MAX || filename_size == 0)
+
+  SRAM_write(addr,sd_addr,SIZE_picfs_mtab_entry);
+  return mtab_entry;
+}
+
+signed char picfs_getdir(char *addr, char mount_point)
+{
+  mount_point++;
+  if((mount_point & picfs_mtab_bitmap) == 1)
     {
-      error_code = PICFS_INVALID_FILENAME;
+      error_code = PICFS_EBADF;
       return -1;
     }
-  
-  mtab_entry = (char)filename_size;/// using mtab as a temporary variable
-  if((addr + filename_size + 1) > MAX_MTAB_SIZE)
-    {
-      error_code = PICFS_INVALID_FILENAME;
-      return -1;
-    }
-  
-  SRAM_write(addr++,&mtab_entry,1);// filename_size
-  SRAM_write(addr++,mount_point,mtab_entry);
-  SRAM_write(addr++,sd_addr,4);
-  
+  SRAM_read(--mount_point,addr,SIZE_picfs_mtab_entry);
   return 0;
 }
 
-#if 0 // OLD and probably bad
+signed char picfs_chdir(char mount_point)
+{
+  return picfs_getdir(picfs_pwd,mount_point);
+}
+
 /**
  * Resolves a block id to its SD address
  */
@@ -127,7 +123,7 @@ static void picfs_getblock(char *addr, FS_Unit block_id)
   
   addr[0] = addr[1] = addr[2] = addr[3] = 0;
   addr[3] = block_id * FS_BLOCK_SIZE;
-
+  
 }
 
 static char picfs_buffer_block(FS_Unit block_id)
@@ -138,6 +134,7 @@ static char picfs_buffer_block(FS_Unit block_id)
   return 0;
 }
 
+#if 0// working on adding these functions...
 /**
  * Returns a file handle for a file with the 
  * specified name
@@ -331,7 +328,6 @@ char picfs_close(file_t fh)
   picfs_fh_bitmap |= fh;
   return 0;
 }
-#endif
 
 char picfs_is_open(file_t fh)
 {
@@ -339,3 +335,4 @@ char picfs_is_open(file_t fh)
     return TRUE;
   return FALSE;
 }
+#endif
