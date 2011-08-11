@@ -20,6 +20,13 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 
+const char FS_proc_filename[] = "/proc";
+const char FS_dump_filename[] = "/proc/dump";
+const char FS_eeprom_filename[] = "/proc/eeprom";
+const char FS_picc_filename[] = "/proc/picc";
+const char FS_readme_filename[] = "/proc/README";
+
+
 static void log_msg(const char *format, ...)
 {
     va_list ap;
