@@ -12,7 +12,9 @@ enum ERROR_CODES{
   PICFS_NOENT,
   PICFS_ENFILE,
   PICFS_EBADF,
-  PICFS_EINVAL
+  PICFS_EINVAL,
+  PICFS_TOO_MANY_MOUNTED /** mount table space is full **/,
+  PICFS_INVALID_FILENAME
 };
 
 char error_code;

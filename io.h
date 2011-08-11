@@ -30,6 +30,9 @@ void IO_puts(const char *str);
 void IO_putd(char d);
 extern void IO_flush();
 
+extern void SRAM_write(unsigned int addr, char *buffer, char n);
+extern void SRAM_read(unsigned int addr, char *buffer, char n);
+
 #define OUT_LCD 1
 #define OUT_USART 2
 #define OUT_SOUND 4
