@@ -30,24 +30,23 @@ char picfs_mtab_bitmap = 0x3f;// six entries in the table
 
 static signed char picfs_get_free_handle( char *bitmap )
 {
-  signed char new_fh = 1;
+  signed char new_fh = 0,new_fh_mask = 1;
   if(bitmap == NULL)
     return error_return(PICFS_EINVAL);
   
   if(*bitmap == 0)
     return error_return(PICFS_ENFILE);
   
-  while(new_fh > 0)
+  while(new_fh_mask > 0)
     {
-      if((new_fh & *bitmap) != 0)
+      if((new_fh_mask & *bitmap) != 0)
 	break;
-      new_fh <<= 1;
+      new_fh_mask <<= 1;
+      new_fh++;
     }
 
-  *bitmap &= ~((char)new_fh);
+  *bitmap &= ~((char)new_fh_mask);
 
-  new_fh--;
-  
   return new_fh;
 }
 #define picfs_get_free_fh() picfs_get_free_handle(&picfs_fh_bitmap)
@@ -238,6 +237,7 @@ signed char picfs_stat(file_t fh)
 signed char picfs_seek(file_t fh, offset_t offset, char whence)
 {
   offset_t curr,size;
+  char eeprom_addr = fh*FILE_HANDLE_SIZE;
   if(!ISOPEN(fh))
     return error_return(PICFS_EBADF);
 
@@ -248,9 +248,9 @@ signed char picfs_seek(file_t fh, offset_t offset, char whence)
   size <<= 8;
   size |= picfs_buffer[ST_SIZE+1];
   
-  curr = eeprom_read(fh+1);
+  curr = eeprom_read(eeprom_addr+1);
   curr <<= 8;
-  curr |= eeprom_read(fh+2);
+  curr |= eeprom_read(eeprom_addr+2);
   //check to see if offset(whence) is past EOF
   switch(whence)
     {
@@ -276,7 +276,7 @@ signed char picfs_seek(file_t fh, offset_t offset, char whence)
 
 signed char picfs_read(file_t fh)
 {
-  char inode,ptr;
+  char inode,ptr,eeprom_addr = fh*FILE_HANDLE_SIZE;
   offset_t nextnode;
   char addr[4];
 
@@ -285,22 +285,22 @@ signed char picfs_read(file_t fh)
     return error_return(PICFS_EBADF);
 
   // Get the head inode. Is it legit?
-  inode = eeprom_read(fh);
+  inode = eeprom_read(eeprom_addr);
   if(inode == 0)
     return error_return(PICFS_EBADF);
   picfs_stat(fh);
-  if(picfs_buffer[ST_SIZE] < eeprom_read(fh+1))
+  if(picfs_buffer[ST_SIZE] < eeprom_read(eeprom_addr+1))
     return error_return(PICFS_EOF);
   if(picfs_buffer[ST_SIZE] == 0)
-    if(picfs_buffer[ST_SIZE + 1] < eeprom_read(fh+2))
+    if(picfs_buffer[ST_SIZE + 1] < eeprom_read(eeprom_addr+2))
       return error_return(PICFS_EOF);
 
-  nextnode = eeprom_read(fh + 1);
+  nextnode = eeprom_read(eeprom_addr + 1);
   nextnode <<= 8;
-  nextnode |= eeprom_read(fh + 2);
+  nextnode |= eeprom_read(eeprom_addr + 2);
   
-  eeprom_write(fh+1,(char)(nextnode + 1>>8) & 0xff);
-  eeprom_write(fh+2,(char)((nextnode+1) & 0xff));
+  eeprom_write(eeprom_addr+1,(char)(nextnode + 1>>8) & 0xff);
+  eeprom_write(eeprom_addr+2,(char)((nextnode+1) & 0xff));
   while(nextnode >= FS_INODE_NUM_POINTERS)
     {
       picfs_getblock(addr,inode);
@@ -326,13 +326,16 @@ signed char picfs_read(file_t fh)
 
 signed char picfs_close(file_t fh)
 {
-  if(ISOPEN(fh))
+  char eeprom_addr = fh*FILE_HANDLE_SIZE;
+  if(!ISOPEN(fh))
     return error_return(PICFS_EBADF);
 
-  eeprom_write(fh,0);
-  eeprom_write(fh+1,0);
-  eeprom_write(fh+2,0);
-  picfs_fh_bitmap |= fh;
+  eeprom_write(eeprom_addr++,0);
+  eeprom_write(eeprom_addr++,0);
+  eeprom_write(eeprom_addr,0);
+  
+  eeprom_addr = 1 << fh;
+  picfs_fh_bitmap |= eeprom_addr;
   return 0;
 }
 
