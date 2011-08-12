@@ -15,6 +15,7 @@ enum {PICFS_SET, PICFS_CURR, PICFS_END,PICFS_REVERSE};
 char picfs_pwd[4];// working directory
 
 signed char picfs_mount(const char *addr);
+signed char picfs_chdir(char mount_point);
 signed char picfs_open(const char *name);
 signed char picfs_close(file_t fh);
 signed char picfs_read(file_t fh);

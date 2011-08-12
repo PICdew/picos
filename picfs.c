@@ -84,13 +84,13 @@ signed char picfs_mount(const char *sd_addr)
   return mtab_entry;
 }
 
-signed char picfs_getdir(char *addr, char mount_point)
+static signed char picfs_getdir(char *addr, char mount_point)
 {
-  mount_point++;
-  if((mount_point & picfs_mtab_bitmap) == 1)
+  char mount_point_mask = 1 << mount_point;
+  if((mount_point_mask & picfs_mtab_bitmap) != 0)
     return error_return(PICFS_EBADF);
 
-  SRAM_read(--mount_point,addr,SIZE_picfs_mtab_entry);
+  SRAM_read(mount_point*SIZE_picfs_mtab_entry,addr,SIZE_picfs_mtab_entry);
   return 0;
 }
 
