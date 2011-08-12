@@ -52,13 +52,14 @@
      STRING = 268,
      CR = 269,
      MORSE = 270,
-     IFX = 271,
-     ELSE = 272,
-     NE = 273,
-     EQ = 274,
-     LE = 275,
-     GE = 276,
-     UMINUS = 277
+     TIME = 271,
+     IFX = 272,
+     ELSE = 273,
+     NE = 274,
+     EQ = 275,
+     LE = 276,
+     GE = 277,
+     UMINUS = 278
    };
 #endif
 /* Tokens.  */
@@ -75,13 +76,14 @@
 #define STRING 268
 #define CR 269
 #define MORSE 270
-#define IFX 271
-#define ELSE 272
-#define NE 273
-#define EQ 274
-#define LE 275
-#define GE 276
-#define UMINUS 277
+#define TIME 271
+#define IFX 272
+#define ELSE 273
+#define NE 274
+#define EQ 275
+#define LE 276
+#define GE 277
+#define UMINUS 278
 
 
 
@@ -100,7 +102,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 104 "pasm_yacc.h"
+#line 106 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

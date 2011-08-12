@@ -3,6 +3,7 @@
 
 #include "page.h"
 #include "picfs_error.h"
+#include "picos_time.h"
 #include "piclang.h"
 #include "arg.h"
 #include "io.h"
@@ -196,6 +197,9 @@ void PICLANG_next()
 	  }
 	break;
       }
+    case PICLANG_TIME:
+      TIME_stdout();
+      break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       return;

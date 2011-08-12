@@ -56,7 +56,7 @@ int sym[26];                    /* symbol table */
 %token <iValue> INTEGER 
 %token <sIndex> VARIABLE
 %token WHILE IF PUTCH PUTD EXIT INPUT SYSTEM SPRINT STRING CR
-%token MORSE
+%token MORSE TIME
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -84,6 +84,7 @@ stmt:
         | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
         | SPRINT '(' STRING ')' ';' {$$ = opr(SPRINT,1,$3);}
         | MORSE '(' STRING ')' ';' {$$ = opr(MORSE,1,$3);}
+        | TIME '(' ')' ';'{$$ = opr(TIME,0);}
         | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
@@ -425,6 +426,10 @@ int ex(nodeType *p) {
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tmorse\n");
 	  insert_code(PICLANG_MORSE);
+	  break;
+	case TIME:
+	  write_assembly(assembly_file,"\ttime\n");
+	  insert_code(PICLANG_TIME);
 	  break;
         default:
             ex(p->opr.op[0]);
