@@ -1,5 +1,5 @@
 #include "picfs.h"
-#include "error.h"
+#include "picfs_error.h"
 #include "sd.h"
 #include "io.h"
 
@@ -32,16 +32,10 @@ static signed char picfs_get_free_handle( char *bitmap )
 {
   signed char new_fh = 1;
   if(bitmap == NULL)
-    {
-      error_code = PICFS_EINVAL;
-      return -1;
-    }
+    return error_return(PICFS_EINVAL);
   
   if(*bitmap == 0)
-    {
-      error_code = PICFS_ENFILE;
-      return -1;
-    }
+    return error_return(PICFS_ENFILE);
   
   while(new_fh > 0)
     {
@@ -73,15 +67,10 @@ signed char picfs_mount(const char *sd_addr)
   unsigned int addr;
 
   if(sd_addr == NULL)
-    {
-      error_code = PICFS_EINVAL;
-      return -1;
-    }
+    return error_return(PICFS_EINVAL);
+
   if(picfs_mtab_bitmap == 0)
-    {
-      error_code = PICFS_ENFILE;
-      return -1;
-    }
+    return error_return(PICFS_ENFILE);
   
   mtab_entry = picfs_get_free_mtab_entry();
   if(mtab_entry < 0)
@@ -100,10 +89,8 @@ signed char picfs_getdir(char *addr, char mount_point)
 {
   mount_point++;
   if((mount_point & picfs_mtab_bitmap) == 1)
-    {
-      error_code = PICFS_EBADF;
-      return -1;
-    }
+    return error_return(PICFS_EBADF);
+
   SRAM_read(--mount_point,addr,SIZE_picfs_mtab_entry);
   return 0;
 }
@@ -134,7 +121,6 @@ static char picfs_buffer_block(FS_Unit block_id)
   return 0;
 }
 
-#if 0// working on adding these functions...
 /**
  * Returns a file handle for a file with the 
  * specified name
@@ -146,13 +132,13 @@ signed char picfs_open(const char *name)
   char addr[4];
   char ch, pointer;
   if(picfs_fh_bitmap == 0)
-    return -PICFS_ENFILE;
+    return error_return(PICFS_ENFILE);
   
   picfs_getblock(addr,0);
   addr[3] += FS_SuperBlock_root_block;
   SD_read(addr,&ch,1);
   if(ch == 0)
-    return -PICFS_NOENT;
+    return error_return(PICFS_NOENT);
   
   pointer = 0;
   for(;pointer < FS_INode_pointers;pointer++)
@@ -178,11 +164,10 @@ signed char picfs_open(const char *name)
 	    {
 	      signed char fh;
 	      char eeprom_addr;
-	      addr[3]++;
 	      SD_read(addr,&ch,1);// first inode in file
 	      fh = picfs_get_free_fh();//file handle
 	      if(fh < 0)
-		return -PICFS_ENFILE;
+		return error_return(PICFS_ENFILE);
 	      eeprom_addr = fh*FILE_HANDLE_SIZE;
 	      eeprom_write((char)eeprom_addr,ch);
 	      eeprom_write((char)eeprom_addr+1,0);
@@ -193,29 +178,48 @@ signed char picfs_open(const char *name)
 	}
     }
 
-  return -PICFS_NOENT;
+  return error_return(PICFS_NOENT);
 
 }
 
-char picfs_stat(file_t fh)
+signed char picfs_stat(file_t fh)
 {
   unsigned int size = 0;
   char addr[4];
   char inode,val;
   if(!ISOPEN(fh))
-      return PICFS_EBADF;
+    return error_return(PICFS_EBADF);
 
   inode = eeprom_read(fh);
   picfs_getblock(addr,inode);
   while(inode != 0)
     {
-      addr[3] = FS_INode_indirect;
+      if(((int)addr[3] + FS_INode_indirect) > 255)
+	addr[2]++;
+      addr[3] += FS_INode_indirect;
       SD_read(addr,&val,1);
       if(val == 0)
 	{
-	  addr[3] = FS_INode_size;
+	  char pointer_counter = 1;
+	  if(addr[3] == 0)
+	      addr[2]--;
+	  addr[3]--;// FS_INode_size
 	  SD_read(addr,&val,1);
 	  size += val;
+	  if(addr[3] >= 253)
+	    addr[2]++;
+	  addr[3] += 3;
+	  for(;pointer_counter < FS_INODE_NUM_POINTERS;pointer_counter++)
+	    {
+	      SD_read(addr,&val,1);
+	      if(val == 0)
+		break;
+	      else
+		size += FS_BLOCK_SIZE;
+	      if(addr[3] == 255)
+		addr[2]++;
+	      addr[3]++;
+	    }
 	  break;
 	}
       size += FS_INODE_NUM_POINTERS*FS_BLOCK_SIZE;
@@ -231,15 +235,15 @@ char picfs_stat(file_t fh)
   return 0;
 }
 
-char picfs_seek(file_t fh, offset_t offset, char whence)
+signed char picfs_seek(file_t fh, offset_t offset, char whence)
 {
   offset_t curr,size;
   if(!ISOPEN(fh))
-    return PICFS_EBADF;
+    return error_return(PICFS_EBADF);
 
   curr = picfs_stat(fh);
   if(curr != 0)
-    return (char)curr;
+    return curr;
   size = picfs_buffer[ST_SIZE];
   size <<= 8;
   size |= picfs_buffer[ST_SIZE+1];
@@ -265,25 +269,25 @@ char picfs_seek(file_t fh, offset_t offset, char whence)
       else
 	curr = size - offset;
     default:
-      return PICFS_EINVAL;
+      return error_return(PICFS_EINVAL);
     }
   return 0;
 }
 
-char picfs_read(file_t fh)
+signed char picfs_read(file_t fh)
 {
   char inode,ptr;
   offset_t nextnode;
   char addr[4];
 
   //Is this file open?
-  if(ISOPEN(fh))
-    return PICFS_EBADF;
+  if(!ISOPEN(fh))
+    return error_return(PICFS_EBADF);
 
   // Get the head inode. Is it legit?
   inode = eeprom_read(fh);
   if(inode == 0)
-    return PICFS_EBADF;
+    return error_return(PICFS_EBADF);
   picfs_stat(fh);
   if(picfs_buffer[ST_SIZE] < eeprom_read(fh+1))
     return 0;//beyond EOF
@@ -297,7 +301,7 @@ char picfs_read(file_t fh)
   
   eeprom_write(fh+1,(char)(nextnode + 1>>8) & 0xff);
   eeprom_write(fh+2,(char)((nextnode+1) & 0xff));
-  while(nextnode >= FS_BLOCK_SIZE*FS_INODE_NUM_POINTERS)
+  while(nextnode >= FS_INODE_NUM_POINTERS)
     {
       picfs_getblock(addr,inode);
       addr[3] += FS_INode_indirect;
@@ -305,22 +309,25 @@ char picfs_read(file_t fh)
       if(ptr == 0)
 	return 0;
       inode = ptr;
-      nextnode -= FS_BLOCK_SIZE*FS_INODE_NUM_POINTERS;
+      nextnode -= FS_INODE_NUM_POINTERS;
     }
   
   picfs_getblock(addr,inode);
-  addr[3] += (char)nextnode/FS_BLOCK_SIZE;
-  SD_read(addr,&inode,1);
+  ptr = (char)nextnode + FS_INode_pointers;
+  if(addr[3] > 255-ptr)
+    addr[2]++;
+  addr[3] += ptr;
+  SD_read(addr,&ptr,1);
   if(ptr == 0)
     return 0;
   
   return picfs_buffer_block(ptr);
 }
 
-char picfs_close(file_t fh)
+signed char picfs_close(file_t fh)
 {
   if(ISOPEN(fh))
-    return PICFS_EBADF;
+    return error_return(PICFS_EBADF);
 
   eeprom_write(fh,0);
   eeprom_write(fh+1,0);
@@ -335,4 +342,5 @@ char picfs_is_open(file_t fh)
     return TRUE;
   return FALSE;
 }
+#if 0// working on adding these functions...
 #endif

@@ -1,3 +1,6 @@
+#ifndef PICFS_ERROR_H
+#define PICFS_ERROR_H 1
+
 enum ERROR_CODES{
   SUCCESS = 0,
   SD_INIT_ERROR,
@@ -18,3 +21,11 @@ enum ERROR_CODES{
 };
 
 char error_code;
+
+/**
+ * Sets 'error_code' to the provided value and returns -1.
+ */
+signed char error_return(char the_error);
+
+
+#endif
