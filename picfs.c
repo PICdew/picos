@@ -290,10 +290,10 @@ signed char picfs_read(file_t fh)
     return error_return(PICFS_EBADF);
   picfs_stat(fh);
   if(picfs_buffer[ST_SIZE] < eeprom_read(fh+1))
-    return 0;//beyond EOF
+    return error_return(PICFS_EOF);
   if(picfs_buffer[ST_SIZE] == 0)
     if(picfs_buffer[ST_SIZE + 1] < eeprom_read(fh+2))
-      return 0;//beyond EOF
+      return error_return(PICFS_EOF);
 
   nextnode = eeprom_read(fh + 1);
   nextnode <<= 8;
@@ -307,7 +307,7 @@ signed char picfs_read(file_t fh)
       addr[3] += FS_INode_indirect;
       SD_read(addr,&ptr,1);
       if(ptr == 0)
-	return 0;
+	return error_return(PICFS_EOF);
       inode = ptr;
       nextnode -= FS_INODE_NUM_POINTERS;
     }
@@ -319,7 +319,7 @@ signed char picfs_read(file_t fh)
   addr[3] += ptr;
   SD_read(addr,&ptr,1);
   if(ptr == 0)
-    return 0;
+    return error_return(PICFS_EOF);
   
   return picfs_buffer_block(ptr);
 }
