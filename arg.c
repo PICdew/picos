@@ -1,6 +1,6 @@
 #include "arg.h"
 #include "string.h"
-#include "error.h"
+#include "picfs_error.h"
 
 #ifndef NO_PICLANG
 #include "piclang.h"

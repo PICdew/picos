@@ -1,5 +1,5 @@
 #include "page.h"
-#include "error.h"
+#include "picfs_error.h"
 
 void PAGE_init()
 {

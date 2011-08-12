@@ -1,5 +1,5 @@
 #include "sd.h"
-#include "error.h"
+#include "picfs_error.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
