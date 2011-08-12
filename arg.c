@@ -8,7 +8,6 @@
 
 char ARG_buffer[ARG_SIZE];
 
-
 void ARG_clear()
 {
   char i = 0;
@@ -25,14 +24,9 @@ void ARG_putch(char ch)
   ARG_buffer[ARG_end++] = ch;
 }
 
-char ARG_next_int()
+signed char ARG_getd()
 {
-  char retval = -1;
-#ifndef NO_PICLANG
-  if(ARG_source == ARG_PICLANG)
-	return PICLANG_pop();
-#endif
-
+  signed char retval;
   if(ARG_next >= ARG_SIZE)
     {
       error_code = ARG_BUFFER_OVERFLOW;
@@ -69,9 +63,18 @@ const char* ARG_gets()
 {
   const char *next_word;
   if(ARG_next >= ARG_SIZE)
-    return "";
+    return NULL;
   next_word = &ARG_buffer[ARG_next];
-  ARG_next += 1 + strlen(next_word);
+  while(ARG_next != ARG_SIZE)
+    {
+      if(ARG_buffer[ARG_next] == ' ')
+	{
+	  ARG_buffer[ARG_next] = 0;
+	  ARG_next++;
+	  break;
+	}
+      ARG_next++;
+    }
   return next_word;
 }
 
