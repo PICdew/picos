@@ -50,6 +50,8 @@ void calculate_crc(char *crc, char newval)
   *crc ^= newval;
 }
 
+#ifndef NOT_FOR_PIC
+
 char TEMPERATURE_read()
 {
 	char temp;
@@ -59,4 +61,6 @@ char TEMPERATURE_read()
 	temp = temp >> 2;
 	return temp;			
 }
+
+#endif
 
