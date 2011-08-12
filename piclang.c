@@ -14,36 +14,13 @@
 
 #define PICLANG_error(code)  curr_process.status = code
 
-char PICLANG_load(char nth)
+char PICLANG_load(unsigned int sram_addr)
 {
   char size = 0,pos = 0,counter = 0;
-  
-  for(;pos < 0xff;)
-    {
-      size = eeprom_read(pos);
-      if(counter == nth)
-	break;
-      pos = pos + size;// move to beginning of next PCB
-      counter++;
-    }
-
-  if(size == 0)
+  if(sram_addr == 0xffff)
     return PICLANG_NO_SUCH_PROGRAM;
-
-  curr_process.offset = pos;// offset must equal the address of the first byte.
-  curr_process.size = size;
-  eeprom_write(++pos,curr_process.offset);// update offset
-  curr_process.bitmap = eeprom_read(++pos);
-  curr_process.num_pages = eeprom_read(++pos);
-  curr_process.pc = eeprom_read(++pos);
-  curr_process.status = eeprom_read(++pos);
-  curr_process.start_address = eeprom_read(++pos);
-  curr_process.string_address = eeprom_read(++pos);
-
-  counter = 0;
-  for(;counter<PICLANG_STACK_SIZE;counter++)
-    curr_process.stack[counter] = eeprom_read(++pos);
-  curr_process.stack_head = eeprom_read(++pos);
+  // Load PCB into memory
+  SRAM_read(sram_addr,&curr_process,PCB_SIZE);
 
   PICLANG_quantum = DEFAULT_PICLANG_QUANTUM;
 
@@ -54,39 +31,20 @@ char PICLANG_load(char nth)
 	return error_code;
     }
 
-  if((curr_process.bitmap & PICLANG_BIT_SYSCALL) != 0)
-    ARG_source = ARG_PICLANG;
-
+  curr_process_addr = sram_addr;
   return PICLANG_SUCCESS;
 
 }
 
 char PICLANG_save(char saved_status)
 {
-  char pos,status;
+  char status;
   if(curr_process.size == 0)
     return PICLANG_NO_SUCH_PROGRAM;
 
-  pos = curr_process.start_address + curr_process.offset;
-  if(pos < PCB_SIZE)
-    return PICLANG_EEPROM_OVERFLOW;
-  
-  pos--;// move back to stack head
-  eeprom_write(pos--,curr_process.stack_head);
-  status = PICLANG_STACK_SIZE - 1;
-  for(;;status--)// save the stack
-    {    
-      eeprom_write(pos--,curr_process.stack[status]);
-      if(status == 0)
-	break;
-    }
-  pos -= 2;// skip start_address + string address
   curr_process.status = saved_status;
-  status = curr_process.status;
-  eeprom_write(pos,curr_process.status);
-  pos--;
-  eeprom_write(pos,curr_process.pc);
-  
+
+  SRAM_write(curr_process_addr,&curr_process,PCB_SIZE);
 
   PICLANG_init();
 
@@ -98,35 +56,38 @@ char PICLANG_save(char saved_status)
 void PICLANG_init()
 {
   curr_process.size = 0;
-  curr_process.offset = 0;
   curr_process.pc = 0;
   curr_process.status = PICLANG_SUSPENDED;
   curr_process.start_address = 0;
   curr_process.string_address = 0;
   curr_process.stack_head = 0;
   PICLANG_quantum = 0;
+  curr_process_addr = 0xffff;
 }
 
-char PICLANG_get_next_byte(){
-  char next = curr_process.pc++;
-  if((next + PCB_SIZE) > curr_process.size)
+char PICLANG_get_next_byte()
+{
+  unsigned int next = curr_process_addr + curr_process.pc;
+  char val;
+  curr_process.pc++;
+  next += curr_process.start_address;
+  if(next < curr_process_addr)
     {
       PICLANG_error(PICLANG_PC_OVERFLOW);
-      return EOP;
+      return 1;
     }
-  next += curr_process.start_address + curr_process.offset;
-  return eeprom_read(next);
+  SRAM_read(next,&val,1);
+  return val;
 }
 
 void PICLANG_pushl(char val)
 {
-  curr_process.stack_head++;
-  if(curr_process.stack_head > PICLANG_STACK_SIZE)
+  if(curr_process.stack_head >= PICLANG_STACK_SIZE)
     {
       PICLANG_error(PICLANG_STACK_OVERFLOW);
       return;
     }
-  curr_process.stack[curr_process.stack_head] = val;
+  curr_process.stack[curr_process.stack_head++] = val;
 }
 
 char PICLANG_pop()
@@ -136,7 +97,7 @@ char PICLANG_pop()
       PICLANG_error(PICLANG_STACK_OVERFLOW);
       return 0;
     }
-  return curr_process.stack[curr_process.stack_head--];
+  return curr_process.stack[--curr_process.stack_head];
 }
 
 void PICLANG_next()
@@ -152,6 +113,8 @@ void PICLANG_next()
     }
   
   command = PICLANG_get_next_byte();
+  if(curr_process.status != PICLANG_SUCCESS)
+    return;
   switch(command)
     {
     case EOP:
@@ -171,7 +134,7 @@ void PICLANG_next()
       break;
     case PICLANG_PUSH:
       {
-	char val = PAGE_get(PICLANG_get_next_byte(),curr_process.offset);
+	char val = PAGE_get(PICLANG_get_next_byte(),0/* replace with UID */);
 	if(error_code != SUCCESS)
 	  PICLANG_error(error_code);
 	else
@@ -181,7 +144,7 @@ void PICLANG_next()
     case PICLANG_POP:
       {
 	char addr = PICLANG_get_next_byte();
-	PAGE_set(addr,PICLANG_pop(),curr_process.offset);
+	PAGE_set(addr,PICLANG_pop(),0/* replace with UID */);
 	break;
       }
     case PICLANG_PRINT:
@@ -196,10 +159,12 @@ void PICLANG_next()
       break;
     case PICLANG_SPRINT:
       {
-	char addr = PICLANG_pop(),ch;
+	char ch;
+	unsigned int addr;
 	static bit should_flush;
-	addr += curr_process.offset + curr_process.string_address;
-	ch = eeprom_read(addr++);
+	addr = curr_process_addr + curr_process.string_address;
+	addr += PICLANG_pop();
+	SRAM_read(addr++,&ch,1);
 	if(ch == 0)
 	  should_flush = FALSE;
 	else
@@ -207,7 +172,7 @@ void PICLANG_next()
 	while(ch != 0)
 	  {
 	    putch(ch);
-	    ch = eeprom_read(addr++);
+	    SRAM_read(addr++,&ch,1);
 	  }
 	if(should_flush == TRUE)
 	  IO_flush();
@@ -220,14 +185,14 @@ void PICLANG_next()
     case PICLANG_MORSE:
       {
 	char two[2];
-	char addr;
+	unsigned int addr;
 	two[1] = 0;
 	addr = PICLANG_pop();
-	two[0] = eeprom_read(addr++);
+	SRAM_read(addr++,two,1);
 	while(two[0] != 0)
 	  {
 	    morse_sound(two);
-	    two[0] = eeprom_read(addr++);
+	    SRAM_read(addr++,two,1);
 	  }
 	break;
       }

@@ -16,32 +16,32 @@
 
 typedef struct{
   char size;// size of program
-  char offset;// offset used to find sections of binary
   char bitmap;// flags for the OS, i.e. uses system call arguments?
   char num_pages;
   char pc;// program counter
   char status;// Error status
-  char start_address;// First byte of eeprom used for program (after PCB)
-  char string_address;// First byte of string data (null terminated)
+  char start_address;// Offset of SRAM used for program (after PCB)
+  char string_address;// Offset of string data (null terminated)
   char stack[PICLANG_STACK_SIZE];
   char stack_head;
 }PCB;
 #define PCB_SIZE sizeof(PCB)
 
-extern PCB curr_process;
+PCB curr_process;
+unsigned int curr_process_addr;// Address of first byte of program (including PCB) in memory that is currently running.
 volatile char PICLANG_quantum;
 volatile char PICLANG_system;// CRC hex value for system calls within piclan
 
 extern void PICLANG_init();
 
 /**
- * Loads the n-th program from EEPROM
+ * Loads program from SRAM.
  * Returns status of load
  */
-extern char PICLANG_load(char nth);
+extern char PICLANG_load(unsigned int sram_addr);
 
 /**
- * Saves the program to EEPROM
+ * Saves the program to SRAM
  * Returns status of program at save.
  */
 extern char PICLANG_save(char status);
@@ -57,9 +57,7 @@ enum PICLANG_COMMANDS
     PICLANG_SPRINT,PICLANG_SYSTEM,PICLANG_MORSE,PICLANG_NUM_COMMANDS
   };
 
-enum PICLANG_STATUS{PICLANG_SUCCESS = 0,PICLANG_UNKNOWN_ERROR,PICLANG_NO_SUCH_PROGRAM,
-	PICLANG_SUSPENDED,PICLANG_UNKNOWN_COMMAND,PICLANG_PC_OVERFLOW,
-	PICLANG_EEPROM_OVERFLOW,PICLANG_STACK_OVERFLOW};
+#define PICLANG_SUCCESS 0
 
 
 

@@ -133,8 +133,6 @@ void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned ch
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
 {
   struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  struct compiled_code *offset = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  offset->val = 0;
   struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   bitmap->val = piclang_bitmap;
   struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -160,8 +158,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   end_of_stack->next->val = 0;
   end_of_stack = end_of_stack->next;
   size->next = bitmap;
-  bitmap->next = offset;
-  offset->next = num_pages;
+  bitmap->next = num_pages;
   num_pages->next = pc;
   pc->next = status;
   status->next = start_address;
