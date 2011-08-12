@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "page.h"
-#include "error.h"
+#include "picfs_error.h"
 #include "piclang.h"
 #include "arg.h"
 #include "io.h"
