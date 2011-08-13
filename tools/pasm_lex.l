@@ -94,7 +94,10 @@ unsigned char do_crc(const char *str)
 "system"        return SYSTEM;
 "sprint"        return SPRINT;
 "morse"         return MORSE;
-"time" return TIME;
+"settime"       return SET_TIME;
+"setdate"       return SET_DATE;
+"time"          return TIME;
+"argd"          return ARGD;
 "cr"            return CR;
 "quit"          return EXIT;
 

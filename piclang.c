@@ -200,6 +200,48 @@ void PICLANG_next()
     case PICLANG_TIME:
       TIME_stdout();
       break;
+    case PICLANG_SET_TIME:case PICLANG_SET_DATE:
+      {
+	TIME_t *newtime = TIME_get();
+	if(newtime == NULL)
+	  {
+	    PICLANG_error(PICLANG_NULL_POINTER);
+	    return;
+	  }
+	if(command == PICLANG_SET_TIME)
+	  {
+	    newtime->minutes = PICLANG_pop();
+	    newtime->hours = PICLANG_pop();
+	    if(newtime->minutes > 59 || newtime->hours > 23)
+	      {
+		newtime->minutes = newtime->hours = 0;
+		PICLANG_error(TIME_INVALID);
+	      }
+	  }
+	else
+	  {
+	    newtime->day = PICLANG_pop();
+	    newtime->month = PICLANG_pop();
+	    if(newtime->month > 12 || newtime->day > 31)
+	      {
+		newtime->month = newtime->day = 0;
+		PICLANG_error(TIME_INVALID);
+	      }
+	  }
+	break;
+      }
+    case PICLANG_ARGD:
+      {
+	signed char argd = ARG_getd();
+	if(argd < 0)
+	  {
+	    curr_process.status = error_code;
+	    error_code = 0;
+	    return;
+	  }
+	PICLANG_pushl((char)argd);
+	break;
+      }
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       return;

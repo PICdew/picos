@@ -56,7 +56,7 @@ int sym[26];                    /* symbol table */
 %token <iValue> INTEGER 
 %token <sIndex> VARIABLE
 %token WHILE IF PUTCH PUTD EXIT INPUT SYSTEM SPRINT STRING CR
-%token MORSE TIME
+%token MORSE TIME ARGD SET_TIME SET_DATE
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -84,6 +84,9 @@ stmt:
         | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
         | SPRINT '(' STRING ')' ';' {$$ = opr(SPRINT,1,$3);}
         | MORSE '(' STRING ')' ';' {$$ = opr(MORSE,1,$3);}
+        | ARGD '(' ')' ';'{ $$ = opr(ARGD,0);}
+        | SET_TIME '(' ')' ';'{ $$ = opr(SET_TIME,0);}
+        | SET_DATE '(' ')' ';'{ $$ = opr(SET_DATE,0);}
         | TIME '(' ')' ';'{$$ = opr(TIME,0);}
         | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
@@ -430,6 +433,18 @@ int ex(nodeType *p) {
 	case TIME:
 	  write_assembly(assembly_file,"\ttime\n");
 	  insert_code(PICLANG_TIME);
+	  break;
+	case SET_TIME:
+	  write_assembly(assembly_file,"\targd\n\targd\n\tsettime\n");
+	  insert_code(PICLANG_ARGD);
+	  insert_code(PICLANG_ARGD);
+	  insert_code(PICLANG_SET_TIME);
+	  break;
+	case SET_DATE:
+	  write_assembly(assembly_file,"\targd\n\targd\n\tsetdate\n");
+	  insert_code(PICLANG_ARGD);
+	  insert_code(PICLANG_ARGD);
+	  insert_code(PICLANG_SET_DATE);
 	  break;
         default:
             ex(p->opr.op[0]);
