@@ -46,6 +46,7 @@ signed char ARG_getd()
       if(ARG_next == ARG_SIZE)
 	break;
     }
+  ARG_next++;
   return retval;
 }
 

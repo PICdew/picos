@@ -1,5 +1,6 @@
 #include "io.h"
 #include "utils.h"
+#include "picfs_error.h"
 #include "picos_time.h"
 
 #include <htc.h>
@@ -21,17 +22,17 @@ void TIME_tick(void)
 
   TIME_curr.seconds++;
   TIME_tickCounter = 0;
-  if(TIME_curr.seconds == 60)
+  if(TIME_curr.seconds >= 60)
     {
       TIME_curr.minutes++;
       TIME_curr.seconds = 0;
     }
-  if(TIME_curr.minutes == 60)
+  if(TIME_curr.minutes >= 60)
     {
       TIME_curr.hours++;
       TIME_curr.minutes = 0;
     }
-  if(TIME_curr.hours == 24)
+  if(TIME_curr.hours >= 24)
     {
       TIME_curr.day++;
       TIME_curr.hours = 0;
@@ -69,7 +70,15 @@ const TIME_t* TIME_get()
 void TIME_set(TIME_t *t)
 {
   if(t != NULL)
-    TIME_curr = *t;
+    {
+      if(t->hours > 23 || t->minutes > 59 || t->month > 12 || t->day > 31)
+	{
+	  error_code = TIME_INVALID;
+	  return;
+	}
+      TIME_curr = *t;
+    }
+    
 }
 
 
