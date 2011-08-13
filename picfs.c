@@ -104,11 +104,15 @@ signed char picfs_chdir(char mount_point)
  */
 static void picfs_getblock(char *addr, FS_Unit block_id)
 {
+  unsigned int larger;
   if(addr == NULL)
     return;
   
-  addr[0] = addr[1] = addr[2] = addr[3] = 0;
-  addr[3] = block_id * FS_BLOCK_SIZE;
+  addr[0] = addr[1] = 0;
+  larger = block_id * FS_BLOCK_SIZE;
+  addr[3] = larger & 0xff;
+  larger &= 0xff00;
+  addr[2] = larger >> 8;
   
 }
 
@@ -128,25 +132,25 @@ static char picfs_buffer_block(FS_Unit block_id)
  */
 signed char picfs_open(const char *name)
 {
-  char addr[4];
+  char addr[4], inode[4];
   char ch, pointer;
   if(picfs_fh_bitmap == 0)
     return error_return(PICFS_ENFILE);
   
-  picfs_getblock(addr,0);
-  addr[3] += FS_SuperBlock_root_block;
-  SD_read(addr,&ch,1);
+  picfs_getblock(inode,0);
+  inode[3] += FS_SuperBlock_root_block;
+  SD_read(inode,&ch,1);
   if(ch == 0)
     return error_return(PICFS_NOENT);
   
+  picfs_getblock(inode,ch); // now contains inode's address
+  inode[3] += FS_INode_pointers;// now contains the first pointer
   pointer = 0;
-  for(;pointer < FS_INode_pointers;pointer++)
+  for(;pointer < FS_INode_pointers;pointer++,inode[3]++)
     {
       char filename[PICFS_FILENAME_MAX];
       char entrypos = 0;
-      picfs_getblock(addr,ch);
-      addr[3] += FS_INode_pointers + pointer;
-      SD_read(addr,&ch,1);//dir entry listing
+      SD_read(inode,&ch,1);//dir entry listing
       if(ch == 0)
 	break;
       picfs_getblock(addr,ch);
