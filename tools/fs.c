@@ -518,12 +518,16 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
     {
       size_t len;
       if(dirent_len % FS_BLOCK_SIZE == 0)
-	dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
+	{
+	  dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
+	  dirent_len = 0;
+	}
       len = (size_t)dirent[0];
       if(len == 0)
 	{
 	  dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
 	  len = (size_t)dirent[0];
+	  dirent_len = 0;
 	}
       d_name = (unsigned char*)realloc(d_name,(len+1)*sizeof(unsigned char));
       dirent += 1;
@@ -532,7 +536,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
       filler(buf,d_name,NULL,0);
       dirent += len + 1;
       dirent_len += len + 2;
-      log_msg("dirlen = %d\n",dirent_len);
+      log_msg("dirlen (@%d) = %d\n",the_dir[pointer_counter - 1],dirent_len);
     }
   free(d_name);
   return 0;
