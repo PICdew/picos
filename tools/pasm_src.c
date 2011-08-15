@@ -132,6 +132,8 @@ void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned ch
 
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
 {
+  int i;
+  struct compiled_code *magic_number = NULL;
   struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   bitmap->val = piclang_bitmap;
@@ -186,7 +188,17 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
     }
   
   size->val =  CountCode(size);
-    
+  
+  // Magic number to identify the executable
+  i = PCB_MAGIC_NUMBER_OFFSET - 1;
+  for(;i >= 0;i--)
+    {
+      magic_number = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      magic_number->next = size;
+      magic_number->val = PICLANG_magic_numbers[i];
+      size = magic_number;
+    }
+
   return size;
 }
 

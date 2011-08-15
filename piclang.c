@@ -20,6 +20,10 @@ char PICLANG_load(unsigned int sram_addr)
   char size = 0,pos = 0,counter = 0;
   if(sram_addr == 0xffff)
     return PICLANG_NO_SUCH_PROGRAM;
+  // Verify this is an executable with the magic number
+
+  
+  
   // Load PCB into memory
   SRAM_read(sram_addr,&curr_process,PCB_SIZE);
 

@@ -26,6 +26,8 @@ typedef struct{
   char stack_head;
 }PCB;
 #define PCB_SIZE sizeof(PCB)
+#define PCB_MAGIC_NUMBER_OFFSET 4
+extern const char *PICLANG_magic_numbers;
 
 PCB curr_process;
 unsigned int curr_process_addr;// Address of first byte of program (including PCB) in memory that is currently running.
