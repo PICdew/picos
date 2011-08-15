@@ -160,6 +160,13 @@ void FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
   if(block == NULL || the_state == NULL)
     return;
 
+  if(the_state->block_size < FS_SuperBlock_length || the_state->block_size < FS_INode_length)
+    {
+      size_t min_size = (FS_INode_length > FS_SuperBlock_length) ? FS_INode_length : FS_SuperBlock_length;
+      fprintf(stderr,"Block size must be at least %d bytes.\n",min_size);
+      return -1;
+    }
+
   num_blocks = the_state->num_blocks;
   block_size = the_state->block_size;
   block[FS_SuperBlock_magic_number] = MAGIC_SUPERBLOCK;
