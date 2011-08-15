@@ -29,7 +29,7 @@ enum FS_MAGIC_NUMBERS{
   MAGIC_FREE_INODE
 };
 
-#define FS_REVISION_NUM 0
+#define FS_REVISION_NUM 1
 
 enum{
   FS_INode_magic_number = 0,
@@ -44,6 +44,9 @@ enum{
 
 enum {
   FS_SuperBlock_magic_number = 0,
+  FS_SuperBlock_magic_number2,
+  FS_SuperBlock_magic_number3,
+  FS_SuperBlock_magic_number4,
   FS_SuperBlock_revision_num,
   FS_SuperBlock_block_size,
   FS_SuperBlock_num_blocks,
