@@ -18,12 +18,19 @@
 char PICLANG_load(unsigned int sram_addr)
 {
   char size = 0,pos = 0,counter = 0;
+  char magic_numbers[PCB_MAGIC_NUMBER_OFFSET];
   if(sram_addr == 0xffff)
     return PICLANG_NO_SUCH_PROGRAM;
-  // Verify this is an executable with the magic number
 
-  
-  
+  // Verify this is an executable with the magic number
+  SRAM_read(sram_addr,magic_numbers,PCB_MAGIC_NUMBER_OFFSET);
+  if(strncmp(magic_numbers,PICLANG_magic_numbers,PCB_MAGIC_NUMBER_OFFSET) != 0)
+    {
+      error_code = PICLANG_INVALID_EXECUTABLE;
+      return error_code;
+    }
+  sram_addr += PCB_MAGIC_NUMBER_OFFSET;
+
   // Load PCB into memory
   SRAM_read(sram_addr,&curr_process,PCB_SIZE);
 
