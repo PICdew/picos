@@ -163,9 +163,9 @@ void FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
   num_blocks = the_state->num_blocks;
   block_size = the_state->block_size;
   block[FS_SuperBlock_magic_number] = MAGIC_SUPERBLOCK;
-  block[FS_SuperBlock_magic_number2] = 6;
-  block[FS_SuperBlock_magic_number3] = 29;
-  block[FS_SuperBlock_magic_number4] = 82;
+  block[FS_SuperBlock_magic_number2] = 0x6;
+  block[FS_SuperBlock_magic_number3] = 0x29;
+  block[FS_SuperBlock_magic_number4] = 0x82;
   block[FS_SuperBlock_revision_num] = FS_REVISION_NUM;
   block[FS_SuperBlock_block_size] = block_size;
   block[FS_SuperBlock_num_blocks] = num_blocks;
