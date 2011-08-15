@@ -19,6 +19,14 @@ void ARG_clear()
 
 void ARG_putch(char ch)
 {
+  if(ch == 0x7f)
+    {
+      if(ARG_end >= ARG_SIZE || ARG_end == 0)
+	return;
+      ARG_end--;
+      ARG_buffer[ARG_end] = 0;
+      return;
+    }
   if(ARG_next >= ARG_SIZE)
     ARG_next = 0;
   ARG_buffer[ARG_end++] = ch;
