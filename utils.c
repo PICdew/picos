@@ -7,6 +7,7 @@
 #endif
 
 #include <stddef.h>
+const char *PICLANG_magic_numbers = "Foo";
 
 void hex_to_word(char *two_chars, char hex)
 {
