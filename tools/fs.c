@@ -767,7 +767,7 @@ static int FS_removefile(const char *path, FS_Block *sb)
 		      memcpy(tmp_filelist,dirlist + len + 2,FS_BLOCK_SIZE - (dirlist - byte_start) - len - 2);
 		      memcpy(dirlist,tmp_filelist,FS_BLOCK_SIZE - (dirlist - byte_start));
 		      inode[FS_INode_size]--;
-		      if(byte_start[0] == 0)
+		      if(byte_start[0] == 0 && dir_ent != 0)
 			{
 			  // if directory listing is now empty, remove it from the inode and shift
 			  FS_free_block(sb,inode[FS_INode_pointers + dir_ent]);
