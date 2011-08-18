@@ -26,7 +26,56 @@ char picfs_mtab_bitmap = 0x3f;// six entries in the table
 // of next get offset
 #define FILE_HANDLE_SIZE 3
 
-
+void cat_file(const char *filename, int fileptr)
+{
+  signed char retval;
+  file_t file;
+  retval = picfs_open(filename);
+  if(retval < 0)
+    {
+      IO_puts("Could not open ");
+      IO_puts(filename);
+      IO_putd(error_code);
+      error_code = 0;
+    }
+  file = (file_t)retval;
+  if(picfs_is_open(file))
+    {
+      IO_puts(filename);
+      IO_puts(":\n");
+      while(TRUE)
+	{
+	if(picfs_read(file) != 0)
+	  {
+	    if(error_code == PICFS_EOF)
+	      {
+		error_code = 0;
+	      }
+	    else
+	      {
+		IO_puts("ERROR ");
+		IO_putd(error_code);
+	      }
+	    break;
+	  }
+	else
+	  {
+	    IO_puts(picfs_buffer);
+	    if(fileptr >= 0)
+	      {
+		SRAM_write(fileptr,picfs_buffer,FS_BUFFER_SIZE);
+		fileptr += FS_BUFFER_SIZE;
+	      }
+	  }
+	}
+      putch('\n');
+      picfs_close(file);
+    }
+  else
+    {
+      IO_puts("Could not open startup");
+    }
+}
 
 static signed char picfs_get_free_handle( char *bitmap )
 {

@@ -25,4 +25,12 @@ offset_t picfs_tell(file_t fh);
 void picfs_rewind(file_t fh);
 char picfs_is_open(file_t fh); 
 
+/**
+ * Reads a file specified by "filename" and writes it
+ * to either the standard output (default) or to a file
+ * in SRAM specified by the index of the first byte of 
+ * the file in SRAM.
+ */
+void cat_file(const char *filename, int fileptr);
+
 #endif
