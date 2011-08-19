@@ -51,6 +51,12 @@ void calculate_crc(char *crc, char newval)
   *crc ^= newval;
 }
 
+void picos_delay(unsigned long cycles)
+{
+  while(cycles != 0)
+    cycles--;
+}
+
 #ifndef NOT_FOR_PIC
 
 char TEMPERATURE_read()

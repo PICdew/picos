@@ -103,11 +103,11 @@ void morse_ditdat_sound_blocking(char encoded)
   for(;i < count;i++)
     {
       tone_440();
-      __delay_ms(96);
+      
       if(encoded & 0x80)
-	__delay_ms(192);
+	TIME_40msleep(4);
       mute_sound();
-      __delay_ms(48);
+      TIME_40msleep(1);
       encoded = encoded << 1;
     }
 }
