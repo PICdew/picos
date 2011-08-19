@@ -1,6 +1,3 @@
-#include <htc.h>
-#include <stdio.h>
-
 #include "page.h"
 #include "picfs_error.h"
 #include "picos_time.h"
@@ -12,6 +9,10 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <htc.h>
+#include <stdio.h>
+#include <string.h>
 
 #define PICLANG_error(code)  curr_process.status = code
 
