@@ -601,7 +601,6 @@ LIBOBJS
 EGREP
 GREP
 CPP
-PICOS_CFLAGS
 YFLAGS
 YACC
 LEXLIB
@@ -694,7 +693,6 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_dependency_tracking
-with_picos
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1329,11 +1327,6 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
-
-Optional Packages:
-  --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
-  --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-picos            Include PIC OS headers
 
 Some influential environment variables:
   CXX         C++ compiler command
@@ -4269,27 +4262,6 @@ fi
   test -n "$YACC" && break
 done
 test -n "$YACC" || YACC="yacc"
-
-
-# Checks for libraries.
-
-# Check whether --with-picos was given.
-if test "${with_picos+set}" = set; then :
-  withval=$with_picos; with_picos="$withval"
-else
-  with_picos=no
-fi
-
-
-if test x"$with_picos" != x"no"; then
-   PICOS_CFLAGS="-I ${with_picos}"
-
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: Using provided picos path $with_picos" >&5
-$as_echo "Using provided picos path $with_picos" >&6; }
-else
-   { $as_echo "$as_me:${as_lineno-$LINENO}: result: Assuming picos headers are installed in the directory above this one or in system directories" >&5
-$as_echo "Assuming picos headers are installed in the directory above this one or in system directories" >&6; }
-fi
 
 
 #For readline!

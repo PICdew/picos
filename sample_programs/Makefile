@@ -4,4 +4,4 @@ all:
 	../tools/pasm -b fs/start startup_message.plc
 	../tools/pasm -b fs/setdate setdate.plc
 	../tools/pasm -b fs/settime settime.plc
-	../tools/pasm -b fs/settime morse.plc
+	../tools/pasm -b fs/morse morse.plc
