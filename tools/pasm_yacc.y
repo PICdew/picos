@@ -56,7 +56,7 @@ int sym[26];                    /* symbol table */
 %token <iValue> INTEGER 
 %token <sIndex> VARIABLE
 %token WHILE IF PUTCH PUTD EXIT INPUT SYSTEM SPRINT STRING CR
-%token MORSE TIME ARGD SET_TIME SET_DATE
+%token MORSE TIME ARGD ARGCH SET_TIME SET_DATE
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -83,8 +83,8 @@ stmt:
         | SYSTEM '(' expr ',' expr ')' ';'{ $$ = opr(SYSTEM,2,$3,$5);}
         | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
         | SPRINT '(' STRING ')' ';' {$$ = opr(SPRINT,1,$3);}
-        | MORSE '(' STRING ')' ';' {$$ = opr(MORSE,1,$3);}
-        | ARGD '(' ')' ';'{ $$ = opr(ARGD,0);}
+| MORSE '(' STRING ')' ';' {$$ = opr(MORSE,2,$3,con(PICLANG_MORSE_STRING));}
+        | MORSE '(' expr ')' ';' {$$ = opr(MORSE,2,$3,con(PICLANG_MORSE_CHAR));}
         | SET_TIME '(' ')' ';'{ $$ = opr(SET_TIME,0);}
         | SET_DATE '(' ')' ';'{ $$ = opr(SET_DATE,0);}
         | TIME '(' ')' ';'{$$ = opr(TIME,0);}
@@ -97,6 +97,7 @@ stmt:
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
+        | CR '(' ')' ';' {$$ = opr(PUTCH,1,con(0xa));}
         | EXIT {YYACCEPT;}
         ;
 
@@ -108,6 +109,8 @@ stmt_list:
 expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
+        | ARGD '(' ')'          { $$ = opr(ARGD,0);}
+        | ARGCH '(' ')'         { $$ = opr(ARGCH,0);}
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
         | expr '-' expr         { $$ = opr('-', 2, $1, $3); }
@@ -426,6 +429,7 @@ int ex(nodeType *p) {
 	  insert_code(PICLANG_SPRINT);
 	  break;
 	case MORSE:
+	  ex(p->opr.op[1]);
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tmorse\n");
 	  insert_code(PICLANG_MORSE);
@@ -445,6 +449,14 @@ int ex(nodeType *p) {
 	  insert_code(PICLANG_ARGD);
 	  insert_code(PICLANG_ARGD);
 	  insert_code(PICLANG_SET_DATE);
+	  break;
+	case ARGCH:
+	  write_assembly(assembly_file,"\targch\n");
+	  insert_code(PICLANG_ARGCH);
+	  break;
+	case ARGD:
+	  write_assembly(assembly_file,"\targd\n");
+	  insert_code(PICLANG_ARGD);
 	  break;
         default:
             ex(p->opr.op[0]);

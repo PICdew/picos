@@ -54,15 +54,16 @@
      MORSE = 270,
      TIME = 271,
      ARGD = 272,
-     SET_TIME = 273,
-     SET_DATE = 274,
-     IFX = 275,
-     ELSE = 276,
-     NE = 277,
-     EQ = 278,
-     LE = 279,
-     GE = 280,
-     UMINUS = 281
+     ARGCH = 273,
+     SET_TIME = 274,
+     SET_DATE = 275,
+     IFX = 276,
+     ELSE = 277,
+     NE = 278,
+     EQ = 279,
+     LE = 280,
+     GE = 281,
+     UMINUS = 282
    };
 #endif
 /* Tokens.  */
@@ -81,15 +82,16 @@
 #define MORSE 270
 #define TIME 271
 #define ARGD 272
-#define SET_TIME 273
-#define SET_DATE 274
-#define IFX 275
-#define ELSE 276
-#define NE 277
-#define EQ 278
-#define LE 279
-#define GE 280
-#define UMINUS 281
+#define ARGCH 273
+#define SET_TIME 274
+#define SET_DATE 275
+#define IFX 276
+#define ELSE 277
+#define NE 278
+#define EQ 279
+#define LE 280
+#define GE 281
+#define UMINUS 282
 
 
 
@@ -108,7 +110,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 112 "pasm_yacc.h"
+#line 114 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

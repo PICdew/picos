@@ -39,7 +39,7 @@ unsigned char do_crc(const char *str)
                               return INTEGER;
                          }
 
-\"[a-zA-Z.][a-zA-Z0-9 ]*\" {
+\"[a-zA-Z.][a-zA-Z0-9 \:]*\" {
                               yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
                               strncpy(yylval.nPtr->str.string,&yytext[1],strlen(yytext)-2);
                               yylval.nPtr->type = typeStr;
@@ -98,6 +98,7 @@ unsigned char do_crc(const char *str)
 "setdate"       return SET_DATE;
 "time"          return TIME;
 "argd"          return ARGD;
+"argch"         return ARGCH;
 "cr"            return CR;
 "quit"          return EXIT;
 

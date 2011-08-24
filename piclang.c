@@ -39,7 +39,7 @@ char PICLANG_load(unsigned int sram_addr)
 
   if(curr_process.status != PICLANG_SUSPENDED)
     {
-      char retval = PAGE_request(curr_process.num_pages,curr_process.start_address);
+      char retval = PAGE_request(curr_process.num_pages,0 /* replace with UID or pid */);
       if(retval != 0)
 	return error_code;
     }
@@ -199,9 +199,18 @@ void PICLANG_next()
       {
 	char two[2];
 	unsigned int addr;
-	two[1] = 0;
 	addr = PICLANG_pop();
-	SRAM_read(addr++,two,1);
+	two[1] = PICLANG_pop();//char or string?
+	if(two[1] == PICLANG_MORSE_STRING)
+	  SRAM_read(addr++,two,1);
+	else
+	  {
+	    two[0] = (char)addr;
+	    two[1] = 0;
+	    morse_sound(two);
+	    break;
+	  }
+	two[1] = 0;
 	while(two[0] != 0)
 	  {
 	    morse_sound(two);
@@ -252,6 +261,18 @@ void PICLANG_next()
 	    return;
 	  }
 	PICLANG_pushl((char)argd);
+	break;
+      }
+    case PICLANG_ARGCH:
+      {
+	signed char argch = ARG_getch();
+	if(argch < 0)
+	  {
+	    curr_process.status = error_code;
+	    error_code = 0;
+	    return;
+	  }
+	PICLANG_pushl((char)argch);
 	break;
       }
     case PICLANG_NUM_COMMANDS:default:
