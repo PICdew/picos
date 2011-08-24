@@ -37,7 +37,7 @@ void IO_puts(const char *str)
 char get_button_state()
 {
   char retval = ((button_port & 0b111000) >> button_phase);
-  TIME_40msleep(1);
+  TIME_sleep(1);
   retval &= ((button_port & 0b111000) >> button_phase);
   return ~retval & 7;
 }
@@ -99,15 +99,15 @@ void morse_ditdat_sound_blocking(char encoded)
 {
   char count = (encoded & 7);
   char i = 0;
-  
+  return;
   for(;i < count;i++)
     {
       tone_440();
       
       if(encoded & 0x80)
-	TIME_40msleep(4);
+	TIME_sleep(4);
       mute_sound();
-      TIME_40msleep(1);
+      TIME_sleep(1);
       encoded = encoded << 1;
     }
 }
@@ -141,6 +141,8 @@ char get_command()
   char ditdat = 0;
   char command_hash = 0;
   static bit have_command;
+
+#if 0 //deprecated
   clear_output();
   ARG_clear();
   IO_puts("$");
@@ -174,6 +176,11 @@ char get_command()
   
   ARG_next = 0;
   return command_hash;
+#else
+
+  IO_puts("deprecated");
+  return 0;
+#endif
 }
 
 char morse_to_char(char morse)

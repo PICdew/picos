@@ -111,7 +111,7 @@ void TIME_stdout()
   IO_putd(TIME_curr.minutes);
 }
 
-void TIME_40msleep(char x)
+void TIME_sleep(char x)
 {
 	x += TIME_tickCounter;
 	x = x % TIME_PERIOD;
