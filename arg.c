@@ -58,7 +58,7 @@ signed char ARG_getd()
   return retval;
 }
 
-char ARG_getch()
+signed char ARG_getch()
 {
   if(ARG_next >= ARG_SIZE)
     {

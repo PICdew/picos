@@ -41,8 +41,11 @@ void cat_file(const char *filename, int fileptr)
   file = (file_t)retval;
   if(picfs_is_open(file))
     {
-      IO_puts(filename);
-      IO_puts(":\n");
+      if(fileptr < 0)
+	{
+	  IO_puts(filename);
+	  IO_puts(":\n");
+	}
       while(TRUE)
 	{
 	if(picfs_read(file) != 0)
@@ -60,16 +63,18 @@ void cat_file(const char *filename, int fileptr)
 	  }
 	else
 	  {
-	    IO_puts(picfs_buffer);
 	    if(fileptr >= 0)
 	      {
 		SRAM_write(fileptr,picfs_buffer,FS_BUFFER_SIZE);
 		fileptr += FS_BUFFER_SIZE;
 	      }
+	    else
+	      IO_puts(picfs_buffer);
 	  }
 	}
-      putch('\n');
       picfs_close(file);
+      if(fileptr < 0)
+	putch('\n');
     }
   else
     {

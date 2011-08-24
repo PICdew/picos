@@ -22,5 +22,5 @@ void ARG_clear();
 signed char ARG_getd();
 
 void ARG_putch(char ch);
-char ARG_getch();
+signed char ARG_getch();
 const char* ARG_gets();
