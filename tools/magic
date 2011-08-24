@@ -1,0 +1,4 @@
+#Magic number for my picos file system files
+0 string \0\6\x29\x82 PICOS File System
+#Magic number for my picos exectuable files
+0 string Foo PICOS Exectuable File

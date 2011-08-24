@@ -1,0 +1,8 @@
+/**
+ * For a character supplied to the command line, the Morse code is generated
+ */
+a = argch();
+sprint("Morse:");
+cr();
+putch(a);
+morse(a);
