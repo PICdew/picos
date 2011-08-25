@@ -661,7 +661,8 @@ static int FS_mkfile(const char *path, mode_t mode)
 	  count += *dir_list + 2;
 	  dir_list += *dir_list + 2;
 	}
-      if(size >= strlen(filename))
+      error_log("Size: %d, Count: %d, dir_list: %d",size,count,dir_list);
+      if(size >= strlen(filename)+2)
 	{
 	  *dir_list = strlen(filename);
 	  dir_list++;
