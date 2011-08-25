@@ -39,9 +39,11 @@ unsigned char do_crc(const char *str)
                               return INTEGER;
                          }
 
-\"[a-zA-Z.][a-zA-Z0-9 \:]*\" {
+\"[a-zA-Z. ][a-zA-Z0-9 \:]*\" {
+                              size_t text_len = strlen(&yytext[1]);
                               yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
-                              strncpy(yylval.nPtr->str.string,&yytext[1],strlen(yytext)-2);
+                              strncpy(yylval.nPtr->str.string,&yytext[1],text_len-1);// minus 1 for the end quotation mark
+                              yylval.nPtr->str.string[text_len-1] = 0;
                               yylval.nPtr->type = typeStr;
                               return STRING;
                          }

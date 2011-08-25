@@ -22,6 +22,15 @@ int write_assembly(FILE *stream, const char *format, ...)
   return retval;
 }
 
+#if 0
+void _attach_label(struct compiled_code *ptrlist_end, unsigned char label)
+{
+  if(ptrlist_end == NULL)
+    return;
+  ptrlist_end->label = label;
+}
+#endif
+
 void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val)
 {
   struct compiled_code *list = *ptrlist;
@@ -100,8 +109,9 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, unsigned char *piclang_bitmap, int num_variables)
 {
   char hex_buffer[45];
-  
-  FirstPass(the_code,FALSE,&piclang_bitmap,num_variables);
+  void resolve_labels(struct compiled_code* code);
+
+  resolve_labels(*the_code);
   *the_code = MakePCB(*the_code,the_strings,num_variables,piclang_bitmap);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
   fprintf(hex_file,":020000040000FA\n");
@@ -111,23 +121,49 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_co
 
 }
 
-void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables)
+int lookup_label(const struct compiled_code* code, unsigned char label)
 {
-  int clean_skip_assignment_check = skip_assignment_check;
-  
+  int label_index = 0;
+  if(code == NULL)
+    return -1;
+  for(;code != NULL;code = code->next)
+    {
+      if(code->val == PICLANG_LABEL)
+	{
+	  if(label_index == label)
+	    return code->label;
+	  label_index++;
+	}
+    }
+  return -1;
+}
+
+void resolve_labels(struct compiled_code* code)
+{
+  const struct compiled_code* code_head = code;
   if(code == NULL)
     return;
-    switch(code->val)
-    {
-     case PICLANG_SYSTEM:
-      if(piclang_bitmap != NULL)
-	*piclang_bitmap |= PICLANG_BIT_SYSCALL;
-      break;
-    }
-  if(clean_skip_assignment_check)
-    skip_assignment_check = FALSE;
   
-  FirstPass(code->next,skip_assignment_check,piclang_bitmap,num_variables);
+  for(;code != NULL;code = code->next)
+    {
+      switch(code->val)
+	{
+	case PICLANG_JMP:case PICLANG_JZ:// change labels to addresses
+	  if(code->next != NULL)
+	    {
+	      int label_addr = lookup_label(code_head, code->next->val);
+	      if(label_addr < 0)
+		{
+		  fprintf(stderr,"Could not resolve label %d\n",code->next->val);
+		  return;
+		}
+	      code->next->val = (unsigned char)label_addr;
+	    }
+	  break;
+	default:
+	  break;
+	}
+    }
 }
 
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)

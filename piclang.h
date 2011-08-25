@@ -12,11 +12,11 @@
 #endif
 
 // bitmap masks
-#define PICLANG_BIT_SYSCALL 0x1
+#define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
 
 typedef struct{
   char size;// size of program
-  char bitmap;// flags for the OS, i.e. uses system call arguments?
+  char bitmap;// See bitmap mask defines above
   char num_pages;
   char pc;// program counter
   char status;// Error status
@@ -71,6 +71,12 @@ enum PICLANG_COMMANDS
     PICLANG_SET_TIME,
     PICLANG_SET_DATE,
     PICLANG_ARGCH,
+    PICLANG_JZ/* jump if zero */,
+    PICLANG_JMP/* jump unconditionally */,
+    PICLANG_COMPLT/* test for less than */,
+    PICLANG_COMPGT/* test for greather than */,
+    PICLANG_COMPEQ/* test for equality */,
+    PICLANG_LABEL/* Dummy variable for labeling sections of code for jumps */,
     PICLANG_NUM_COMMANDS
   };
 

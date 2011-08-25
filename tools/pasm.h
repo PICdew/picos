@@ -48,6 +48,7 @@ struct compiled_code
 };
 
 void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
+void _attach_label(struct compiled_code *ptrlist_end, unsigned char label);
 extern int write_assembly(FILE *stream, const char *format, ...);
 
 enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};

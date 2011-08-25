@@ -78,17 +78,26 @@ void PICLANG_init()
   curr_process_addr = 0xffff;
 }
 
+/**
+ * Returns the next byte of the program. 
+ *
+ * Obtains the next byte and then increments the program counter.
+ *
+ * If the program counter exceeds the program memory, 0xff is returned
+ * AND the process status is set to PICLANG_PC_OVERFLOW. Therefore, to determine
+ * and error, the status must be checked, not the return value.
+ */
 char PICLANG_get_next_byte()
 {
   unsigned int next = curr_process_addr + curr_process.pc;
   char val;
-  curr_process.pc++;
-  next += curr_process.start_address;
-  if(next < curr_process_addr)
+  if(curr_process.pc > curr_process.size - PCB_SIZE || next < curr_process_addr)
     {
       PICLANG_error(PICLANG_PC_OVERFLOW);
-      return 1;
+      return 0xff;
     }
+  curr_process.pc++;
+  next += curr_process.start_address;
   SRAM_read(next,&val,1);
   return val;
 }
@@ -113,6 +122,14 @@ char PICLANG_pop()
   return curr_process.stack[--curr_process.stack_head];
 }
 
+void PICLANG_update_arith_status()
+{
+  if(curr_process.stack[curr_process.stack_head - 1] == 0)
+    curr_process.bitmap |= PICLANG_ZERO;
+  else
+    curr_process.bitmap &= ~PICLANG_ZERO;
+}
+
 void PICLANG_next()
 {
   char command;
@@ -132,16 +149,19 @@ void PICLANG_next()
     {
     case EOP:
       PICLANG_save(SUCCESS);
-      return;
+      break;
     case PICLANG_ADD:
       PICLANG_pushl(PICLANG_pop() + PICLANG_pop());
-      return;
+      PICLANG_update_arith_status();
+      break;
     case PICLANG_SUB:
       PICLANG_pushl(PICLANG_pop() - PICLANG_pop());
-      return;
+      PICLANG_update_arith_status();
+      break;
     case PICLANG_MULT:
       PICLANG_pushl(PICLANG_pop() * PICLANG_pop());
-      return;
+      PICLANG_update_arith_status();
+      break;
     case PICLANG_PUSHL:
       PICLANG_pushl(PICLANG_get_next_byte());
       break;
@@ -227,7 +247,7 @@ void PICLANG_next()
 	if(newtime == NULL)
 	  {
 	    PICLANG_error(PICLANG_NULL_POINTER);
-	    return;
+	    break;
 	  }
 	if(command == PICLANG_SET_TIME)
 	  {
@@ -258,9 +278,10 @@ void PICLANG_next()
 	  {
 	    curr_process.status = error_code;
 	    error_code = 0;
-	    return;
+	    break;
 	  }
 	PICLANG_pushl((char)argd);
+	PICLANG_update_arith_status();
 	break;
       }
     case PICLANG_ARGCH:
@@ -270,13 +291,57 @@ void PICLANG_next()
 	  {
 	    curr_process.status = error_code;
 	    error_code = 0;
-	    return;
+	    break;
 	  }
 	PICLANG_pushl((char)argch);
 	break;
       }
+    case PICLANG_JZ:case PICLANG_JMP:
+      {
+	char label = PICLANG_get_next_byte();
+	if(curr_process.status != PICLANG_SUCCESS)
+	  break;
+	if(command == PICLANG_JMP)
+	  curr_process.pc = label;
+	else if((curr_process.bitmap & PICLANG_ZERO) == 0)
+	  curr_process.pc = label;
+	break;
+      }
+    case PICLANG_LABEL:
+      break;
+    case PICLANG_COMPLT:
+      {
+	char rhs = PICLANG_pop();
+	char lhs = PICLANG_pop();
+	if(lhs < rhs)
+	  curr_process.bitmap |= PICLANG_ZERO;
+	else
+	  curr_process.bitmap &= ~PICLANG_ZERO;
+	break;
+      }
+    case PICLANG_COMPGT:
+      {
+	char rhs = PICLANG_pop();
+	char lhs = PICLANG_pop();
+	if(lhs > rhs)
+	  curr_process.bitmap |= PICLANG_ZERO;
+	else
+	  curr_process.bitmap &= ~PICLANG_ZERO;
+	break;
+      }
+    case PICLANG_COMPEQ:
+      {
+	char rhs = PICLANG_pop();
+	char lhs = PICLANG_pop();
+	if(lhs == rhs)
+	  curr_process.bitmap |= PICLANG_ZERO;
+	else
+	  curr_process.bitmap &= ~PICLANG_ZERO;
+	break;
+      }
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
-      return;
+      break;
     }
+
 }

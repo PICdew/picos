@@ -5,3 +5,4 @@ all:
 	../tools/pasm -b fs/setdate setdate.plc
 	../tools/pasm -b fs/settime settime.plc
 	../tools/pasm -b fs/morse morse.plc
+	../tools/pasm -b fs/test test.plc
