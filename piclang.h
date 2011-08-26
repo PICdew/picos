@@ -32,6 +32,7 @@ extern const char *PICLANG_magic_numbers;
 PCB curr_process;
 unsigned int curr_process_addr;// Address of first byte of program (including PCB) in memory that is currently running.
 volatile char PICLANG_quantum;
+extern int PICLANG_next_process[];
 volatile char PICLANG_system;// CRC hex value for system calls within piclan
 
 extern void PICLANG_init();
@@ -60,9 +61,9 @@ enum PICLANG_COMMANDS
     PICLANG_PUSHL,
     PICLANG_PUSH,
     PICLANG_POP,
-    PICLANG_INPUT,
     PICLANG_PRINT,
     PICLANG_PRINTL,
+    PICLANG_CLEAR,
     PICLANG_SPRINT,
     PICLANG_SYSTEM,
     PICLANG_MORSE,
@@ -71,11 +72,14 @@ enum PICLANG_COMMANDS
     PICLANG_SET_TIME,
     PICLANG_SET_DATE,
     PICLANG_ARGCH,
+    PICLANG_GETCH/* retrieve a character from stdin */,
+    PICLANG_GETD/* retrieve a decimial integer from 0 to 9 from stdin */,
     PICLANG_JZ/* jump if zero */,
     PICLANG_JMP/* jump unconditionally */,
     PICLANG_COMPLT/* test for less than */,
     PICLANG_COMPGT/* test for greather than */,
     PICLANG_COMPEQ/* test for equality */,
+    PICLANG_COMPNE/* inequality */,
     PICLANG_LABEL/* Dummy variable for labeling sections of code for jumps */,
     PICLANG_NUM_COMMANDS
   };

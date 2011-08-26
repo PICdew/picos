@@ -46,24 +46,26 @@
      PUTCH = 262,
      PUTD = 263,
      EXIT = 264,
-     INPUT = 265,
-     SYSTEM = 266,
-     SPRINT = 267,
-     STRING = 268,
-     CR = 269,
-     MORSE = 270,
-     TIME = 271,
-     ARGD = 272,
-     ARGCH = 273,
-     SET_TIME = 274,
-     SET_DATE = 275,
-     IFX = 276,
-     ELSE = 277,
-     NE = 278,
-     EQ = 279,
-     LE = 280,
-     GE = 281,
-     UMINUS = 282
+     SYSTEM = 265,
+     SPRINT = 266,
+     STRING = 267,
+     CR = 268,
+     MORSE = 269,
+     TIME = 270,
+     ARGD = 271,
+     ARGCH = 272,
+     SET_TIME = 273,
+     SET_DATE = 274,
+     GETD = 275,
+     GETCH = 276,
+     CLEAR = 277,
+     IFX = 278,
+     ELSE = 279,
+     NE = 280,
+     EQ = 281,
+     LE = 282,
+     GE = 283,
+     UMINUS = 284
    };
 #endif
 /* Tokens.  */
@@ -74,24 +76,26 @@
 #define PUTCH 262
 #define PUTD 263
 #define EXIT 264
-#define INPUT 265
-#define SYSTEM 266
-#define SPRINT 267
-#define STRING 268
-#define CR 269
-#define MORSE 270
-#define TIME 271
-#define ARGD 272
-#define ARGCH 273
-#define SET_TIME 274
-#define SET_DATE 275
-#define IFX 276
-#define ELSE 277
-#define NE 278
-#define EQ 279
-#define LE 280
-#define GE 281
-#define UMINUS 282
+#define SYSTEM 265
+#define SPRINT 266
+#define STRING 267
+#define CR 268
+#define MORSE 269
+#define TIME 270
+#define ARGD 271
+#define ARGCH 272
+#define SET_TIME 273
+#define SET_DATE 274
+#define GETD 275
+#define GETCH 276
+#define CLEAR 277
+#define IFX 278
+#define ELSE 279
+#define NE 280
+#define EQ 281
+#define LE 282
+#define GE 283
+#define UMINUS 284
 
 
 
@@ -110,7 +114,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 114 "pasm_yacc.h"
+#line 118 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

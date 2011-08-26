@@ -158,6 +158,8 @@ void resolve_labels(struct compiled_code* code)
 		  return;
 		}
 	      code->next->val = (unsigned char)label_addr;
+	      code = code->next;
+	      continue;
 	    }
 	  break;
 	default:

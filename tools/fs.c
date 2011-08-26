@@ -267,10 +267,10 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
 {
   char *rw_path;
   char *token;
-  size_t num_entries,dir_counter;
+  size_t num_entries,dir_counter,direntry_idx;
   FS_Block *dirent;
   int moved_up = FALSE;
-  
+    
   if(dir == NULL || path == NULL || dir[FS_INode_magic_number] != MAGIC_DIR)
     return NULL;
 
@@ -286,7 +286,8 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
       for(;dir_counter<num_entries;dir_counter++)
 	{
 	  dirent = FS_getblock(sb,dir[FS_INode_pointers + dir_counter]);
-	  while(dirent != NULL && dirent[0] != 0)
+	  direntry_idx = 0;
+	  while(dirent != NULL && dirent[0] != 0 && direntry_idx < FS_BLOCK_SIZE)
 	    {
 	      size_t len = (size_t)dirent[0];dirent++;
 	      FS_Unit d_name[FS_BLOCK_SIZE];
@@ -306,6 +307,7 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
 		  break;
 		}
 	      dirent++;
+	      direntry_idx += len + 2;
 	    }
 	  if(moved_up)
 	    {
@@ -409,6 +411,14 @@ static int FS_truncate(const char *path, off_t new_size)
   FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]), *main_inode;
   off_t old_size;
   int needed_blocks;
+
+  if(path == NULL)
+    {
+      error_log("FS_truncate given a null pointer for a path\n");
+      return;
+    }
+  log_msg("FS_truncate (%s",path);
+
   file_head = FS_resolve(file_head,path,sb);
   if(file_head == NULL)
     return -ENOENT;
@@ -424,7 +434,6 @@ static int FS_truncate(const char *path, off_t new_size)
     }
 
   old_size = file_head[FS_INode_size];
-  log_msg("FS_truncate (%s, old size: %d)\n",path,file_head[FS_INode_size]);
   
   if(old_size < new_size)
     {
@@ -504,7 +513,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   (void)offset;
   (void)fi;
   
-  if(strncmp(path,FS_proc_filename,sizeof(FS_proc_filename)) == 0)
+  if(strcmp(path,FS_proc_filename) == 0)
     {
       filler(buf,"dump",NULL,0);
       filler(buf,"eeprom",NULL,0);
@@ -524,26 +533,30 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   filler(buf, "..", NULL, 0);
 
   dir_counter = 0;
-  for(;dir_counter < the_dir[FS_INode_size];dir_counter++)
+  dirent_len = FS_BLOCK_SIZE;// This value will initialize the first directory entry read. See first if block of the following while loop
+  while(dir_counter < the_dir[FS_INode_size])
     {
       size_t len;
-      if(dirent_len % FS_BLOCK_SIZE == 0)
+      error_log("Dir entry %d\n",dir_counter);
+      if(dirent_len >= FS_BLOCK_SIZE)
 	{
+	  if(pointer_counter >=  FS_INODE_NUM_POINTERS || the_dir[pointer_counter] == 0)
+	    break;
 	  dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
 	  dirent_len = 0;
 	}
       len = (size_t)dirent[0];
       if(len == 0)
 	{
-	  dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
-	  len = (size_t)dirent[0];
-	  dirent_len = 0;
+	  dirent_len = FS_BLOCK_SIZE;
+	  continue;
 	}
       d_name = (unsigned char*)realloc(d_name,(len+1)*sizeof(unsigned char));
       dirent += 1;
       memcpy(d_name,dirent,len);
       d_name[len] = 0;
       filler(buf,d_name,NULL,0);
+      dir_counter++;
       dirent += len + 1;
       dirent_len += len + 2;
       log_msg("dirlen (@%d) = %d\n",the_dir[pointer_counter - 1],dirent_len);
@@ -575,13 +588,15 @@ static int FS_opendir(const char *path, struct fuse_file_info *fi)
 static int FS_mkfile(const char *path, mode_t mode)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
-  FS_Block *file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
+  FS_Block *file = NULL;
   FS_Unit pointer = 0;
   const char *delim = NULL;
   char filename[FS_BLOCK_SIZE-2];
+  log_msg("FS_mkfile (%s) mode 0%d\n",path,mode & 0777);
+
+  file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
   memset(filename,0,sizeof(char)*(FS_BLOCK_SIZE-2));
   
-  log_msg("FS_mkfile (%s) mode 0%d\n",path,mode & 0777);
   
   if(file != NULL)
     {
@@ -693,13 +708,14 @@ static int FS_mknod(const char *path, mode_t mode, dev_t dev)
 static int FS_open(const char *path, struct fuse_file_info *fi)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
-  FS_Block *file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
+  FS_Block *file = NULL;
   size_t len;
 
-  log_msg("FS_open (%s, 0x%x)\n",path,file);
-
+  log_msg("FS_open (%s)\n",path);
   if(FS_is_virtual(path) && strcmp(path,"/") != 0)
     return 0;
+  file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
+  
   if(file == NULL)
     return -ENOENT;
   return 0;
@@ -708,8 +724,13 @@ static int FS_open(const char *path, struct fuse_file_info *fi)
 static int FS_removefile(const char *path, FS_Block *sb)
 {
   FS_Block *top_dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
-  FS_Block *inode = FS_resolve(top_dir,path,sb);
+  FS_Block *inode = NULL;
   FS_Block *curr_block = NULL;
+  
+  log_msg("FS_removefile (%s)\n",path);
+  
+  inode = FS_resolve(top_dir,path,sb);
+
   if(FS_is_virtual(path))
     return -EACCES;
   
@@ -734,21 +755,27 @@ static int FS_removefile(const char *path, FS_Block *sb)
       inode = FS_resolve(top_dir,parent,sb);
       if(inode != NULL)
 	{
-	 FS_Unit dir_ent = 0;
+	  FS_Unit dir_ent = 0;
+	  char filename[FS_BLOCK_SIZE];
+	  strncpy(filename,path+ strlen(parent),FS_BLOCK_SIZE);
 	  for(;dir_ent < inode[FS_INode_size];dir_ent++)
 	    {
 	      size_t index = 0;
 	      FS_Block *byte_start;
 	      dirlist = FS_getblock(sb, inode[FS_INode_pointers + dir_ent]);
 	      byte_start = dirlist;
-	      for(;index < FS_BLOCK_SIZE;index++)
+	      for(;index < FS_BLOCK_SIZE;)
 		{
 		  size_t len = (size_t)dirlist[0];dirlist++;
-		  if(strncmp(dirlist,path + strlen(parent),len) == 0)
+		  char str_direntry[FS_BLOCK_SIZE];
+		  strncpy(str_direntry,dirlist,len);
+		  str_direntry[len] = 0;
+		  error_log("Remove: %s ?= %s\n",str_direntry,filename);
+		  if(strcmp(filename,str_direntry) == 0)
 		    {
 		      FS_Block tmp_filelist[FS_BLOCK_SIZE];
 		      FS_Block *data_inode = FS_getblock(sb,dirlist[len]);
-		      log_msg("Freeing contents of inode %x\n",dirlist[len]);
+		      log_msg("Freeing contents of inode %x at directory entry 0x%x\n",dirlist[len],dirlist - 1);
 		      //Free data inodes
 		      if(data_inode != NULL)
 			{
@@ -771,12 +798,16 @@ static int FS_removefile(const char *path, FS_Block *sb)
 		      if(byte_start[0] == 0 && dir_ent != 0)
 			{
 			  // if directory listing is now empty, remove it from the inode and shift
+			  size_t shift_idx = dir_ent + 1;
 			  FS_free_block(sb,inode[FS_INode_pointers + dir_ent]);
 			  inode[FS_INode_pointers + dir_ent] = 0;
+			  for(;shift_idx < FS_INODE_NUM_POINTERS;shift_idx++)
+			    inode[FS_INode_pointers + shift_idx - 1] = inode[FS_INode_pointers + shift_idx];
 			}
 		      break;
 		    }
-		  dirlist += len + 1;		      
+		  dirlist += len + 1;
+		  index += len + 2;
 		}
 	      if(have_dir_name)
 		break;
@@ -808,13 +839,15 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
-  FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+  FS_Block *file_head = NULL;
   FS_Unit data_ptr = 0;
   FS_Block *data_block = NULL;
   size_t amount_written = 0;
-  file_head = FS_resolve(file_head,path,sb);
   
   log_msg("FS_write (file = %s, text = %s, size = %d, offset = %d)\n",path,buf,size,offset);
+  
+  file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
+  file_head = FS_resolve(file_head,path,sb);
   
   if(file_head == NULL)
     {

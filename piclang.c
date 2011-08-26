@@ -15,6 +15,7 @@
 #include <string.h>
 
 #define PICLANG_error(code)  curr_process.status = code
+int PICLANG_next_process[] = {0xffff};
 
 char PICLANG_load(unsigned int sram_addr)
 {
@@ -51,17 +52,21 @@ char PICLANG_load(unsigned int sram_addr)
 
 char PICLANG_save(char saved_status)
 {
-  char status;
   if(curr_process.size == 0)
     return PICLANG_NO_SUCH_PROGRAM;
 
   curr_process.status = saved_status;
+  if(saved_status == PICLANG_SUSPENDED)
+    PICLANG_next_process[0] = curr_process_addr - PCB_MAGIC_NUMBER_OFFSET;
+  else
+    PICLANG_next_process[0] = 0xffff;
+
 
   SRAM_write(curr_process_addr,&curr_process,PCB_SIZE);
 
   PICLANG_init();
 
-  return status;
+  return 0;
 
 }
 
@@ -190,6 +195,25 @@ void PICLANG_next()
       IO_putd(PICLANG_pop());
       IO_flush();
       break;
+    case PICLANG_CLEAR:
+      clear_output();
+      break;
+    case PICLANG_GETCH:
+      {
+	PICLANG_pushl(getch());
+	break;
+      }
+    case PICLANG_GETD:
+      {
+	char dec = getch();
+	if(dec < '0' || dec > '9')
+	  {
+	    curr_process.status = ARG_INVALID;
+	    break;
+	  }
+	PICLANG_pushl(dec);
+	break;
+      }
     case PICLANG_SPRINT:
       {
 	char ch;
@@ -329,7 +353,7 @@ void PICLANG_next()
 	  curr_process.bitmap &= ~PICLANG_ZERO;
 	break;
       }
-    case PICLANG_COMPEQ:
+    case PICLANG_COMPEQ:case PICLANG_COMPNE:
       {
 	char rhs = PICLANG_pop();
 	char lhs = PICLANG_pop();
@@ -337,6 +361,8 @@ void PICLANG_next()
 	  curr_process.bitmap |= PICLANG_ZERO;
 	else
 	  curr_process.bitmap &= ~PICLANG_ZERO;
+	if(command == PICLANG_COMPNE)
+	  curr_process.bitmap ^= PICLANG_ZERO;
 	break;
       }
     case PICLANG_NUM_COMMANDS:default:

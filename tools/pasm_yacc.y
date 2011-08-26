@@ -55,8 +55,8 @@ int sym[26];                    /* symbol table */
 
 %token <iValue> INTEGER 
 %token <sIndex> VARIABLE
-%token WHILE IF PUTCH PUTD EXIT INPUT SYSTEM SPRINT STRING CR
-%token MORSE TIME ARGD ARGCH SET_TIME SET_DATE
+%token WHILE IF PUTCH PUTD EXIT SYSTEM SPRINT STRING CR
+%token MORSE TIME ARGD ARGCH SET_TIME SET_DATE GETD GETCH CLEAR
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -88,7 +88,6 @@ stmt:
         | SET_TIME '(' ')' ';'{ $$ = opr(SET_TIME,0);}
         | SET_DATE '(' ')' ';'{ $$ = opr(SET_DATE,0);}
         | TIME '(' ')' ';'{$$ = opr(TIME,0);}
-        | INPUT VARIABLE ';'             { $$ = opr(INPUT, 1, id($2)); }
         | expr ';'                       { $$ = $1; }
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
         | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
@@ -98,6 +97,7 @@ stmt:
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
         | CR '(' ')' ';' {$$ = opr(PUTCH,1,con(0xa));}
+        | CLEAR '(' ')' ';'              { $$ = opr(CLEAR,0);}
         | EXIT {YYACCEPT;}
         ;
 
@@ -111,6 +111,8 @@ expr:
         | VARIABLE              { $$ = id($1); }
         | ARGD '(' ')'          { $$ = opr(ARGD,0);}
         | ARGCH '(' ')'         { $$ = opr(ARGCH,0);}
+        | GETD '(' ')'          { $$ = opr(GETD,0);}
+        | GETCH '(' ')'         { $$ = opr(GETCH,0);}
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
         | expr '-' expr         { $$ = opr('-', 2, $1, $3); }
@@ -204,14 +206,15 @@ void yyerror(char *s) {
 
 
 
-static const char short_options[] = "a:b:e:ho:";
+static const char short_options[] = "a:e:ho:";
+enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
-               {"hex", 1,NULL, 'o'},
+               {"hex", 1,NULL, OUTPUT_HEX},
 	       {"asm", 1,NULL, 'a'},
 	       {"eeprom",1,NULL, 'e'},
-	       {"binary",1,NULL,'b'},
+	       {"binary",1,NULL,'o'},
                {0, 0, 0, 0}
              };
 
@@ -228,10 +231,10 @@ void print_help()
   printf("Options:\n");
   printf("--help, -h :\t\t Displays this dialog.\n");
   printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");
-  printf("--hex,-o <file> :\t Outputs Intel Hex to the specified file.\n");
+  printf("--hex <file>    :\t Outputs Intel Hex to the specified file.\n");
   printf("--eeprom, -e <file> :\t Outputs \"__EEPROM_DATA(...)\" code for use\n");
   printf("                     \t with the Hi Tech C Compiler.\n");
-  printf("--binary, -b <file> :\t Outputs a binary file containing the compiled program.\n");
+  printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
 }
 
 int main(int argc, char **argv) 
@@ -257,7 +260,7 @@ int main(int argc, char **argv)
       
       switch(opt)
 	{
-	case 'o':
+	case OUTPUT_HEX:
 	  hex_file = fopen(optarg,"w");
 	  if(hex_file == NULL)
 	    hex_file = stdout;
@@ -267,7 +270,7 @@ int main(int argc, char **argv)
 	  if(assembly_file == NULL)
 	    assembly_file = stdout;
 	  break;
-	case 'b':
+	case 'o':
 	  binary_file = fopen(optarg,"w");
 	  if(binary_file == NULL)
 	    {
@@ -332,7 +335,7 @@ int lbl1, lbl2;
     if (!p) return 0;
     switch(p->type) {
     case typeCon:
-      write_assembly(assembly_file,"\tpushl\t%d\n", p->con.value); 
+      write_assembly(assembly_file,"\tpushl\t0x%x\n", p->con.value); 
       insert_code(PICLANG_PUSHL);
       insert_code(p->con.value);
       break;
@@ -409,12 +412,12 @@ int lbl1, lbl2;
             break;
         case PUTD:     
 	  ex(p->opr.op[0]);
-           write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
-            break;
+	  write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
+	  break;
         case PUTCH:
-            ex(p->opr.op[0]);
-            write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
-            break;
+	  ex(p->opr.op[0]);
+	  write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
+	  break;
         case '=':       
             ex(p->opr.op[1]);
             write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(resolve_variable(p->opr.op[0]->id.i));
@@ -423,14 +426,6 @@ int lbl1, lbl2;
             ex(p->opr.op[0]);
             write_assembly(assembly_file,"\tneg\n");
             break;
-	case INPUT:
-	  //ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tpushl\t%c\n",p->opr.op[0]->id.i + 'a');
-	  insert_code(PICLANG_PUSHL);
-	  insert_code(resolve_variable(p->opr.op[0]->id.i));
-	  write_assembly(assembly_file,"\tinput\n");
-	  insert_code( PICLANG_INPUT);
-	  break;
         case SYSTEM:
 	  {
 	    int op_counter = p->opr.nops - 1;
@@ -454,6 +449,10 @@ int lbl1, lbl2;
 	  write_assembly(assembly_file,"\ttime\n");
 	  insert_code(PICLANG_TIME);
 	  break;
+	case CLEAR:
+	  write_assembly(assembly_file,"\tclear\n");
+	  insert_code(PICLANG_CLEAR);
+	  break;
 	case SET_TIME:
 	  write_assembly(assembly_file,"\targd\n\targd\n\tsettime\n");
 	  insert_code(PICLANG_ARGD);
@@ -473,6 +472,12 @@ int lbl1, lbl2;
 	case ARGD:
 	  write_assembly(assembly_file,"\targd\n");
 	  insert_code(PICLANG_ARGD);
+	  break;
+	case GETD:
+	  write_assembly(assembly_file,"\tgetd\n");insert_code(PICLANG_GETD);
+	  break;
+	case GETCH:
+	  write_assembly(assembly_file,"\tgetch\n");insert_code(PICLANG_GETCH);
 	  break;
         default:
             ex(p->opr.op[0]);
@@ -509,6 +514,7 @@ int lbl1, lbl2;
 	      break;
             case NE:    
 	      write_assembly(assembly_file,"\tcompNE\n"); 
+	      insert_code(PICLANG_COMPNE);
 	      break;
             case EQ:    
 	      write_assembly(assembly_file,"\tcompEQ\n"); 

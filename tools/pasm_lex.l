@@ -34,7 +34,7 @@ unsigned char do_crc(const char *str)
 <C_COMMENT>"*/" {BEGIN(INITIAL);}
 <C_COMMENT>. {}
 
-\'[a-zA-Z][a-zA-Z0-9]*\' {
+\'[a-zA-Z0-9. ]*\' {
                               yylval.iValue = do_crc(yytext);
                               return INTEGER;
                          }
@@ -92,7 +92,8 @@ unsigned char do_crc(const char *str)
 "else"          return ELSE;
 "putd"         return PUTD;
 "putch"         return PUTCH;
-"input"         return INPUT;
+"getch"         return GETCH;
+"getd"          return GETD;
 "system"        return SYSTEM;
 "sprint"        return SPRINT;
 "morse"         return MORSE;
@@ -102,6 +103,7 @@ unsigned char do_crc(const char *str)
 "argd"          return ARGD;
 "argch"         return ARGCH;
 "cr"            return CR;
+"clear"         return CLEAR;
 "quit"          return EXIT;
 
 [ \t\n]+        ;       /* ignore whitespace */

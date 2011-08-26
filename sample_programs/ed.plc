@@ -1,0 +1,8 @@
+a = getch();
+while(a != '.')
+{
+putch(a);
+a = getch();
+}
+clear();
+sprint("Done");
