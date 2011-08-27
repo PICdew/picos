@@ -2,11 +2,23 @@
  * This is a program that set the date
  */
 sprint("Month: ");
+cr();
 m = getd();
 putd(m);
 e = getch();
-if(e == 0xa)
+if(e > 0x2f)
 {
+	if(e < 0x3a)
+	{
+		e = e - 0x30;
+		m = m*10 + e;
+		clear();
+		sprint("Month: ");
+		cr();
+		putd(m);
+		e = getch();
+	}
+}
 clear();
 sprint("Day: ");
 d = getd();
@@ -14,17 +26,17 @@ putd(d);
 e = getch();
 if(e > 0x2f)
 {
-if(e < 0x3a)
-{
-e = e - 0x30;
-d = d*10 + e;
-}
-clear();
-sprint("Day: ");
-putd(d);
-e = getch();
+	if(e < 0x3a)
+	{
+		e = e - 0x30;
+		d = d*10 + e;
+		clear();
+		sprint("Day: ");
+		putd(d);
+		e = getch();
+	}
 }
 setdate(m,d);
 clear();
 time();
-}
+
