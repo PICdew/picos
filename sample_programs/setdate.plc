@@ -16,7 +16,7 @@ if(e > 0x2f)
 {
 if(e < 0x3a)
 {
-e = e - 48;
+e = e - 0x30;
 d = d*10 + e;
 }
 clear();

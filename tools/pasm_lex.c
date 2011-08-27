@@ -871,7 +871,7 @@ case 4:
 YY_RULE_SETUP
 #line 37 "pasm_lex.l"
 {
-                              yylval.iValue = yytext[0];
+                              yylval.iValue = yytext[1];
                               return INTEGER;
                          }
 	YY_BREAK
@@ -908,7 +908,7 @@ case 8:
 YY_RULE_SETUP
 #line 61 "pasm_lex.l"
 { 
-                 sscanf(yytext,"0x%o",&yylval.iValue);
+                 sscanf(yytext,"0%o",&yylval.iValue);
                   return INTEGER;
                  }
 	YY_BREAK

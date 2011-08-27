@@ -163,9 +163,12 @@ void PICLANG_next()
       PICLANG_update_arith_status();
       break;
     case PICLANG_SUB:
-      PICLANG_pushl(PICLANG_pop() - PICLANG_pop());
-      PICLANG_update_arith_status();
-      break;
+      {
+	char rhs = PICLANG_pop();
+	PICLANG_pushl(PICLANG_pop() - rhs);
+	PICLANG_update_arith_status();
+	break;
+      }
     case PICLANG_MULT:
       PICLANG_pushl(PICLANG_pop() * PICLANG_pop());
       PICLANG_update_arith_status();

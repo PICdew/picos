@@ -35,7 +35,7 @@ unsigned char do_crc(const char *str)
 <C_COMMENT>. {}
 
 \'[^\']\' {
-                              yylval.iValue = yytext[0];
+                              yylval.iValue = yytext[1];
                               return INTEGER;
                          }
 
@@ -59,7 +59,7 @@ unsigned char do_crc(const char *str)
                  }
 
 0[0-9a-fA-F][0-9a-fA-F]* { 
-                 sscanf(yytext,"0x%o",&yylval.iValue);
+                 sscanf(yytext,"0%o",&yylval.iValue);
                   return INTEGER;
                  }
 
