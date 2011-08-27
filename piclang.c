@@ -59,7 +59,10 @@ char PICLANG_save(char saved_status)
   if(saved_status == PICLANG_SUSPENDED)
     PICLANG_next_process[0] = curr_process_addr - PCB_MAGIC_NUMBER_OFFSET;
   else
-    PICLANG_next_process[0] = 0xffff;
+    {
+      PAGE_free(0);
+      PICLANG_next_process[0] = 0xffff;
+    }
 
 
   SRAM_write(curr_process_addr,&curr_process,PCB_SIZE);
@@ -208,9 +211,10 @@ void PICLANG_next()
 	char dec = getch();
 	if(dec < '0' || dec > '9')
 	  {
-	    curr_process.status = ARG_INVALID;
+	    PICLANG_error(ARG_INVALID);
 	    break;
 	  }
+	dec -= 0x30;
 	PICLANG_pushl(dec);
 	break;
       }
@@ -300,8 +304,7 @@ void PICLANG_next()
 	signed char argd = ARG_getd();
 	if(argd < 0)
 	  {
-	    curr_process.status = error_code;
-	    error_code = 0;
+	    PICLANG_error(error_code);
 	    break;
 	  }
 	PICLANG_pushl((char)argd);
@@ -313,8 +316,7 @@ void PICLANG_next()
 	signed char argch = ARG_getch();
 	if(argch < 0)
 	  {
-	    curr_process.status = error_code;
-	    error_code = 0;
+	    PICLANG_error(error_code);
 	    break;
 	  }
 	PICLANG_pushl((char)argch);
