@@ -34,12 +34,12 @@ unsigned char do_crc(const char *str)
 <C_COMMENT>"*/" {BEGIN(INITIAL);}
 <C_COMMENT>. {}
 
-\'[a-zA-Z0-9. ]*\' {
-                              yylval.iValue = do_crc(yytext);
+\'[^\']\' {
+                              yylval.iValue = yytext[0];
                               return INTEGER;
                          }
 
-\"[a-zA-Z. ][a-zA-Z0-9 \:]*\" {
+\"[^\"]*\" {
                               size_t text_len = strlen(&yytext[1]);
                               yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
                               strncpy(yylval.nPtr->str.string,&yytext[1],text_len-1);// minus 1 for the end quotation mark
