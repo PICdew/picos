@@ -1,5 +1,5 @@
 a = getch();
-while(a != '.')
+while(a != 4)
 {
 putch(a);
 a = getch();
