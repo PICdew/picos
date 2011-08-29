@@ -2422,7 +2422,7 @@ int lbl1, lbl2;
 	  break;
 	case FFLUSH:
 	  write_assembly(assembly_file,"\tfflush\n");
-	  insert_code(PICLANG_TIME);
+	  insert_code(PICLANG_FFLUSH);
 	  break;
 	case CLEAR:
 	  write_assembly(assembly_file,"\tclear\n");

@@ -6,4 +6,5 @@ while(a != 4)
 	a = getch();
 }
 clear();
+fflush();
 sprint("Done");

@@ -358,8 +358,27 @@ signed char picfs_write(file_t fh)
   char addr[4], buffer[FS_BLOCK_SIZE];
   SD_read(picfs_pwd,buffer,FS_BLOCK_SIZE);
   num_free = buffer[FS_SuperBlock_num_free_blocks];
+  
   if(num_free < 2)
     return error_return(PICFS_ENOMEM);
+
+  // If we have re-mounted the file system, figure out where the end of
+  // the raw file linked list is
+  if(picfs_last_raw_block == 0 && buffer[FS_SuperBlock_raw_file] != 0)
+    {
+      FS_Unit free_queue = buffer[FS_SuperBlock_free_queue]; 
+      picfs_getblock(addr,buffer[FS_SuperBlock_raw_file]);
+      SD_read(addr,buffer,FS_BLOCK_SIZE);
+      while(buffer[1] != 0)
+	{
+	  picfs_getblock(addr,buffer[1]);
+	  picfs_last_raw_block = buffer[1];
+	  SD_read(addr,buffer,FS_INode_length);
+	}
+      
+      buffer[FS_INode_pointers] = free_queue;
+      SD_read(picfs_pwd,buffer,FS_BLOCK_SIZE);
+    }
 
   //Get first raw block
   first_block = buffer[FS_SuperBlock_free_queue];
