@@ -11,6 +11,7 @@
 #endif
 
 extern FS_Unit picfs_buffer[];
+FS_Unit picfs_last_raw_block = 0;
 char picfs_fh_bitmap = 0xff;
 #define ISOPEN(fh) ((fh & ~picfs_fh_bitmap) == 0)
 #define FS_BLOCK_SIZE FS_BUFFER_SIZE
@@ -51,14 +52,7 @@ void cat_file(const char *filename, int fileptr)
 	if(picfs_read(file) != 0)
 	  {
 	    if(error_code == PICFS_EOF)
-	      {
 		error_code = 0;
-	      }
-	    else
-	      {
-		IO_puts("ERROR ");
-		IO_putd(error_code);
-	      }
 	    break;
 	  }
 	else
@@ -107,6 +101,17 @@ static signed char picfs_get_free_handle( char *bitmap )
 #define picfs_get_free_mtab_entry() picfs_get_free_handle(&picfs_mtab_bitmap)
 
 
+signed char picfs_verify_fs(const char *sd_addr)
+{
+  char magic_numbers[4];
+  SD_read(sd_addr,magic_numbers,4);
+  if(magic_numbers[0] != 0 && magic_numbers[1] != 0x6 && magic_numbers[2] != 0x29 && magic_numbers[3] != 0x83)
+    {
+      return error_return(PICFS_INVALID_FILESYSTEM);
+    }
+  return SUCCESS;
+}
+
 /**
  * Mounts the SD card fs onto the lowest available mount point.
  *
@@ -118,22 +123,26 @@ signed char picfs_mount(const char *sd_addr)
 {
   signed char mtab_entry;
   unsigned int addr;
-
+  
   if(sd_addr == NULL)
     return error_return(PICFS_EINVAL);
 
   if(picfs_mtab_bitmap == 0)
     return error_return(PICFS_ENFILE);
-  
+
   mtab_entry = picfs_get_free_mtab_entry();
   if(mtab_entry < 0)
-    {
-      error_code = -mtab_entry;
-      return -1;
-    }
-  
+    return -1;// error_code already set by previous function
+
   addr = SIZE_picfs_mtab_entry * mtab_entry;
 
+  if(picfs_verify_fs(sd_addr) != 0)
+    {
+      void picfs_free_handle(char *bitmap, file_t fh);
+      picfs_free_handle(&picfs_mtab_bitmap,mtab_entry);
+      return -1;// error_code already set by previous function
+    }
+  
   SRAM_write(addr,sd_addr,SIZE_picfs_mtab_entry);
   return mtab_entry;
 }
@@ -150,7 +159,16 @@ static signed char picfs_getdir(char *addr, char mount_point)
 
 signed char picfs_chdir(char mount_point)
 {
-  return picfs_getdir(picfs_pwd,mount_point);
+  char oldpwd[4];
+  signed char retval = 0;
+  memcpy(oldpwd,picfs_pwd,4);
+  retval = picfs_getdir(picfs_pwd,mount_point);
+  if(retval != SUCCESS)
+    {
+      memcpy(picfs_pwd,oldpwd,4);
+      return -1;
+    }
+  return 0;
 }
 
 /**
@@ -332,6 +350,59 @@ signed char picfs_seek(file_t fh, offset_t offset, char whence)
   return 0;
 }
 
+signed char picfs_write(file_t fh)
+{
+  char num_free,first_block,second_block;
+  char addr[4], buffer[FS_BLOCK_SIZE];
+  SD_read(picfs_pwd,buffer,FS_BLOCK_SIZE);
+  num_free = buffer[FS_SuperBlock_num_free_blocks];
+  if(num_free < 2)
+    return error_return(PICFS_ENOMEM);
+
+  //Get first raw block
+  first_block = buffer[FS_SuperBlock_free_queue];
+  picfs_getblock(addr,first_block);
+  SD_read(addr,buffer,FS_INode_length);
+  second_block = buffer[FS_INode_pointers];
+  
+  // Update free queue
+  picfs_getblock(addr,second_block);
+  SD_read(addr,buffer,FS_INode_length);
+  num_free = buffer[FS_INode_pointers];// borrowing num_free to save memory
+  SD_read(picfs_pwd,buffer,FS_BLOCK_SIZE);
+  buffer[FS_SuperBlock_num_free_blocks] -= 2;
+  buffer[FS_SuperBlock_free_queue] = num_free;
+  if(picfs_last_raw_block == 0)
+    buffer[FS_SuperBlock_raw_file] = first_block;
+  SD_write(buffer,picfs_pwd,FS_BLOCK_SIZE);
+  
+  // If raw has alread been written to, update the previous block so that it points to the first_block, continuing the linked list
+  if(picfs_last_raw_block != 0)
+    {
+      picfs_getblock(addr,picfs_last_raw_block);
+      SD_read(addr,buffer,2);
+      buffer[1] = first_block;
+      SD_write(buffer,addr,2);
+    }
+  picfs_last_raw_block = second_block;
+  
+  //Save some data to the first block
+  picfs_getblock(addr,first_block);
+  buffer[0] = MAGIC_RAW;
+  buffer[1] = second_block;
+  memcpy(buffer + 2,picfs_buffer,FS_BLOCK_SIZE - 2);
+  SD_write(buffer,addr,FS_BLOCK_SIZE);
+
+  // write second raw block
+  picfs_getblock(addr,second_block);
+  memset(buffer,0,FS_BLOCK_SIZE);
+  buffer[0] = MAGIC_RAW;
+  memcpy(buffer+2,picfs_buffer + FS_BLOCK_SIZE - 2,2);
+  SD_write(buffer,addr,6);//write 6 to clean the pointer away
+    
+  return 0;
+}
+
 signed char picfs_read(file_t fh)
 {
   char inode,ptr,eeprom_addr = fh*FILE_HANDLE_SIZE;
@@ -382,6 +453,13 @@ signed char picfs_read(file_t fh)
   return picfs_buffer_block(ptr);
 }
 
+void picfs_free_handle(char *bitmap, file_t fh)
+{
+  char mask = 1 << fh;
+  if(bitmap != NULL)
+    *bitmap |= mask;
+}
+
 signed char picfs_close(file_t fh)
 {
   char eeprom_addr = fh*FILE_HANDLE_SIZE;
@@ -392,8 +470,7 @@ signed char picfs_close(file_t fh)
   eeprom_write(eeprom_addr++,0);
   eeprom_write(eeprom_addr,0);
   
-  eeprom_addr = 1 << fh;
-  picfs_fh_bitmap |= eeprom_addr;
+  picfs_free_handle(&picfs_fh_bitmap,fh);
   return 0;
 }
 

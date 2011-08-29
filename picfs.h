@@ -18,18 +18,19 @@ signed char picfs_mount(const char *addr);
 signed char picfs_chdir(char mount_point);
 signed char picfs_open(const char *name);
 signed char picfs_close(file_t fh);
+signed char picfs_write(file_t fh);// file handle currently ignore and the raw file of the fs is used.
 signed char picfs_read(file_t fh);
 signed char picfs_seek(file_t fh, offset_t offset, char whence);
 signed char picfs_stat(file_t fh);
 offset_t picfs_tell(file_t fh);
 void picfs_rewind(file_t fh);
 char picfs_is_open(file_t fh); 
-
 /**
- * Reads a file specified by "filename" and writes it
- * to either the standard output (default) or to a file
- * in SRAM specified by the index of the first byte of 
- * the file in SRAM.
+ * Reads a file specified by "filename" and, depending on the
+ * value of fileptr, writes it to:
+ * -1: the standard output (default)
+ * >= 0: to a file * in SRAM specified by the index of the
+ * first byte of the file in SRAM.
  */
 void cat_file(const char *filename, int fileptr);
 
