@@ -114,10 +114,14 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_co
   resolve_labels(*the_code);
   *the_code = MakePCB(*the_code,the_strings,num_variables,piclang_bitmap);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
-  fprintf(hex_file,":020000040000FA\n");
-  FPrintCode(hex_file,*the_code,0,hex_buffer,0x4200,0,PRINT_HEX);
-  fprintf(hex_file,":00000001FF\n");
-  FPrintCode(eeprom_file,*the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
+  if(hex_file != NULL)
+    {
+      fprintf(hex_file,":020000040000FA\n");
+      FPrintCode(hex_file,*the_code,0,hex_buffer,0x4200,0,PRINT_HEX);
+      fprintf(hex_file,":00000001FF\n");
+    }
+  if(eeprom_file != NULL)
+    FPrintCode(eeprom_file,*the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
 
 }
 

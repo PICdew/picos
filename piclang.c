@@ -1,5 +1,7 @@
 #include "page.h"
 #include "picfs_error.h"
+#include "picfs.h"
+extern FS_Unit picfs_buffer[];
 #include "picos_time.h"
 #include "piclang.h"
 #include "arg.h"
@@ -16,6 +18,7 @@
 
 #define PICLANG_error(code)  curr_process.status = code
 int PICLANG_next_process[] = {0xffff};
+char PICLANG_file_buffer_index;
 
 char PICLANG_load(unsigned int sram_addr)
 {
@@ -41,6 +44,7 @@ char PICLANG_load(unsigned int sram_addr)
   if(curr_process.status != PICLANG_SUSPENDED)
     {
       char retval = PAGE_request(curr_process.num_pages,0 /* replace with UID or pid */);
+      PICLANG_file_buffer_index = 0;
       if(retval != 0)
 	return error_code;
     }
@@ -195,6 +199,19 @@ void PICLANG_next()
       {
 	putch(PICLANG_pop());
 	IO_flush();
+	break;
+      }
+    case PICLANG_FPUTCH:
+      {
+	picfs_buffer[PICLANG_file_buffer_index++] = PICLANG_pop();
+	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
+	  break;
+      }
+    case PICLANG_FFLUSH:
+      {
+	picfs_write(0);
+	memset(picfs_buffer,0,FS_BUFFER_SIZE);
+	PICLANG_file_buffer_index = 0;
 	break;
       }
     case PICLANG_PRINTL:

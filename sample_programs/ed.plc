@@ -1,8 +1,9 @@
 a = getch();
 while(a != 4)
 {
-putch(a);
-a = getch();
+	fputch(a);
+	putch(a);
+	a = getch();
 }
 clear();
 sprint("Done");

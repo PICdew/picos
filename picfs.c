@@ -42,7 +42,7 @@ void cat_file(const char *filename, int fileptr)
   file = (file_t)retval;
   if(picfs_is_open(file))
     {
-      if(fileptr < 0)
+      if(fileptr == -1)
 	{
 	  IO_puts(filename);
 	  IO_puts(":\n");
@@ -62,12 +62,14 @@ void cat_file(const char *filename, int fileptr)
 		SRAM_write(fileptr,picfs_buffer,FS_BUFFER_SIZE);
 		fileptr += FS_BUFFER_SIZE;
 	      }
+	    else if(fileptr == -2)
+	      picfs_write(0);
 	    else
 	      IO_puts(picfs_buffer);
 	  }
 	}
       picfs_close(file);
-      if(fileptr < 0)
+      if(fileptr == -1)
 	putch('\n');
     }
   else

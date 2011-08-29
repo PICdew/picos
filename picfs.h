@@ -28,6 +28,7 @@ char picfs_is_open(file_t fh);
 /**
  * Reads a file specified by "filename" and, depending on the
  * value of fileptr, writes it to:
+ * -2: filesystem raw file
  * -1: the standard output (default)
  * >= 0: to a file * in SRAM specified by the index of the
  * first byte of the file in SRAM.

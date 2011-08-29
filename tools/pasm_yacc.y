@@ -57,6 +57,7 @@ int sym[26];                    /* symbol table */
 %token <sIndex> VARIABLE
 %token WHILE IF PUTCH PUTD EXIT SYSTEM SPRINT STRING CR
 %token MORSE TIME ARGD ARGCH SET_TIME SET_DATE GETD GETCH CLEAR
+%token FPUTCH FFLUSH
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -90,7 +91,9 @@ stmt:
         | TIME '(' ')' ';'{$$ = opr(TIME,0);}
         | expr ';'                       { $$ = $1; }
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
-        | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
+        | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
+        | FPUTCH '(' expr ')' ';'        { $$ = opr(FPUTCH,1,$3); }
+        | FFLUSH '(' ')' ';'{$$ = opr(FFLUSH,0);}
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
@@ -240,7 +243,7 @@ void print_help()
 int main(int argc, char **argv) 
 {
   char hex_buffer[45];
-  FILE *hex_file = stdout, *eeprom_file = stdout, *binary_file = NULL;
+  FILE *hex_file = NULL, *eeprom_file = NULL, *binary_file = NULL;
   char opt;
   int opt_index;
   unsigned char piclang_bitmap = 0;
@@ -418,6 +421,10 @@ int lbl1, lbl2;
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
 	  break;
+        case FPUTCH:
+	  ex(p->opr.op[0]);
+	  write_assembly(assembly_file,"\tfputch\n");insert_code(PICLANG_FPUTCH);
+	  break;
         case '=':       
             ex(p->opr.op[1]);
             write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(resolve_variable(p->opr.op[0]->id.i));
@@ -447,6 +454,10 @@ int lbl1, lbl2;
 	  break;
 	case TIME:
 	  write_assembly(assembly_file,"\ttime\n");
+	  insert_code(PICLANG_TIME);
+	  break;
+	case FFLUSH:
+	  write_assembly(assembly_file,"\tfflush\n");
 	  insert_code(PICLANG_TIME);
 	  break;
 	case CLEAR:

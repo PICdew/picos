@@ -94,6 +94,8 @@ unsigned char do_crc(const char *str)
 "putch"         return PUTCH;
 "getch"         return GETCH;
 "getd"          return GETD;
+"fputch"        return FPUTCH;
+"fflush"        return FFLUSH;
 "system"        return SYSTEM;
 "sprint"        return SPRINT;
 "morse"         return MORSE;
