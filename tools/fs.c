@@ -25,7 +25,7 @@ const char FS_dump_filename[] = "/proc/dump";
 const char FS_eeprom_filename[] = "/proc/eeprom";
 const char FS_picc_filename[] = "/proc/picc";
 const char FS_readme_filename[] = "/proc/README";
-
+const char FS_rawfile_name[] = "/proc/raw";
 
 static void log_msg(const char *format, ...)
 {
@@ -180,6 +180,7 @@ void FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
   block[FS_SuperBlock_root_block] = 1;
 
   block[FS_SuperBlock_free_queue] = 2;
+  block[FS_SuperBlock_raw_file] = 0;
 }
 
 void FS_mkinode(FS_Block *inode, FS_Unit block_size)
@@ -238,6 +239,29 @@ static int FS_file_size(FS_Block *the_dir)
   
 }
 
+static int FS_size_rawfile()
+{
+  int size = 0, len;
+  FS_Block *sb = FS_PRIVATE_DATA->super_block, *file;
+  if(sb == NULL || sb[FS_SuperBlock_raw_file] == 0)
+    return 0;
+  
+  file = FS_getblock(sb,sb[FS_SuperBlock_raw_file]);
+  if(file == NULL)
+    return 0;
+  
+  if(file[FS_INode_magic_number] != MAGIC_RAW)
+    return 0;
+
+  len = sb[FS_SuperBlock_block_size] - 2;
+  for(;;file = FS_getblock(sb,file[FS_INode_magic_number+1]))
+    {
+      size += len;
+      if(file[FS_INode_magic_number+1] == 0)
+	break;
+    }
+  return size;
+}
 
 static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
 {
@@ -368,6 +392,13 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 	stbuf->st_mode = 0444 | S_IFREG;
 	stbuf->st_size = len;
 	fclose(picc);
+	return 0;
+      }
+    else if(strcmp(path,FS_rawfile_name) == 0)
+      {
+	int len = FS_size_rawfile();
+	stbuf->st_mode = 0444 | S_IFREG;
+	stbuf->st_size = len;
 	return 0;
       }
     dir = FS_resolve(dir,path,sb);
@@ -518,6 +549,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
       filler(buf,"dump",NULL,0);
       filler(buf,"eeprom",NULL,0);
       filler(buf,"picc",NULL,0);
+      filler(buf,"raw",NULL,0);
       return 0;
     }
   else if(strcmp(path,"/") == 0)
@@ -714,6 +746,7 @@ static int FS_open(const char *path, struct fuse_file_info *fi)
   log_msg("FS_open (%s)\n",path);
   if(FS_is_virtual(path) && strcmp(path,"/") != 0)
     return 0;
+  
   file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
   
   if(file == NULL)
@@ -907,6 +940,43 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
   return amount_written;
 }
 
+static int FS_read_rawfile(char *buf, size_t size)
+{
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  FS_Block *file = NULL;
+  int len, total_written = 0, amount_written;
+  log_msg("FS_read_rawfile ()\n");
+  if(buf == NULL || sb == NULL || sb[FS_SuperBlock_raw_file] == 0)
+    return 0;
+  
+  file = FS_getblock(sb,sb[FS_SuperBlock_raw_file]);
+  if(file == NULL)
+    return 0;
+  
+  if(file[FS_INode_magic_number] != MAGIC_RAW)
+    return 0;
+  
+  len = sb[FS_SuperBlock_block_size] - 2;
+  for(;;file = FS_getblock(sb,file[FS_INode_magic_number+1]))
+    {
+      char debug[len+1];
+      if(file[FS_INode_magic_number] != MAGIC_RAW)
+	return total_written;
+      amount_written = (size < len) ? size : len;
+      memcpy(buf,file + 2, amount_written);
+      total_written += amount_written;
+      if(len >= size)
+	break;
+      size -= len;
+      buf += amount_written;
+      if(file[FS_INode_magic_number+1] == 0)
+	break;
+    }
+
+  log_msg("\tRead %d bytes\n",total_written);
+  
+  return total_written;
+}
 
 static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 		   struct fuse_file_info *fi)
@@ -951,6 +1021,10 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       size = fread(buf,sizeof(char),len,eeprom_file);
       fclose(eeprom_file);
       return len;
+    }
+  else if(strcmp(path,FS_rawfile_name) == 0)
+    {
+      return FS_read_rawfile(buf,size);
     }
   else
     {

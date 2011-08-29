@@ -26,7 +26,8 @@ enum FS_MAGIC_NUMBERS{
   MAGIC_SUPERBLOCK = 0,
   MAGIC_DIR,
   MAGIC_DATA,
-  MAGIC_FREE_INODE
+  MAGIC_FREE_INODE,
+  MAGIC_RAW
 };
 
 #define FS_REVISION_NUM 1
@@ -52,6 +53,7 @@ enum {
   FS_SuperBlock_num_blocks,
   FS_SuperBlock_num_free_blocks,
   FS_SuperBlock_free_queue,
+  FS_SuperBlock_raw_file/* Inode for the beginning of a raw file. */,
   FS_SuperBlock_root_block,
   FS_SuperBlock_length
 };

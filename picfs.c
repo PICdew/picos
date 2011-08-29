@@ -107,6 +107,17 @@ static signed char picfs_get_free_handle( char *bitmap )
 #define picfs_get_free_mtab_entry() picfs_get_free_handle(&picfs_mtab_bitmap)
 
 
+signed char picfs_verify_fs(const char *sd_addr)
+{
+  char magic_numbers[4];
+  SD_read(sd_addr,magic_numbers,4);
+  if(magic_numbers[0] != 0 && magic_numbers[1] != 0x6 && magic_numbers[2] != 0x29 && magic_numbers[3] != 0x83)
+    {
+      return error_return(PICFS_INVALID_FILESYSTEM);
+    }
+  return SUCCESS;
+}
+
 /**
  * Mounts the SD card fs onto the lowest available mount point.
  *
@@ -118,22 +129,26 @@ signed char picfs_mount(const char *sd_addr)
 {
   signed char mtab_entry;
   unsigned int addr;
-
+  
   if(sd_addr == NULL)
     return error_return(PICFS_EINVAL);
 
   if(picfs_mtab_bitmap == 0)
     return error_return(PICFS_ENFILE);
-  
+
   mtab_entry = picfs_get_free_mtab_entry();
   if(mtab_entry < 0)
-    {
-      error_code = -mtab_entry;
-      return -1;
-    }
-  
+    return -1;// error_code already set by previous function
+
   addr = SIZE_picfs_mtab_entry * mtab_entry;
 
+  if(picfs_verify_fs(sd_addr) != 0)
+    {
+      void picfs_free_handle(char *bitmap, file_t fh);
+      picfs_free_handle(&picfs_mtab_bitmap,mtab_entry);
+      return -1;// error_code already set by previous function
+    }
+  
   SRAM_write(addr,sd_addr,SIZE_picfs_mtab_entry);
   return mtab_entry;
 }
@@ -150,7 +165,16 @@ static signed char picfs_getdir(char *addr, char mount_point)
 
 signed char picfs_chdir(char mount_point)
 {
-  return picfs_getdir(picfs_pwd,mount_point);
+  char oldpwd[4];
+  signed char retval = 0;
+  memcpy(oldpwd,picfs_pwd,4);
+  retval = picfs_getdir(picfs_pwd,mount_point);
+  if(retval != SUCCESS)
+    {
+      memcpy(picfs_pwd,oldpwd,4);
+      return -1;
+    }
+  return 0;
 }
 
 /**
@@ -382,6 +406,13 @@ signed char picfs_read(file_t fh)
   return picfs_buffer_block(ptr);
 }
 
+void picfs_free_handle(char *bitmap, file_t fh)
+{
+  char mask = 1 << fh;
+  if(bitmap != NULL)
+    *bitmap |= mask;
+}
+
 signed char picfs_close(file_t fh)
 {
   char eeprom_addr = fh*FILE_HANDLE_SIZE;
@@ -392,8 +423,7 @@ signed char picfs_close(file_t fh)
   eeprom_write(eeprom_addr++,0);
   eeprom_write(eeprom_addr,0);
   
-  eeprom_addr = 1 << fh;
-  picfs_fh_bitmap |= eeprom_addr;
+  picfs_free_handle(&picfs_fh_bitmap,fh);
   return 0;
 }
 
