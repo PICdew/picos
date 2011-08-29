@@ -353,7 +353,7 @@ signed char picfs_seek(file_t fh, offset_t offset, char whence)
 signed char picfs_write(file_t fh)
 {
   char num_free,first_block,second_block;
-  char addr[4], buffer[FS_BLOCK_SIZE+1];
+  char addr[4], buffer[FS_BLOCK_SIZE];
   SD_read(picfs_pwd,buffer,FS_BLOCK_SIZE);
   num_free = buffer[FS_SuperBlock_num_free_blocks];
   if(num_free < 2)
@@ -370,12 +370,11 @@ signed char picfs_write(file_t fh)
   SD_read(addr,buffer,FS_INode_length);
   num_free = buffer[FS_INode_pointers];// borrowing num_free to save memory
   SD_read(picfs_pwd,buffer,FS_BLOCK_SIZE);
-  buffer[FS_BLOCK_SIZE] = 0;
   buffer[FS_SuperBlock_num_free_blocks] -= 2;
   buffer[FS_SuperBlock_free_queue] = num_free;
   if(picfs_last_raw_block == 0)
     buffer[FS_SuperBlock_raw_file] = first_block;
-  SD_write(buffer,picfs_pwd);
+  SD_write(buffer,picfs_pwd,FS_BLOCK_SIZE);
   
   // If raw has alread been written to, update the previous block so that it points to the first_block, continuing the linked list
   if(picfs_last_raw_block != 0)
@@ -383,8 +382,7 @@ signed char picfs_write(file_t fh)
       picfs_getblock(addr,picfs_last_raw_block);
       SD_read(addr,buffer,2);
       buffer[1] = first_block;
-      buffer[2] = 0;
-      SD_write(buffer,addr);
+      SD_write(buffer,addr,2);
     }
   picfs_last_raw_block = second_block;
   
@@ -393,15 +391,14 @@ signed char picfs_write(file_t fh)
   buffer[0] = MAGIC_RAW;
   buffer[1] = second_block;
   memcpy(buffer + 2,picfs_buffer,FS_BLOCK_SIZE - 2);
-  buffer[FS_BLOCK_SIZE] = 0;// sd write writes until null character is found
-  SD_write(buffer,addr);
+  SD_write(buffer,addr,FS_BLOCK_SIZE);
 
   // write second raw block
   picfs_getblock(addr,second_block);
   memset(buffer,0,FS_BLOCK_SIZE);
   buffer[0] = MAGIC_RAW;
   memcpy(buffer+2,picfs_buffer + FS_BLOCK_SIZE - 2,2);
-  SD_write(buffer,addr);
+  SD_write(buffer,addr,6);//write 6 to clean the pointer away
     
   return 0;
 }

@@ -16,7 +16,7 @@ void SD_restart(char block_size);
  * Write a null terminated buffer.
  * the size of loc must be four bytes and loc must be big endian
  */
-void SD_write(char *buff, char *loc);
+void SD_write(char *buff, char *loc, char n);
 
 /**
  * Read n characters from SD
