@@ -46,6 +46,7 @@ static void error_log(const char *format, ...)
 
 static FS_Block* FS_getblock(FS_Block *super_block, FS_Unit block_id)
 {
+  log_msg("FS_getblock (block = %d, addr = 0x%x)\n",block_id,block_id*FS_BLOCK_SIZE);
   return &(super_block[block_id*FS_BLOCK_SIZE]);
 }
 
@@ -266,7 +267,7 @@ static int FS_size_rawfile()
 static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
-  log_msg("inode2stat\n");
+  log_msg("inode2stat (thedir = 0x%x, thedir[0..1] = {%d, %d})\n",the_dir,the_dir[0],the_dir[1]);
   if(stbuf == NULL || the_dir == NULL)
     return;
 
@@ -1165,6 +1166,9 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
     }
 
   fclose(dev);
+  
+  the_state->block_size = super_block[FS_SuperBlock_block_size];
+  the_state->num_blocks = super_block[FS_SuperBlock_num_blocks];
   return super_block;
 }
 
