@@ -38,5 +38,5 @@ if(e > 0x2f)
 }
 setdate(m,d);
 clear();
-time();
+sprint("Date Set!");
 

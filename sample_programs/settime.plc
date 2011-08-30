@@ -38,5 +38,5 @@ if(e > 0x2f)
 }
 settime(m,d);
 clear();
-time();
+sprint("Time Set!");
 

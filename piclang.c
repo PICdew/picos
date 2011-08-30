@@ -287,7 +287,31 @@ void PICLANG_next()
 	break;
       }
     case PICLANG_TIME:
-      TIME_stdout();
+      {
+	TIME_t *thetime = TIME_get();;
+	char key = PICLANG_pop();
+	switch(key)
+	  {
+	  case 0:
+	    PICLANG_pushl(thetime->month);
+	    break;
+	  case 1:
+	    PICLANG_pushl(thetime->day);
+	    break;
+	  case 2:
+	    PICLANG_pushl(thetime->hours);
+	    break;
+	  case 3:
+	    PICLANG_pushl(thetime->minutes);
+	    break;
+	  case 4:
+	    PICLANG_pushl(thetime->seconds);
+	    break;
+	  default:
+	    break;
+	  }
+	break;
+      }
       break;
     case PICLANG_SET_TIME:case PICLANG_SET_DATE:
       {

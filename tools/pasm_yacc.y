@@ -88,7 +88,6 @@ stmt:
         | MORSE '(' expr ')' ';' {$$ = opr(MORSE,2,$3,con(PICLANG_MORSE_CHAR));}
         | SET_TIME '(' expr ',' expr ')' ';'{ $$ = opr(SET_TIME,2,$3,$5);}
         | SET_DATE '(' expr ',' expr ')' ';'{ $$ = opr(SET_DATE,2,$3,$5);}
-        | TIME '(' ')' ';'{$$ = opr(TIME,0);}
         | expr ';'                       { $$ = $1; }
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
         | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
@@ -116,6 +115,7 @@ expr:
         | ARGCH '(' ')'         { $$ = opr(ARGCH,0);}
         | GETD '(' ')'          { $$ = opr(GETD,0);}
         | GETCH '(' ')'         { $$ = opr(GETCH,0);}
+        | TIME '(' expr ')' { $$ = opr(TIME,1,$3);}
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
         | expr '-' expr         { $$ = opr('-', 2, $1, $3); }
@@ -453,6 +453,7 @@ int lbl1, lbl2;
 	  insert_code(PICLANG_MORSE);
 	  break;
 	case TIME:
+	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\ttime\n");
 	  insert_code(PICLANG_TIME);
 	  break;
