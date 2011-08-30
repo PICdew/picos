@@ -91,7 +91,7 @@ stmt:
         | TIME '(' ')' ';'{$$ = opr(TIME,0);}
         | expr ';'                       { $$ = $1; }
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
-        | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
+        | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
         | FPUTCH '(' expr ')' ';'        { $$ = opr(FPUTCH,1,$3); }
         | FFLUSH '(' ')' ';'{$$ = opr(FFLUSH,0);}
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
