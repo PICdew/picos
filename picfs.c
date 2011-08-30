@@ -26,6 +26,26 @@ char picfs_mtab_bitmap = 0x3f;// six entries in the table
 // of next get offset
 #define FILE_HANDLE_SIZE 3
 
+void picfs_offset_addr(char *sd_addr, signed int offset)
+{
+  signed long large_addr;
+  if(offset == 0)
+    return;
+  if(sd_addr == NULL)
+    return;
+  large_addr = sd_addr[3];
+  large_addr += sd_addr[2] << 8;
+  large_addr += sd_addr[1] << 16;
+  large_addr += sd_addr[0] << 24;
+  
+  large_addr += offset;
+  
+  sd_addr[3] = large_addr & 0xff;
+  sd_addr[2] = (large_addr & 0xff00) >> 8;
+  sd_addr[1] = (large_addr & 0xff0000) >> 16;
+  sd_addr[0] = (large_addr & 0xff000000) >> 24;
+}
+
 void cat_file(const char *filename, int fileptr)
 {
   signed char retval;
@@ -104,12 +124,15 @@ static signed char picfs_get_free_handle( char *bitmap )
 
 signed char picfs_verify_fs(const char *sd_addr)
 {
-  char magic_numbers[4];
-  SD_read(sd_addr,magic_numbers,4);
+  char magic_numbers[FS_SuperBlock_block_size+1];
+  SD_read(sd_addr,magic_numbers,FS_SuperBlock_block_size+1);
   if(magic_numbers[0] != 0 && magic_numbers[1] != 0x6 && magic_numbers[2] != 0x29 && magic_numbers[3] != 0x83)
     {
       return error_return(PICFS_INVALID_FILESYSTEM);
     }
+  if(magic_numbers[FS_SuperBlock_block_size] != FS_BLOCK_SIZE)
+    return error_return( PICFS_INVALID_FILESYSTEM/*FS_BLOCK_SIZE */);
+  
   return SUCCESS;
 }
 
@@ -211,15 +234,15 @@ signed char picfs_open(const char *name)
     return error_return(PICFS_ENFILE);
   
   picfs_getblock(inode,0);
-  inode[3] += FS_SuperBlock_root_block;
+  picfs_offset_addr(inode,FS_SuperBlock_root_block);
   SD_read(inode,&ch,1);
   if(ch == 0)
     return error_return(PICFS_NOENT);
   
   picfs_getblock(inode,ch); // now contains inode's address
-  inode[3] += FS_INode_pointers;// now contains the first pointer
+  picfs_offset_addr(inode,FS_INode_pointers);// now contains the first pointer
   pointer = 0;
-  for(;pointer < FS_INode_pointers;pointer++,inode[3]++)
+  for(;pointer < FS_INode_pointers;pointer++,picfs_offset_addr(inode,1))
     {
       char filename[PICFS_FILENAME_MAX];
       char entrypos = 0;
@@ -232,10 +255,10 @@ signed char picfs_open(const char *name)
 	  SD_read(addr,&ch,1);
 	  if(ch == 0)
 	    break;
-	  addr[3]++;entrypos++;
+	  picfs_offset_addr(addr,1);entrypos++;
 	  SD_read(addr,filename,ch);
 	  filename[ch] = 0;
-	  addr[3] += ch;entrypos += ch;
+	  picfs_offset_addr(addr,ch);entrypos += ch;
 	  if(strcmp(filename,name) == 0)
 	    {
 	      signed char fh;
@@ -250,7 +273,7 @@ signed char picfs_open(const char *name)
 	      eeprom_write((char)eeprom_addr+2,0);
 	      return (signed char)fh;
 	    }
-	  addr[3]++;entrypos++;
+	  picfs_offset_addr(addr,1);entrypos++;
 	}
     }
 
@@ -270,21 +293,15 @@ signed char picfs_stat(file_t fh)
   picfs_getblock(addr,inode);
   while(inode != 0)
     {
-      if(((int)addr[3] + FS_INode_indirect) > 255)
-	addr[2]++;
-      addr[3] += FS_INode_indirect;
+      picfs_offset_addr(addr,FS_INode_indirect);
       SD_read(addr,&val,1);
       if(val == 0)
 	{
 	  char pointer_counter = 1;
-	  if(addr[3] == 0)
-	      addr[2]--;
-	  addr[3]--;// FS_INode_size
+	  picfs_offset_addr(addr,-1);// FS_INode_size
 	  SD_read(addr,&val,1);
 	  size += val;
-	  if(addr[3] >= 253)
-	    addr[2]++;
-	  addr[3] += 3;
+	  picfs_offset_addr(addr,3);
 	  for(;pointer_counter < FS_INODE_NUM_POINTERS;pointer_counter++)
 	    {
 	      SD_read(addr,&val,1);
@@ -292,9 +309,7 @@ signed char picfs_stat(file_t fh)
 		break;
 	      else
 		size += FS_BLOCK_SIZE;
-	      if(addr[3] == 255)
-		addr[2]++;
-	      addr[3]++;
+	      picfs_offset_addr(addr,1);
 	    }
 	  break;
 	}
@@ -453,7 +468,7 @@ signed char picfs_read(file_t fh)
   while(nextnode >= FS_INODE_NUM_POINTERS)
     {
       picfs_getblock(addr,inode);
-      addr[3] += FS_INode_indirect;
+      picfs_offset_addr(addr,FS_INode_indirect);
       SD_read(addr,&ptr,1);
       if(ptr == 0)
 	return error_return(PICFS_EOF);
@@ -463,9 +478,7 @@ signed char picfs_read(file_t fh)
   
   picfs_getblock(addr,inode);
   ptr = (char)nextnode + FS_INode_pointers;
-  if(addr[3] > 255-ptr)
-    addr[2]++;
-  addr[3] += ptr;
+  picfs_offset_addr(addr,ptr);
   SD_read(addr,&ptr,1);
   if(ptr == 0)
     return error_return(PICFS_EOF);
