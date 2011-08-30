@@ -10,7 +10,6 @@
 #include "config.h"
 #endif
 
-extern FS_Unit picfs_buffer[];
 FS_Unit picfs_last_raw_block = 0;
 char picfs_fh_bitmap = 0xff;
 #define ISOPEN(fh) ((fh & ~picfs_fh_bitmap) == 0)

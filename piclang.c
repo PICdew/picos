@@ -1,7 +1,6 @@
 #include "page.h"
 #include "picfs_error.h"
 #include "picfs.h"
-extern FS_Unit picfs_buffer[];
 #include "picos_time.h"
 #include "piclang.h"
 #include "arg.h"
