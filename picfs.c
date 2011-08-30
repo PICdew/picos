@@ -28,22 +28,18 @@ char picfs_mtab_bitmap = 0x3f;// six entries in the table
 
 void picfs_offset_addr(char *sd_addr, signed int offset)
 {
-  signed long large_addr;
-  if(offset == 0)
-    return;
-  if(sd_addr == NULL)
-    return;
-  large_addr = sd_addr[3];
-  large_addr += sd_addr[2] << 8;
-  large_addr += sd_addr[1] << 16;
-  large_addr += sd_addr[0] << 24;
+  long large_addr;
+  large_addr = sd_addr[0];large_addr <<= 8;
+  large_addr += sd_addr[1];large_addr <<= 8;
+  large_addr += sd_addr[2];large_addr <<= 8;
+  large_addr += sd_addr[3];
   
   large_addr += offset;
-  
-  sd_addr[3] = large_addr & 0xff;
-  sd_addr[2] = (large_addr & 0xff00) >> 8;
-  sd_addr[1] = (large_addr & 0xff0000) >> 16;
-  sd_addr[0] = (large_addr & 0xff000000) >> 24;
+
+  sd_addr[3] = large_addr & 0xff;large_addr >>= 8;
+  sd_addr[2] = large_addr & 0xff;large_addr >>= 8;
+  sd_addr[1] = large_addr & 0xff;large_addr >>= 8;
+  sd_addr[0] = large_addr & 0xff;
 }
 
 void cat_file(const char *filename, int fileptr)
