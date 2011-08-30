@@ -73,7 +73,7 @@ void SD_restart(char block_size)
   SD_CS = 1;
 }
 
-void SD_write(char *buff, char *loc)	
+void SD_write(char *buff, char *loc, char size)	
 {
   unsigned int resp,i;
   SD_CS = 0;	
@@ -90,10 +90,11 @@ void SD_write(char *buff, char *loc)
 	
 
   SPI_sendrecv(0xFC);//multi block write (CMD25) token
-  while(*buff != 0)
+  while(size != 0)
     {
       SPI_sendrecv(*buff);
       buff++;
+      size--;
     }
   SPI_sendrecv(0xFF);
   SPI_sendrecv(0xFF);

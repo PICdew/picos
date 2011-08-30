@@ -312,7 +312,6 @@ void PICLANG_next()
 	  }
 	break;
       }
-      break;
     case PICLANG_SET_TIME:case PICLANG_SET_DATE:
       {
 	TIME_t *newtime = TIME_get();
