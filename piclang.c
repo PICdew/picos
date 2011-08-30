@@ -200,13 +200,33 @@ void PICLANG_next()
 	IO_flush();
 	break;
       }
-    case PICLANG_FPUTCH:
+    case PICLANG_FPUTD:
+      {
+	char hex_val[2];
+	hex_to_word(hex_val,PICLANG_pop());
+	picfs_buffer[PICLANG_file_buffer_index++] = hex_val[0];
+	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
+	  {
+	    picfs_write(0);
+	    memset(picfs_buffer,0,FS_BUFFER_SIZE);
+	    PICLANG_file_buffer_index = 0;
+	  }
+	picfs_buffer[PICLANG_file_buffer_index++] = hex_val[1];
+	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
+	  {
+	    picfs_write(0);
+	    memset(picfs_buffer,0,FS_BUFFER_SIZE);
+	    PICLANG_file_buffer_index = 0;
+	  }
+	break;
+      }
+    case PICLANG_FPUTCH:// KEEP FPUTCH before FFLUSH
       {
 	picfs_buffer[PICLANG_file_buffer_index++] = PICLANG_pop();
 	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
 	  break;
       }
-    case PICLANG_FFLUSH:
+    case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH
       {
 	picfs_write(0);
 	memset(picfs_buffer,0,FS_BUFFER_SIZE);
@@ -287,26 +307,30 @@ void PICLANG_next()
       }
     case PICLANG_TIME:
       {
-	TIME_t *thetime = TIME_get();;
+	TIME_t *thetime = TIME_get();
 	char key = PICLANG_pop();
 	switch(key)
 	  {
-	  case 0:
+	  case 'Y':
+	    PICLANG_pushl(thetime->year);
+	    break;
+	  case 'm':
 	    PICLANG_pushl(thetime->month);
 	    break;
-	  case 1:
+	  case 'd':
 	    PICLANG_pushl(thetime->day);
 	    break;
-	  case 2:
+	  case 'H':
 	    PICLANG_pushl(thetime->hours);
 	    break;
-	  case 3:
+	  case 'M':
 	    PICLANG_pushl(thetime->minutes);
 	    break;
-	  case 4:
+	  case 'S':
 	    PICLANG_pushl(thetime->seconds);
 	    break;
 	  default:
+	    PICLANG_error(PICLANG_INVALID_PARAMETER);
 	    break;
 	  }
 	break;

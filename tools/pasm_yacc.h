@@ -60,14 +60,15 @@
      GETCH = 276,
      CLEAR = 277,
      FPUTCH = 278,
-     FFLUSH = 279,
-     IFX = 280,
-     ELSE = 281,
-     NE = 282,
-     EQ = 283,
-     LE = 284,
-     GE = 285,
-     UMINUS = 286
+     FPUTD = 279,
+     FFLUSH = 280,
+     IFX = 281,
+     ELSE = 282,
+     NE = 283,
+     EQ = 284,
+     LE = 285,
+     GE = 286,
+     UMINUS = 287
    };
 #endif
 /* Tokens.  */
@@ -92,14 +93,15 @@
 #define GETCH 276
 #define CLEAR 277
 #define FPUTCH 278
-#define FFLUSH 279
-#define IFX 280
-#define ELSE 281
-#define NE 282
-#define EQ 283
-#define LE 284
-#define GE 285
-#define UMINUS 286
+#define FPUTD 279
+#define FFLUSH 280
+#define IFX 281
+#define ELSE 282
+#define NE 283
+#define EQ 284
+#define LE 285
+#define GE 286
+#define UMINUS 287
 
 
 
@@ -118,7 +120,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 122 "pasm_yacc.h"
+#line 124 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

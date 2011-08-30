@@ -7,3 +7,4 @@ all:
 	../tools/pasm -o fs/test test.plc	
 	../tools/pasm -o fs/morse morse.plc
 	../tools/pasm -o fs/ed ed.plc
+	../tools/pasm -o fs/timestamp timestamp.plc

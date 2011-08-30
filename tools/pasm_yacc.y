@@ -57,7 +57,7 @@ int sym[26];                    /* symbol table */
 %token <sIndex> VARIABLE
 %token WHILE IF PUTCH PUTD EXIT SYSTEM SPRINT STRING CR
 %token MORSE TIME ARGD ARGCH SET_TIME SET_DATE GETD GETCH CLEAR
-%token FPUTCH FFLUSH
+%token FPUTCH FPUTD FFLUSH
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -92,6 +92,7 @@ stmt:
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
         | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
         | FPUTCH '(' expr ')' ';'        { $$ = opr(FPUTCH,1,$3); }
+        | FPUTD '(' expr ')' ';'        { $$ = opr(FPUTD,1,$3); }
         | FFLUSH '(' ')' ';'{$$ = opr(FFLUSH,0);}
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
@@ -424,6 +425,10 @@ int lbl1, lbl2;
         case FPUTCH:
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tfputch\n");insert_code(PICLANG_FPUTCH);
+	  break;
+        case FPUTD:
+	  ex(p->opr.op[0]);
+	  write_assembly(assembly_file,"\tfputd\n");insert_code(PICLANG_FPUTD);
 	  break;
         case '=':       
             ex(p->opr.op[1]);

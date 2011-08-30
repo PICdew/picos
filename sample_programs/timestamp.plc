@@ -1,0 +1,7 @@
+fputd(time('Y'));
+fputd(time('m'));
+fputd(time('d'));
+fputch('T');
+fputd(time('H'));
+fputd(time('M'));
+fflush();

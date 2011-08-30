@@ -1,11 +1,11 @@
 /**
  * This is a program that will display the date
  */
-putd(time(0));
+putd(time('m'));
 putch('/');
-putd(time(1));
+putd(time('d'));
 cr();
-putd(time(2));
+putd(time('H'));
 putch(':');
-putd(time(3));
+putd(time('M'));
 
