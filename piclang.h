@@ -11,6 +11,10 @@
 #define PICLANG_STACK_SIZE 0x10
 #endif
 
+#ifndef PICLANG_CALL_STACK_SIZE
+#define PICLANG_CALL_STACK_SIZE 0x8
+#endif
+
 // bitmap masks
 #define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
 
@@ -24,6 +28,8 @@ typedef struct{
   char string_address;// Offset of string data (null terminated)
   char stack[PICLANG_STACK_SIZE];
   char stack_head;
+  char call_stack[PICLANG_CALL_STACK_SIZE];
+  char call_stack_head;
 }PCB;
 #define PCB_SIZE sizeof(PCB)
 #define PCB_MAGIC_NUMBER_OFFSET 4

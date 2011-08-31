@@ -173,6 +173,36 @@ void resolve_labels(struct compiled_code* code)
     }
 }
 
+/**
+ * Creates a stack, with the stack head pointer at the end.
+ * The size (stack_size) is the number STACK ELEMENTS. Thus,
+ * pstack will point to a linked list of stack_size+1 elements,
+ * where the last element is the stack head pointer.
+ * pstack_end will point to the last stack element, not the stack head.
+ * stack head is at (*pstack_end)->next
+ */
+void create_stack(struct compiled_code **pstack, struct compiled_code **pstack_end, size_t stack_size)
+{
+  struct compiled_code *stack, *end_of_stack;
+  if(pstack == NULL || pstack_end == NULL)
+    return;
+  stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  end_of_stack = stack;
+  stack->val = 0xff;
+
+  size_t stack_counter = 1;
+  for(;stack_counter < stack_size;stack_counter++)
+    {
+      end_of_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      end_of_stack = end_of_stack->next;
+      end_of_stack->val = 0xff;
+    }
+  end_of_stack->next  = (struct compiled_code*)malloc(sizeof(struct compiled_code));// this is the stack head pointer.
+  
+  *pstack = stack;
+  *pstack_end = end_of_stack;
+}
+
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
 {
   int i;
@@ -189,19 +219,17 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   start_address->val = PCB_SIZE;
   struct compiled_code *string_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  struct compiled_code *stack = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  stack->val = 0xff;
-  struct compiled_code *end_of_stack = stack;
-  size_t stack_counter = 1;
-  for(;stack_counter < PICLANG_STACK_SIZE;stack_counter++)
-    {
-      end_of_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-      end_of_stack = end_of_stack->next;
-      end_of_stack->val = 0xff;
-    }
-  end_of_stack->next  = (struct compiled_code*)malloc(sizeof(struct compiled_code));// this is the stack head pointer.
+  struct compiled_code *stack, *end_of_stack;
+  struct compiled_code *call_stack, *end_of_call_stack;
+  create_stack(&stack,&end_of_stack,PICLANG_STACK_SIZE);
   end_of_stack->next->val = 0;
-  end_of_stack = end_of_stack->next;
+  end_of_stack = end_of_stack->next;// stack head
+
+  create_stack(&call_stack,&end_of_call_stack,PICLANG_CALL_STACK_SIZE);
+  end_of_call_stack->next->val = 0;
+  end_of_call_stack = end_of_call_stack->next;// stack head
+  
+  // Piece the linked list together
   size->next = bitmap;
   bitmap->next = num_pages;
   num_pages->next = pc;
@@ -209,10 +237,11 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   status->next = start_address;
   start_address->next = string_address;
   string_address->next = stack;
-  end_of_stack->next = NULL;// temporary to count PCB's size
+  end_of_stack->next = call_stack;
+  end_of_call_stack->next = NULL;// temporary to count PCB's size
   start_address->val = CountCode(size);
 
-  end_of_stack->next = the_code;
+  end_of_call_stack->next = the_code;
   string_address->val = CountCode(size);
 
   if(the_code == NULL)
