@@ -98,9 +98,6 @@ int *variable_list;
 size_t num_variables;
 static int lbl;
 
-#define insert_string(X) insert_compiled_code(&the_strings,&the_strings_end,X)
-#define insert_code(X) insert_compiled_code(&the_code,&the_code_end,X)
-
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
 nodeType *id(int i);
@@ -119,7 +116,7 @@ int sym[26];                    /* symbol table */
 
 
 /* Line 189 of yacc.c  */
-#line 123 "pasm_yacc.c"
+#line 120 "pasm_yacc.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -218,7 +215,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 50 "pasm_yacc.y"
+#line 47 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
     char sIndex;                /* symbol table index */
@@ -227,7 +224,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 231 "pasm_yacc.c"
+#line 228 "pasm_yacc.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -239,7 +236,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 243 "pasm_yacc.c"
+#line 240 "pasm_yacc.c"
 
 #ifdef short
 # undef short
@@ -548,11 +545,11 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    74,    74,    78,    79,    83,    84,    85,    86,    87,
-      88,    89,    90,    91,    92,    93,    94,    95,    96,    97,
-      98,    99,   100,   101,   102,   103,   104,   108,   109,   113,
-     114,   115,   116,   117,   118,   119,   120,   121,   122,   123,
-     124,   125,   126,   127,   128,   129,   130,   131
+       0,    71,    71,    75,    76,    80,    81,    82,    83,    84,
+      85,    86,    87,    88,    89,    90,    91,    92,    93,    94,
+      95,    96,    97,    98,    99,   100,   101,   105,   106,   110,
+     111,   112,   113,   114,   115,   116,   117,   118,   119,   120,
+     121,   122,   123,   124,   125,   126,   127,   128
 };
 #endif
 
@@ -1595,322 +1592,322 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 74 "pasm_yacc.y"
+#line 71 "pasm_yacc.y"
     { YYACCEPT; }
     break;
 
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 78 "pasm_yacc.y"
+#line 75 "pasm_yacc.y"
     { ex((yyvsp[(2) - (2)].nPtr)); freeNode((yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 83 "pasm_yacc.y"
+#line 80 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, NULL, NULL); }
     break;
 
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 84 "pasm_yacc.y"
+#line 81 "pasm_yacc.y"
     { (yyval.nPtr) = opr(SYSTEM,2,(yyvsp[(3) - (7)].nPtr),(yyvsp[(5) - (7)].nPtr));}
     break;
 
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 85 "pasm_yacc.y"
+#line 82 "pasm_yacc.y"
     {(yyval.nPtr) = opr(SYSTEM,3,(yyvsp[(3) - (9)].nPtr),(yyvsp[(5) - (9)].nPtr),(yyvsp[(7) - (9)].nPtr));}
     break;
 
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 86 "pasm_yacc.y"
+#line 83 "pasm_yacc.y"
     {(yyval.nPtr) = opr(SPRINT,1,(yyvsp[(3) - (5)].nPtr));}
     break;
 
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 87 "pasm_yacc.y"
+#line 84 "pasm_yacc.y"
     {(yyval.nPtr) = opr(MORSE,2,(yyvsp[(3) - (5)].nPtr),con(PICLANG_MORSE_STRING));}
     break;
 
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 88 "pasm_yacc.y"
+#line 85 "pasm_yacc.y"
     {(yyval.nPtr) = opr(MORSE,2,(yyvsp[(3) - (5)].nPtr),con(PICLANG_MORSE_CHAR));}
     break;
 
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 89 "pasm_yacc.y"
+#line 86 "pasm_yacc.y"
     { (yyval.nPtr) = opr(SET_TIME,2,(yyvsp[(3) - (7)].nPtr),(yyvsp[(5) - (7)].nPtr));}
     break;
 
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 90 "pasm_yacc.y"
+#line 87 "pasm_yacc.y"
     { (yyval.nPtr) = opr(SET_DATE,3,(yyvsp[(3) - (9)].nPtr),(yyvsp[(5) - (9)].nPtr),(yyvsp[(7) - (9)].nPtr));}
     break;
 
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 91 "pasm_yacc.y"
+#line 88 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (2)].nPtr); }
     break;
 
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 92 "pasm_yacc.y"
+#line 89 "pasm_yacc.y"
     { (yyval.nPtr) = opr(PUTCH, 1, (yyvsp[(3) - (5)].nPtr)); }
     break;
 
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 93 "pasm_yacc.y"
+#line 90 "pasm_yacc.y"
     { (yyval.nPtr) = opr(PUTD,1,(yyvsp[(3) - (5)].nPtr)); }
     break;
 
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 94 "pasm_yacc.y"
+#line 91 "pasm_yacc.y"
     { (yyval.nPtr) = opr(FPUTCH,1,(yyvsp[(3) - (5)].nPtr)); }
     break;
 
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 95 "pasm_yacc.y"
+#line 92 "pasm_yacc.y"
     { (yyval.nPtr) = opr(FPUTD,1,(yyvsp[(3) - (5)].nPtr)); }
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 96 "pasm_yacc.y"
+#line 93 "pasm_yacc.y"
     {(yyval.nPtr) = opr(FFLUSH,0);}
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 97 "pasm_yacc.y"
+#line 94 "pasm_yacc.y"
     { (yyval.nPtr) = opr('=', 2, id((yyvsp[(1) - (4)].sIndex)), (yyvsp[(3) - (4)].nPtr)); }
     break;
 
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 98 "pasm_yacc.y"
+#line 95 "pasm_yacc.y"
     { (yyval.nPtr) = opr(WHILE, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 99 "pasm_yacc.y"
+#line 96 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 100 "pasm_yacc.y"
+#line 97 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 3, (yyvsp[(3) - (7)].nPtr), (yyvsp[(5) - (7)].nPtr), (yyvsp[(7) - (7)].nPtr)); }
     break;
 
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 101 "pasm_yacc.y"
+#line 98 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 102 "pasm_yacc.y"
+#line 99 "pasm_yacc.y"
     {(yyval.nPtr) = opr(PUTCH,1,con(0xa));}
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 103 "pasm_yacc.y"
+#line 100 "pasm_yacc.y"
     { (yyval.nPtr) = opr(CLEAR,0);}
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 104 "pasm_yacc.y"
+#line 101 "pasm_yacc.y"
     {YYACCEPT;}
     break;
 
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 108 "pasm_yacc.y"
+#line 105 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (1)].nPtr); }
     break;
 
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 109 "pasm_yacc.y"
+#line 106 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, (yyvsp[(1) - (2)].nPtr), (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 29:
 
 /* Line 1455 of yacc.c  */
-#line 113 "pasm_yacc.y"
+#line 110 "pasm_yacc.y"
     { (yyval.nPtr) = con((yyvsp[(1) - (1)].iValue)); }
     break;
 
   case 30:
 
 /* Line 1455 of yacc.c  */
-#line 114 "pasm_yacc.y"
+#line 111 "pasm_yacc.y"
     { (yyval.nPtr) = id((yyvsp[(1) - (1)].sIndex)); }
     break;
 
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 115 "pasm_yacc.y"
+#line 112 "pasm_yacc.y"
     { (yyval.nPtr) = opr(ARGD,0);}
     break;
 
   case 32:
 
 /* Line 1455 of yacc.c  */
-#line 116 "pasm_yacc.y"
+#line 113 "pasm_yacc.y"
     { (yyval.nPtr) = opr(ARGCH,0);}
     break;
 
   case 33:
 
 /* Line 1455 of yacc.c  */
-#line 117 "pasm_yacc.y"
+#line 114 "pasm_yacc.y"
     { (yyval.nPtr) = opr(GETD,0);}
     break;
 
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 118 "pasm_yacc.y"
+#line 115 "pasm_yacc.y"
     { (yyval.nPtr) = opr(GETCH,0);}
     break;
 
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 119 "pasm_yacc.y"
+#line 116 "pasm_yacc.y"
     { (yyval.nPtr) = opr(TIME,1,(yyvsp[(3) - (4)].nPtr));}
     break;
 
   case 36:
 
 /* Line 1455 of yacc.c  */
-#line 120 "pasm_yacc.y"
+#line 117 "pasm_yacc.y"
     { (yyval.nPtr) = opr(UMINUS, 1, (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 37:
 
 /* Line 1455 of yacc.c  */
-#line 121 "pasm_yacc.y"
+#line 118 "pasm_yacc.y"
     { (yyval.nPtr) = opr('+', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 38:
 
 /* Line 1455 of yacc.c  */
-#line 122 "pasm_yacc.y"
+#line 119 "pasm_yacc.y"
     { (yyval.nPtr) = opr('-', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 39:
 
 /* Line 1455 of yacc.c  */
-#line 123 "pasm_yacc.y"
+#line 120 "pasm_yacc.y"
     { (yyval.nPtr) = opr('*', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 40:
 
 /* Line 1455 of yacc.c  */
-#line 124 "pasm_yacc.y"
+#line 121 "pasm_yacc.y"
     { (yyval.nPtr) = opr('/', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 41:
 
 /* Line 1455 of yacc.c  */
-#line 125 "pasm_yacc.y"
+#line 122 "pasm_yacc.y"
     { (yyval.nPtr) = opr('<', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 42:
 
 /* Line 1455 of yacc.c  */
-#line 126 "pasm_yacc.y"
+#line 123 "pasm_yacc.y"
     { (yyval.nPtr) = opr('>', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 43:
 
 /* Line 1455 of yacc.c  */
-#line 127 "pasm_yacc.y"
+#line 124 "pasm_yacc.y"
     { (yyval.nPtr) = opr(GE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 44:
 
 /* Line 1455 of yacc.c  */
-#line 128 "pasm_yacc.y"
+#line 125 "pasm_yacc.y"
     { (yyval.nPtr) = opr(LE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 45:
 
 /* Line 1455 of yacc.c  */
-#line 129 "pasm_yacc.y"
+#line 126 "pasm_yacc.y"
     { (yyval.nPtr) = opr(NE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 46:
 
 /* Line 1455 of yacc.c  */
-#line 130 "pasm_yacc.y"
+#line 127 "pasm_yacc.y"
     { (yyval.nPtr) = opr(EQ, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 47:
 
 /* Line 1455 of yacc.c  */
-#line 131 "pasm_yacc.y"
+#line 128 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 1914 "pasm_yacc.c"
+#line 1911 "pasm_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2122,7 +2119,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 134 "pasm_yacc.y"
+#line 131 "pasm_yacc.y"
 
 
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
@@ -2305,7 +2302,7 @@ int main(int argc, char **argv)
 
   
   yyparse();
-  insert_compiled_code(&the_code,&the_code_end,EOP);
+  insert_code(EOP);
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
@@ -2368,7 +2365,7 @@ int lbl1, lbl2;
         switch(p->opr.oper) {
         case WHILE:
             write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
-	    insert_code(PICLANG_LABEL);
+	    insert_label(PICLANG_LABEL);
             ex(p->opr.op[0]);
             write_assembly(assembly_file,"\tjz\tL%03d\n", lbl2 = lbl++);
 	    insert_code(PICLANG_JZ);
@@ -2378,7 +2375,7 @@ int lbl1, lbl2;
 	    insert_code(PICLANG_JMP);
 	    insert_code(lbl1);
             write_assembly(assembly_file,"L%03d:\n", lbl2);
-	    insert_code(PICLANG_LABEL);
+	    insert_label(PICLANG_LABEL);
             break;
         case IF:
             ex(p->opr.op[0]);
@@ -2392,10 +2389,10 @@ int lbl1, lbl2;
 		insert_code(PICLANG_JMP);
 		insert_code(lbl2);
                 write_assembly(assembly_file,"L%03d:\n", lbl1);
-		insert_code(PICLANG_LABEL);
+		insert_label(PICLANG_LABEL);
                 ex(p->opr.op[2]);
                 write_assembly(assembly_file,"L%03d:\n", lbl2);
-		insert_code(PICLANG_LABEL);
+		insert_label(PICLANG_LABEL);
             } else {
                 /* if */
                 write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
@@ -2403,7 +2400,7 @@ int lbl1, lbl2;
 		insert_code(lbl1);
                 ex(p->opr.op[1]);
                 write_assembly(assembly_file,"L%03d:\n", lbl1);
-		insert_code(PICLANG_LABEL);
+		insert_label(PICLANG_LABEL);
             }
             break;
         case PUTD:     

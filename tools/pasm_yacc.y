@@ -27,9 +27,6 @@ int *variable_list;
 size_t num_variables;
 static int lbl;
 
-#define insert_string(X) insert_compiled_code(&the_strings,&the_strings_end,X)
-#define insert_code(X) insert_compiled_code(&the_code,&the_code_end,X)
-
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
 nodeType *id(int i);
@@ -313,7 +310,7 @@ int main(int argc, char **argv)
 
   
   yyparse();
-  insert_compiled_code(&the_code,&the_code_end,EOP);
+  insert_code(EOP);
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
@@ -376,7 +373,7 @@ int lbl1, lbl2;
         switch(p->opr.oper) {
         case WHILE:
             write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
-	    insert_code(PICLANG_LABEL);
+	    insert_label(PICLANG_LABEL);
             ex(p->opr.op[0]);
             write_assembly(assembly_file,"\tjz\tL%03d\n", lbl2 = lbl++);
 	    insert_code(PICLANG_JZ);
@@ -386,7 +383,7 @@ int lbl1, lbl2;
 	    insert_code(PICLANG_JMP);
 	    insert_code(lbl1);
             write_assembly(assembly_file,"L%03d:\n", lbl2);
-	    insert_code(PICLANG_LABEL);
+	    insert_label(PICLANG_LABEL);
             break;
         case IF:
             ex(p->opr.op[0]);
@@ -400,10 +397,10 @@ int lbl1, lbl2;
 		insert_code(PICLANG_JMP);
 		insert_code(lbl2);
                 write_assembly(assembly_file,"L%03d:\n", lbl1);
-		insert_code(PICLANG_LABEL);
+		insert_label(PICLANG_LABEL);
                 ex(p->opr.op[2]);
                 write_assembly(assembly_file,"L%03d:\n", lbl2);
-		insert_code(PICLANG_LABEL);
+		insert_label(PICLANG_LABEL);
             } else {
                 /* if */
                 write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
@@ -411,7 +408,7 @@ int lbl1, lbl2;
 		insert_code(lbl1);
                 ex(p->opr.op[1]);
                 write_assembly(assembly_file,"L%03d:\n", lbl1);
-		insert_code(PICLANG_LABEL);
+		insert_label(PICLANG_LABEL);
             }
             break;
         case PUTD:     

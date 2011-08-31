@@ -202,16 +202,25 @@ void PICLANG_next()
       }
     case PICLANG_FPUTD:
       {
-	char hex_val[2];
-	hex_to_word(hex_val,PICLANG_pop());
-	picfs_buffer[PICLANG_file_buffer_index++] = hex_val[0];
+	char hex_val[3];
+	dec_to_word(hex_val,PICLANG_pop());
+	if(hex_val[0] != 0x30)
+	  picfs_buffer[PICLANG_file_buffer_index++] = hex_val[0];
 	if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	  {
 	    picfs_write(0);
 	    memset(picfs_buffer,0,FS_BUFFER_SIZE);
 	    PICLANG_file_buffer_index = 0;
 	  }
-	picfs_buffer[PICLANG_file_buffer_index++] = hex_val[1];
+	if(hex_val[1] != 0x30)
+	  picfs_buffer[PICLANG_file_buffer_index++] = hex_val[1];
+	if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
+	  {
+	    picfs_write(0);
+	    memset(picfs_buffer,0,FS_BUFFER_SIZE);
+	    PICLANG_file_buffer_index = 0;
+	  }
+	picfs_buffer[PICLANG_file_buffer_index++] = hex_val[2];
 	if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	  {
 	    picfs_write(0);

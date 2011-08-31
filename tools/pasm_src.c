@@ -31,7 +31,7 @@ void _attach_label(struct compiled_code *ptrlist_end, unsigned char label)
 }
 #endif
 
-void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val)
+void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val)
 {
   struct compiled_code *list = *ptrlist;
   struct compiled_code *list_end = *ptrlist_end;
@@ -42,6 +42,7 @@ void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code**
       list = *ptrlist;
       list->val = val;
       list->label = 0;
+      list->type = type;
       list->next = NULL;
       return;
     }
@@ -51,7 +52,7 @@ void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code**
   *ptrlist_end = list_end->next;
   (*ptrlist_end)->next = NULL;
   (*ptrlist_end)->val = val;
-  
+  (*ptrlist_end)->type = type;
 }
 
 
@@ -132,7 +133,7 @@ int lookup_label(const struct compiled_code* code, unsigned char label)
     return -1;
   for(;code != NULL;code = code->next)
     {
-      if(code->val == PICLANG_LABEL)
+      if(code->type == typeLabel)
 	{
 	  if(label_index == label)
 	    return code->label;

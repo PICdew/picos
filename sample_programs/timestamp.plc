@@ -1,9 +1,37 @@
-fputd(7);
-y = time('Y') + 0xd0;
+fputd(2);
+y = time('Y');
+if(y < 100)
+{
+	fputd(0);
+	if(y < 10)
+	{
+		fputd(0);
+	}
+}
 fputd(y);
-fputd(time('m'));
-fputd(time('d'));
+y = time('m');
+if(y < 10)
+{
+	fputd(0);
+}
+fputd(y);
+y = time('d');
+if(y < 10)
+{
+	fputd(0);
+}
+fputd(y);
 fputch('T');
-fputd(time('H'));
-fputd(time('M'));
+y = time('H');
+if(y < 10)
+{
+	fputd(0);
+}
+fputd(y);
+y = time('M');
+if(y < 10)
+{
+	fputd(0);
+}
+fputd(y);
 fflush();

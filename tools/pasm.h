@@ -1,6 +1,8 @@
 #include <limits.h>
 
-typedef enum { typeCon, typeId, typeOpr, typeStr } nodeEnum;
+typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode } nodeEnum;
+// typeLabel is for label for jumps
+// typeCode is for compiled code
 
 /* constants */
 typedef struct {
@@ -44,10 +46,15 @@ struct compiled_code
 {
   unsigned char label;
   unsigned char val;
+  nodeEnum type;
   struct compiled_code *next;
 };
 
-void insert_compiled_code(struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
+void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
+#define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X)
+#define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X)
+#define insert_label(X) insert_compiled_code(typeLabel, &the_code,&the_code_end,X)
+
 void _attach_label(struct compiled_code *ptrlist_end, unsigned char label);
 extern int write_assembly(FILE *stream, const char *format, ...);
 

@@ -17,10 +17,13 @@ extern char getch(void);
 
 void IO_putd(char d)
 {
-  char hex_val[2];
-  hex_to_word(&hex_val,d);
-  putch(hex_val[0]);
-  putch(hex_val[1]);
+  char hex_val[3];
+  dec_to_word(&hex_val,d);
+  if(hex_val[0] != 0x30)
+    putch(hex_val[0]);
+  if(hex_val[1] != 0x30)
+    putch(hex_val[1]);
+  putch(hex_val[2]);
 }
 
 void IO_puts(const char *str)

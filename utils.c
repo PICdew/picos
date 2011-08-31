@@ -25,6 +25,19 @@ void hex_to_word(char *two_chars, char hex)
     }
 }
 
+void dec_to_word(char *three_chars, char hex)
+{
+  if(three_chars == NULL)
+    return;
+  three_chars[0] = hex/100;
+  three_chars[1] = hex/10;
+  three_chars[2] = hex - three_chars[0]*100 - three_chars[1]*10;
+  
+  hex = 0;// borrow hex as an index
+  for(;hex < 3;hex++)
+    three_chars[hex] += 0x30;//character
+}
+
 void calculate_crc(char *crc, char newval)
 {
 #if 0//old
