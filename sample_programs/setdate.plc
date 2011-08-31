@@ -36,7 +36,25 @@ if(e > 0x2f)
 		e = getch();
 	}
 }
-setdate(m,d);
+clear();
+sprint("Year: ");
+y = getd();
+putd(y);
+e = getch();
+if(e > 0x2f)
+{
+	if(e < 0x3a)
+	{
+		e = e - 0x30;
+		y = y*10 + e;
+		clear();
+		sprint("Year: ");
+		putd(y);
+		e = getch();
+	}
+}
+
+setdate(m,d,y);
 clear();
 sprint("Date Set!");
 

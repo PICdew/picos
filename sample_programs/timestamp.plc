@@ -1,4 +1,6 @@
-fputd(time('Y'));
+fputd(7);
+y = time('Y') + 0xd0;
+fputd(y);
 fputd(time('m'));
 fputd(time('d'));
 fputch('T');

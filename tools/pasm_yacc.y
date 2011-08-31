@@ -87,7 +87,7 @@ stmt:
         | MORSE '(' STRING ')' ';' {$$ = opr(MORSE,2,$3,con(PICLANG_MORSE_STRING));}
         | MORSE '(' expr ')' ';' {$$ = opr(MORSE,2,$3,con(PICLANG_MORSE_CHAR));}
         | SET_TIME '(' expr ',' expr ')' ';'{ $$ = opr(SET_TIME,2,$3,$5);}
-        | SET_DATE '(' expr ',' expr ')' ';'{ $$ = opr(SET_DATE,2,$3,$5);}
+        | SET_DATE '(' expr ',' expr ',' expr ')' ';'{ $$ = opr(SET_DATE,3,$3,$5,$7);}
         | expr ';'                       { $$ = $1; }
         | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
         | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
@@ -479,6 +479,7 @@ int lbl1, lbl2;
 	case SET_DATE:
 	  ex(p->opr.op[0]);
 	  ex(p->opr.op[1]);
+	  ex(p->opr.op[2]);
 	  write_assembly(assembly_file,"\tsetdate\n");
 	  insert_code(PICLANG_SET_DATE);
 	  break;

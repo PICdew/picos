@@ -205,14 +205,14 @@ void PICLANG_next()
 	char hex_val[2];
 	hex_to_word(hex_val,PICLANG_pop());
 	picfs_buffer[PICLANG_file_buffer_index++] = hex_val[0];
-	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
+	if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	  {
 	    picfs_write(0);
 	    memset(picfs_buffer,0,FS_BUFFER_SIZE);
 	    PICLANG_file_buffer_index = 0;
 	  }
 	picfs_buffer[PICLANG_file_buffer_index++] = hex_val[1];
-	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
+	if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	  {
 	    picfs_write(0);
 	    memset(picfs_buffer,0,FS_BUFFER_SIZE);
@@ -355,6 +355,7 @@ void PICLANG_next()
 	  }
 	else
 	  {
+	    newtime->year = PICLANG_pop();
 	    newtime->day = PICLANG_pop();
 	    newtime->month = PICLANG_pop();
 	    if(newtime->month > 12 || newtime->day > 31)
