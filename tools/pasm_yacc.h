@@ -62,13 +62,19 @@
      FPUTCH = 278,
      FPUTD = 279,
      FFLUSH = 280,
-     IFX = 281,
-     ELSE = 282,
-     NE = 283,
-     EQ = 284,
-     LE = 285,
-     GE = 286,
-     UMINUS = 287
+     CALL = 281,
+     EXIT_RETURN = 282,
+     SUBROUTINE = 283,
+     RETURN = 284,
+     DEFINE = 285,
+     ENDDEF = 286,
+     IFX = 287,
+     ELSE = 288,
+     NE = 289,
+     EQ = 290,
+     LE = 291,
+     GE = 292,
+     UMINUS = 293
    };
 #endif
 /* Tokens.  */
@@ -95,13 +101,19 @@
 #define FPUTCH 278
 #define FPUTD 279
 #define FFLUSH 280
-#define IFX 281
-#define ELSE 282
-#define NE 283
-#define EQ 284
-#define LE 285
-#define GE 286
-#define UMINUS 287
+#define CALL 281
+#define EXIT_RETURN 282
+#define SUBROUTINE 283
+#define RETURN 284
+#define DEFINE 285
+#define ENDDEF 286
+#define IFX 287
+#define ELSE 288
+#define NE 289
+#define EQ 290
+#define LE 291
+#define GE 292
+#define UMINUS 293
 
 
 
@@ -111,7 +123,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 47 "pasm_yacc.y"
+#line 52 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
     char sIndex;                /* symbol table index */
@@ -120,7 +132,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 124 "pasm_yacc.h"
+#line 136 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

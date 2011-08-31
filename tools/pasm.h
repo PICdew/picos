@@ -1,6 +1,7 @@
+#include <stdio.h>
 #include <limits.h>
 
-typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode } nodeEnum;
+typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubroutine } nodeEnum;
 // typeLabel is for label for jumps
 // typeCode is for compiled code
 
@@ -50,10 +51,21 @@ struct compiled_code
   struct compiled_code *next;
 };
 
+struct subroutine_map
+{
+  char name[FILENAME_MAX];
+  size_t label;
+  struct subroutine_map *next;
+};
+
 void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
 #define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X)
 #define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X)
 #define insert_label(X) insert_compiled_code(typeLabel, &the_code,&the_code_end,X)
+
+void insert_subroutine(const char *name, size_t label);
+const struct subroutine_map* get_subroutine(const char *name);
+
 
 void _attach_label(struct compiled_code *ptrlist_end, unsigned char label);
 extern int write_assembly(FILE *stream, const char *format, ...);

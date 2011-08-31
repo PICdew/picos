@@ -1,0 +1,10 @@
+def <test>
+{
+	sprint("in test");
+}
+
+def <main>
+{
+	sprint("Hello");
+	call <test>;
+}

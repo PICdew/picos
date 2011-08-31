@@ -1,3 +1,5 @@
+def <main>
+{
 a = getch();
 while(a != 4)
 {
@@ -8,3 +10,4 @@ while(a != 4)
 clear();
 fflush();
 sprint("Done");
+}

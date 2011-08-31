@@ -117,7 +117,7 @@ void PICLANG_pushl(char val)
 {
   if(curr_process.stack_head >= PICLANG_STACK_SIZE)
     {
-      PICLANG_error(PICLANG_STACK_OVERFLOW);
+      PICLANG_error(PICLANG_SEGV);
       return;
     }
   curr_process.stack[curr_process.stack_head++] = val;
@@ -127,10 +127,30 @@ char PICLANG_pop()
 {
   if(curr_process.stack_head > PICLANG_STACK_SIZE)
     {
-      PICLANG_error(PICLANG_STACK_OVERFLOW);
+      PICLANG_error(PICLANG_SEGV);
       return 0;
     }
   return curr_process.stack[--curr_process.stack_head];
+}
+
+void PICLANG_call_push(char val)
+{
+  if(curr_process.call_stack_head >= PICLANG_CALL_STACK_SIZE)
+    {
+      PICLANG_error(PICLANG_STACK_OVERFLOW);
+      return;
+    }
+  curr_process.call_stack[curr_process.call_stack_head++] = val;
+}
+
+char PICLANG_call_pop()
+{
+  if(curr_process.call_stack_head > PICLANG_CALL_STACK_SIZE)
+    {
+      PICLANG_error(PICLANG_STACK_OVERFLOW);
+      return 0;
+    }
+  return curr_process.call_stack[--curr_process.call_stack_head];
 }
 
 void PICLANG_update_arith_status()
@@ -398,17 +418,28 @@ void PICLANG_next()
 	PICLANG_pushl((char)argch);
 	break;
       }
-    case PICLANG_JZ:case PICLANG_JMP:
+    case PICLANG_JZ:case PICLANG_JMP:case PICLANG_CALL:
       {
 	char label = PICLANG_get_next_byte();
 	if(curr_process.status != PICLANG_SUCCESS)
 	  break;
-	if(command == PICLANG_JMP)
+	if(command == PICLANG_CALL)
+	  {
+	    PICLANG_call_push(curr_process.pc);
+	    curr_process.pc = label;
+	  }
+	else if(command == PICLANG_JMP)
 	  curr_process.pc = label;
 	else if((curr_process.bitmap & PICLANG_ZERO) == 0)
 	  curr_process.pc = label;
 	break;
       }
+    case PICLANG_RETURN:
+      curr_process.pc = PICLANG_call_pop();
+      break;
+    case PICLANG_EXIT:
+      curr_process.status = PICLANG_pop();
+      break;
     case PICLANG_LABEL:
       break;
     case PICLANG_COMPLT:

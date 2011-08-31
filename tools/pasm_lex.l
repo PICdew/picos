@@ -63,6 +63,14 @@ unsigned char do_crc(const char *str)
                   return INTEGER;
                  }
 
+\<[a-zA-Z_][0-9a-zA-Z_]*\>  {
+                size_t text_len = strlen(&yytext[1]);
+                yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
+                strncpy(yylval.nPtr->str.string,&yytext[1],text_len-1);// minus 1 for the end quotation mark
+                yylval.nPtr->str.string[text_len-1] = 0;
+                yylval.nPtr->type = typeSubroutine;
+                return SUBROUTINE;
+           }
 
 [a-z]       { 
                 yylval.sIndex = *yytext - 'a';
@@ -107,6 +115,11 @@ unsigned char do_crc(const char *str)
 "argch"         return ARGCH;
 "cr"            return CR;
 "clear"         return CLEAR;
+"call"          return CALL;
+"exit"          return EXIT_RETURN;
+"return"        return RETURN;
+"def"           return DEFINE;
+"end"           return ENDDEF;
 "quit"          return EXIT;
 
 [ \t\n]+        ;       /* ignore whitespace */

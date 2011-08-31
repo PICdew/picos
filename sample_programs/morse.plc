@@ -1,8 +1,11 @@
 /**
  * For a character supplied to the command line, the Morse code is generated
  */
+def <main>
+{
 a = argch();
 sprint("Morse:");
 cr();
 putch(a);
 morse(a);
+}

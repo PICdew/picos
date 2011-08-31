@@ -107,25 +107,6 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
   FPrintCode(hex_file,code->next,col,buffer,start_address,checksum,print_type);
 }
 
-void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, unsigned char *piclang_bitmap, int num_variables)
-{
-  char hex_buffer[45];
-  void resolve_labels(struct compiled_code* code);
-
-  resolve_labels(*the_code);
-  *the_code = MakePCB(*the_code,the_strings,num_variables,piclang_bitmap);
-  memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
-  if(hex_file != NULL)
-    {
-      fprintf(hex_file,":020000040000FA\n");
-      FPrintCode(hex_file,*the_code,0,hex_buffer,0x4200,0,PRINT_HEX);
-      fprintf(hex_file,":00000001FF\n");
-    }
-  if(eeprom_file != NULL)
-    FPrintCode(eeprom_file,*the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
-
-}
-
 int lookup_label(const struct compiled_code* code, unsigned char label)
 {
   int label_index = 0;
@@ -201,77 +182,6 @@ void create_stack(struct compiled_code **pstack, struct compiled_code **pstack_e
   
   *pstack = stack;
   *pstack_end = end_of_stack;
-}
-
-struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
-{
-  int i;
-  struct compiled_code *magic_number = NULL;
-  struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  bitmap->val = piclang_bitmap;
-  struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  num_pages->val = (unsigned char)ceil(1.0*total_memory/PAGE_SIZE);
-  struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  pc->val = 0;
-  struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  status->val = PICLANG_SUCCESS;
-  struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  start_address->val = PCB_SIZE;
-  struct compiled_code *string_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  struct compiled_code *stack, *end_of_stack;
-  struct compiled_code *call_stack, *end_of_call_stack;
-  create_stack(&stack,&end_of_stack,PICLANG_STACK_SIZE);
-  end_of_stack->next->val = 0;
-  end_of_stack = end_of_stack->next;// stack head
-
-  create_stack(&call_stack,&end_of_call_stack,PICLANG_CALL_STACK_SIZE);
-  end_of_call_stack->next->val = 0;
-  end_of_call_stack = end_of_call_stack->next;// stack head
-  
-  // Piece the linked list together
-  size->next = bitmap;
-  bitmap->next = num_pages;
-  num_pages->next = pc;
-  pc->next = status;
-  status->next = start_address;
-  start_address->next = string_address;
-  string_address->next = stack;
-  end_of_stack->next = call_stack;
-  end_of_call_stack->next = NULL;// temporary to count PCB's size
-  start_address->val = CountCode(size);
-
-  end_of_call_stack->next = the_code;
-  string_address->val = CountCode(size);
-
-  if(the_code == NULL)
-    {
-      fprintf(stderr,"No code to compile!\n");
-      exit -1;
-    }
-  while(the_code->next != NULL)
-    the_code = the_code->next;
-  if(the_strings != NULL)
-    the_code->next = the_strings;
-  else
-    {
-      the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-      the_code->next->val = 0;
-    }
-  
-  size->val =  CountCode(size);
-  
-  // Magic number to identify the executable
-  i = PCB_MAGIC_NUMBER_OFFSET - 1;
-  for(;i >= 0;i--)
-    {
-      magic_number = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-      magic_number->next = size;
-      magic_number->val = PICLANG_magic_numbers[i];
-      size = magic_number;
-    }
-
-  return size;
 }
 
 

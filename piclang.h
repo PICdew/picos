@@ -90,6 +90,9 @@ enum PICLANG_COMMANDS
     PICLANG_COMPEQ/* test for equality */,
     PICLANG_COMPNE/* inequality */,
     PICLANG_LABEL/* Dummy variable for labeling sections of code for jumps */,
+    PICLANG_CALL/* Call a subroutine (using the lables) */,
+    PICLANG_RETURN/* Return from a subroutine */,
+    PICLANG_EXIT/* Exit a program */,
     PICLANG_NUM_COMMANDS
   };
 

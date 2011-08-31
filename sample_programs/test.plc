@@ -1,3 +1,5 @@
+def <main>
+{
 a=argd();
 b=argd();
 putd(a);
@@ -14,3 +16,4 @@ if(a == b)
 	sprint(" eq ");
 }
 putd(b);
+}

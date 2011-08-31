@@ -1,3 +1,5 @@
+def <main>
+{
 fputd(2);
 y = time('Y');
 if(y < 100)
@@ -35,3 +37,5 @@ if(y < 10)
 }
 fputd(y);
 fflush();
+
+}

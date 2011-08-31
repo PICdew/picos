@@ -1,4 +1,9 @@
 %{
+#include "pasm.h"
+#include "../piclang.h"
+#include "utils.h"
+#include "../page.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,9 +11,6 @@
 #include <math.h>
 #include <getopt.h>
 #include <errno.h>
-#include "pasm.h"
-#include "../piclang.h"
-#include "utils.h"
 
 #ifndef FALSE
 #define FALSE 0
@@ -21,6 +23,8 @@ struct compiled_code *the_code;
 struct compiled_code *the_code_end;
 struct compiled_code *the_strings;
 struct compiled_code *the_strings_end;
+struct subroutine_map *subroutines;
+
 char **string_list;
 size_t num_strings;
 int *variable_list;
@@ -41,7 +45,8 @@ void yyerror(char *s);
  extern char *yytext;
  extern char *last_string;
  nodeType* store_string(const char *);
-int sym[26];                    /* symbol table */
+  
+ int sym[26];                    /* symbol table */
 %}
 
 %union {
@@ -54,7 +59,7 @@ int sym[26];                    /* symbol table */
 %token <sIndex> VARIABLE
 %token WHILE IF PUTCH PUTD EXIT SYSTEM SPRINT STRING CR
 %token MORSE TIME ARGD ARGCH SET_TIME SET_DATE GETD GETCH CLEAR
-%token FPUTCH FPUTD FFLUSH
+%token FPUTCH FPUTD FFLUSH CALL EXIT_RETURN SUBROUTINE RETURN DEFINE ENDDEF
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -63,7 +68,7 @@ int sym[26];                    /* symbol table */
 %left '*' '/'
 %nonassoc UMINUS
 
-%type <nPtr> stmt expr stmt_list STRING
+%type <nPtr> stmt expr stmt_list STRING SUBROUTINE
 
 %%
 
@@ -78,6 +83,11 @@ function:
 
 stmt: 
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
+        | EXIT_RETURN '(' ')' ';'        { $$ = opr(EXIT_RETURN,0); }
+        | EXIT_RETURN '('  expr ')' ';'  { $$ = opr(EXIT_RETURN, 1, $3); }
+        | RETURN stmt                     { $$ = opr(RETURN,1,$2);}
+        | CALL SUBROUTINE ';'            { $$ = opr(CALL,1,$2); }
+        | DEFINE SUBROUTINE  stmt       {  $$ = opr(DEFINE,2,$2,$3);}
         | SYSTEM '(' expr ',' expr ')' ';'{ $$ = opr(SYSTEM,2,$3,$5);}
         | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
         | SPRINT '(' STRING ')' ';' {$$ = opr(SPRINT,1,$3);}
@@ -129,6 +139,21 @@ expr:
         ;
 
 %%
+
+void insert_subroutine(const char *name, size_t label)
+{
+  
+  if(subroutines == NULL)
+    subroutines = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+  else
+    {
+      struct subroutine_map* tmp = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+      tmp->next = subroutines;
+      subroutines = tmp;
+    }
+  strcpy(subroutines->name,name);
+  subroutines->label = label;
+}
 
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
 
@@ -252,6 +277,7 @@ int main(int argc, char **argv)
   the_strings = the_strings = NULL;
   string_list = NULL;num_strings = 0;
   variable_list = NULL;num_variables = 0;
+  subroutines = NULL;
 
   while(TRUE)
     {    
@@ -371,6 +397,45 @@ int lbl1, lbl2;
       }
     case typeOpr:
         switch(p->opr.oper) {
+	case EXIT_RETURN:
+	  if(p->opr.nops == 0)
+	    {
+	      write_assembly(assembly_file,"\tpushl\t0\n",0); 
+	      insert_code(PICLANG_PUSHL);
+	      insert_code(0);
+	    }
+	  else
+	    ex(p->opr.op[0]);
+	  write_assembly(assembly_file,"\texit\n",0); 
+	  insert_code(PICLANG_EXIT);
+	  insert_code(EOP);
+	  break;
+	case CALL:
+	  {
+	    struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
+	    write_assembly(assembly_file,"\tcall L%03d\n",subroutine->label);
+	    insert_code(PICLANG_CALL);
+	    insert_code(subroutine->label);
+	    break;
+	  }
+	case DEFINE:// KEEP RETURN AFTER DEFINE
+	  {
+	    const char *subroutine = p->opr.op[0]->str.string;
+	  write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
+	  insert_label(PICLANG_LABEL);
+	  insert_subroutine(subroutine,lbl1);
+	  ex(p->opr.op[1]);
+	  if(strcmp(subroutine,"main") == 0)
+	    {
+	      write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
+	      break;
+	    }
+	  }
+	case RETURN:// KEEP RETURN AFTER DEFINE
+	  ex(p->opr.op[0]);
+	  write_assembly(assembly_file,"\treturn\n");
+	  insert_code(PICLANG_RETURN);
+	  break;
         case WHILE:
             write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
 	    insert_label(PICLANG_LABEL);
@@ -593,6 +658,124 @@ int resolve_variable(const int id)
   
 }
 
+const struct subroutine_map* get_subroutine(const char *name)
+{
+  const struct subroutine_map *retval = NULL;
+  if(name == NULL)
+    {
+      fprintf(stderr,"NULL pointer for the subroutine name.\n");
+      exit(-1);
+    }
+  if(subroutines == NULL)
+    {
+      fprintf(stderr,"No subroutines yet defined.\n");
+      exit(-1);
+    }
+  
+  retval = subroutines;
+  while(retval != NULL)
+    {
+      if(strcmp(retval->name,name) == 0)
+	return retval;
+      retval = retval->next;
+    }
+  fprintf(stderr,"No such subroutine: %s\n",name);
+  exit(-1);
+}
+
+struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
+{
+  int i;
+  struct compiled_code *magic_number = NULL;
+  struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  bitmap->val = piclang_bitmap;
+  struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  num_pages->val = (unsigned char)ceil(1.0*total_memory/PAGE_SIZE);
+  struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  status->val = PICLANG_SUCCESS;
+  struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  start_address->val = PCB_SIZE;
+  struct compiled_code *string_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+  struct compiled_code *stack, *end_of_stack;
+  struct compiled_code *call_stack, *end_of_call_stack;
+  create_stack(&stack,&end_of_stack,PICLANG_STACK_SIZE);
+  end_of_stack->next->val = 0;
+  end_of_stack = end_of_stack->next;// stack head
+
+  create_stack(&call_stack,&end_of_call_stack,PICLANG_CALL_STACK_SIZE);
+  end_of_call_stack->next->val = 0;
+  end_of_call_stack = end_of_call_stack->next;// stack head
+  
+  // Piece the linked list together
+  size->next = bitmap;
+  bitmap->next = num_pages;
+  num_pages->next = pc;
+  pc->next = status;
+  status->next = start_address;
+  start_address->next = string_address;
+  string_address->next = stack;
+  end_of_stack->next = call_stack;
+  end_of_call_stack->next = NULL;// temporary to count PCB's size
+  start_address->val = CountCode(size);
+
+  end_of_call_stack->next = the_code;
+  string_address->val = CountCode(size);
+
+  if(the_code == NULL)
+    {
+      fprintf(stderr,"No code to compile!\n");
+      exit -1;
+    }
+  
+  // Find the location of the main function
+  pc->val = lookup_label(the_code,((struct subroutine_map*) get_subroutine("main"))->label);
+
+  while(the_code->next != NULL)
+    the_code = the_code->next;
+  if(the_strings != NULL)
+    the_code->next = the_strings;
+  else
+    {
+      the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      the_code->next->val = 0;
+    }
+  
+  size->val =  CountCode(size);
+  
+  // Magic number to identify the executable
+  i = PCB_MAGIC_NUMBER_OFFSET - 1;
+  for(;i >= 0;i--)
+    {
+      magic_number = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      magic_number->next = size;
+      magic_number->val = PICLANG_magic_numbers[i];
+      size = magic_number;
+    }
+
+
+  return size;
+}
+
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, unsigned char *piclang_bitmap, int num_variables)
+{
+  char hex_buffer[45];
+  void resolve_labels(struct compiled_code* code);
+
+  resolve_labels(*the_code);
+  *the_code = MakePCB(*the_code,the_strings,num_variables,piclang_bitmap);
+  memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
+  if(hex_file != NULL)
+    {
+      fprintf(hex_file,":020000040000FA\n");
+      FPrintCode(hex_file,*the_code,0,hex_buffer,0x4200,0,PRINT_HEX);
+      fprintf(hex_file,":00000001FF\n");
+    }
+  if(eeprom_file != NULL)
+    FPrintCode(eeprom_file,*the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
+
+}
 
 
 
