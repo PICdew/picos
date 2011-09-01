@@ -1,3 +1,11 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * This file provides the code for running PICLANG programs.
+ */
 #include "page.h"
 #include "picfs_error.h"
 #include "picfs.h"

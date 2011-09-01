@@ -1,3 +1,13 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * This file provides the declarations for abstract IO processes.
+ * Functions getch and putch should be implemented in hardware drivers
+ * outside of PICOS.
+ */
 #ifndef button_debounce_time 
 #define button_debounce_time 10 //ms
 #endif

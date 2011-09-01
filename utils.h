@@ -1,3 +1,11 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org or COPYING)
+ *
+ * This file prototypes utility functions used throughout the PICOS.
+ */
 
 extern void dec_to_word(char *three_chars, char hex);
 extern void hex_to_word(char *two_chars, char hex);

@@ -1,3 +1,11 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * This function provides a buffered system for handling command arguments.
+ */
 #define ARG_SIZE 17
 
 enum {ARG_SHELL,ARG_PICLANG};

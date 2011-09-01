@@ -1,3 +1,11 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * This file prototypes the paged memory system used in PICOS.
+ */
 #ifndef NUM_PAGES
 #define NUM_PAGES 4
 #endif

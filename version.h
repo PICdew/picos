@@ -1,7 +1,7 @@
 /**
- * Socipicos, PIC operating system.
- * author: David Coss
- * Date: 10/2/10
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
  * License: GNU Public License version 3.0 (see http://www.gnu.org)
  *
  * This file contains information on changes related to different version and 

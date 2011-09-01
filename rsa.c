@@ -1,3 +1,11 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * This file performs rsa encryption using integer size bit precision.
+ */
 #include <stdio.h>
 #include <math.h>
 

@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * This file gives structures and function prototypes 
+ * for the PICLANG programming language.
+ */
 #ifndef PICLANG_H
 #define PICLANG_H 1
 
