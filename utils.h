@@ -1,6 +1,3 @@
-#ifndef NOT_FOR_PIC
-#include <htc.h>
-#endif
 
 extern void dec_to_word(char *three_chars, char hex);
 extern void hex_to_word(char *two_chars, char hex);

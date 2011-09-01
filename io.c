@@ -1,11 +1,9 @@
 #include "arg.h"
-#include "lcd.h"
 #include "usart.h"
 #include "io.h"
 #include "picos_time.h"
 #include "utils.h"
 
-#include <htc.h>
 #include <string.h>
 
 #ifdef HAVE_CONFIG_H
@@ -102,7 +100,7 @@ void morse_ditdat_sound_blocking(char encoded)
 {
   char count = (encoded & 7);
   char i = 0;
-  return;
+#if 0
   for(;i < count;i++)
     {
       tone_440();
@@ -113,6 +111,7 @@ void morse_ditdat_sound_blocking(char encoded)
       TIME_sleep(1);
       encoded = encoded << 1;
     }
+#endif
 }
 
 char morse_decode(char encode)

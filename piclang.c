@@ -11,7 +11,6 @@
 #include "config.h"
 #endif
 
-#include <htc.h>
 #include <stdio.h>
 #include <string.h>
 

@@ -3,14 +3,12 @@
 #include "picfs_error.h"
 #include "picos_time.h"
 
-#include <htc.h>
-#include <stddef.h>
-#include <stdio.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
+#include <stddef.h>
+#include <stdio.h>
 
 static TIME_t TIME_curr;
 

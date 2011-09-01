@@ -1,7 +1,3 @@
-#ifndef NOT_FOR_PIC
-#include <htc.h>
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -70,17 +66,4 @@ void picos_delay(unsigned long cycles)
     cycles--;
 }
 
-#ifndef NOT_FOR_PIC
-
-char TEMPERATURE_read()
-{
-	char temp;
-	GO_nDONE = 1;
-	while(GO_nDONE)continue;
-	temp = ADRESL - 81;
-	temp = temp >> 2;
-	return temp;			
-}
-
-#endif
 

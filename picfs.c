@@ -3,12 +3,15 @@
 #include "sd.h"
 #include "io.h"
 
-#include <htc.h>
-#include <string.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include <string.h>
+
+extern void ftab_write(unsigned int address, unsigned char val);
+extern char ftab_read(unsigned int address);
 
 FS_Unit picfs_last_raw_block = 0;
 char picfs_fh_bitmap = 0xff;
@@ -264,9 +267,9 @@ signed char picfs_open(const char *name)
 	      if(fh < 0)
 		return error_return(PICFS_ENFILE);
 	      eeprom_addr = fh*FILE_HANDLE_SIZE;
-	      eeprom_write((char)eeprom_addr,ch);
-	      eeprom_write((char)eeprom_addr+1,0);
-	      eeprom_write((char)eeprom_addr+2,0);
+	      ftab_write((char)eeprom_addr,ch);
+	      ftab_write((char)eeprom_addr+1,0);
+	      ftab_write((char)eeprom_addr+2,0);
 	      return (signed char)fh;
 	    }
 	  picfs_offset_addr(addr,1);entrypos++;
@@ -285,7 +288,7 @@ signed char picfs_stat(file_t fh)
   if(!ISOPEN(fh))
     return error_return(PICFS_EBADF);
 
-  inode = eeprom_read(fh);
+  inode = ftab_read(fh);
   picfs_getblock(addr,inode);
   while(inode != 0)
     {
@@ -336,9 +339,9 @@ signed char picfs_seek(file_t fh, offset_t offset, char whence)
   size <<= 8;
   size |= picfs_buffer[ST_SIZE+1];
   
-  curr = eeprom_read(eeprom_addr+1);
+  curr = ftab_read(eeprom_addr+1);
   curr <<= 8;
-  curr |= eeprom_read(eeprom_addr+2);
+  curr |= ftab_read(eeprom_addr+2);
   //check to see if offset(whence) is past EOF
   switch(whence)
     {
@@ -445,22 +448,22 @@ signed char picfs_read(file_t fh)
     return error_return(PICFS_EBADF);
 
   // Get the head inode. Is it legit?
-  inode = eeprom_read(eeprom_addr);
+  inode = ftab_read(eeprom_addr);
   if(inode == 0)
     return error_return(PICFS_EBADF);
   picfs_stat(fh);
-  if(picfs_buffer[ST_SIZE] < eeprom_read(eeprom_addr+1))
+  if(picfs_buffer[ST_SIZE] < ftab_read(eeprom_addr+1))
     return error_return(PICFS_EOF);
   if(picfs_buffer[ST_SIZE] == 0)
-    if(picfs_buffer[ST_SIZE + 1] < eeprom_read(eeprom_addr+2))
+    if(picfs_buffer[ST_SIZE + 1] < ftab_read(eeprom_addr+2))
       return error_return(PICFS_EOF);
 
-  nextnode = eeprom_read(eeprom_addr + 1);
+  nextnode = ftab_read(eeprom_addr + 1);
   nextnode <<= 8;
-  nextnode |= eeprom_read(eeprom_addr + 2);
+  nextnode |= ftab_read(eeprom_addr + 2);
   
-  eeprom_write(eeprom_addr+1,(char)(nextnode + 1>>8) & 0xff);
-  eeprom_write(eeprom_addr+2,(char)((nextnode+1) & 0xff));
+  ftab_write(eeprom_addr+1,(char)(nextnode + 1>>8) & 0xff);
+  ftab_write(eeprom_addr+2,(char)((nextnode+1) & 0xff));
   while(nextnode >= FS_INODE_NUM_POINTERS)
     {
       picfs_getblock(addr,inode);
@@ -495,9 +498,9 @@ signed char picfs_close(file_t fh)
   if(!ISOPEN(fh))
     return error_return(PICFS_EBADF);
 
-  eeprom_write(eeprom_addr++,0);
-  eeprom_write(eeprom_addr++,0);
-  eeprom_write(eeprom_addr,0);
+  ftab_write(eeprom_addr++,0);
+  ftab_write(eeprom_addr++,0);
+  ftab_write(eeprom_addr,0);
   
   picfs_free_handle(&picfs_fh_bitmap,fh);
   return 0;
