@@ -4,7 +4,6 @@
 
 #include "usart.h"
 
-#include <htc.h>
 #include <stdio.h>
 #include <stddef.h>
 
@@ -82,30 +81,5 @@ void usart_9ack(char addr)
       usart_putch(USART_ACK);
 }
 
-void usart2eeprom(char addr)
-{
-  char last;
-  
-  while(TRUE)
-    {
-      last = usart_getch();
-      if(last == 0xde)
-	{
-	  last = usart_getch();
-	  if(last == 0xad)
-	    return;
-	  eeprom_write(addr++, 0xde);
-	  eeprom_write(addr++, last);
-	}
-      else
-	eeprom_write(addr++,last);
-    }
-}
 
-void eeprom2usart(char addr, char size)
-{
-  size += addr;
-  for(;addr < size;addr++)
-    usart_putch(eeprom_read(addr));  
-}
 

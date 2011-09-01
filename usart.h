@@ -47,5 +47,5 @@ extern void usart2eeprom(char start_address);
  * Send the size number of bytes from eeprom (starting
  * at addr) to usart
  */
-void eeprom2usart(char addr, char size);
+extern void eeprom2usart(char addr, char size);
 #endif
