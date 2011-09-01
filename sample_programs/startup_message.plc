@@ -1,11 +1,12 @@
 /**
  * This is a sample program that will display the os version (1.0.0)
  */
-def <main>{
-sprint("PicOS vs");
-putd(1);
-putch('.');
-putd(0);
-putch('.');
-putd(0);
+def <main>
+{
+  sprint("PicOS vs");
+  putd(1);
+  putch('.');
+  putd(0);
+  putch('.');
+  putd(0);
 }

@@ -3,11 +3,11 @@
  */
 def <main>
 {
-putd(time('m'));
-putch('/');
-putd(time('d'));
-cr();
-putd(time('H'));
-putch(':');
-putd(time('M'));
+  putd(time('m'));
+  putch('/');
+  putd(time('d'));
+  cr();
+  putd(time('H'));
+  putch(':');
+  putd(time('M'));
 }

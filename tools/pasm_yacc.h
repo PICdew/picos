@@ -62,19 +62,22 @@
      FPUTCH = 278,
      FPUTD = 279,
      FFLUSH = 280,
-     CALL = 281,
-     EXIT_RETURN = 282,
-     SUBROUTINE = 283,
-     RETURN = 284,
-     DEFINE = 285,
-     ENDDEF = 286,
-     IFX = 287,
-     ELSE = 288,
-     NE = 289,
-     EQ = 290,
-     LE = 291,
-     GE = 292,
-     UMINUS = 293
+     FCLEAR = 281,
+     CALL = 282,
+     EXIT_RETURN = 283,
+     SUBROUTINE = 284,
+     RETURN = 285,
+     DEFINE = 286,
+     ENDDEF = 287,
+     PUSH = 288,
+     POP = 289,
+     IFX = 290,
+     ELSE = 291,
+     NE = 292,
+     EQ = 293,
+     LE = 294,
+     GE = 295,
+     UMINUS = 296
    };
 #endif
 /* Tokens.  */
@@ -101,19 +104,22 @@
 #define FPUTCH 278
 #define FPUTD 279
 #define FFLUSH 280
-#define CALL 281
-#define EXIT_RETURN 282
-#define SUBROUTINE 283
-#define RETURN 284
-#define DEFINE 285
-#define ENDDEF 286
-#define IFX 287
-#define ELSE 288
-#define NE 289
-#define EQ 290
-#define LE 291
-#define GE 292
-#define UMINUS 293
+#define FCLEAR 281
+#define CALL 282
+#define EXIT_RETURN 283
+#define SUBROUTINE 284
+#define RETURN 285
+#define DEFINE 286
+#define ENDDEF 287
+#define PUSH 288
+#define POP 289
+#define IFX 290
+#define ELSE 291
+#define NE 292
+#define EQ 293
+#define LE 294
+#define GE 295
+#define UMINUS 296
 
 
 
@@ -132,7 +138,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 136 "pasm_yacc.h"
+#line 142 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

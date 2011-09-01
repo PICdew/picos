@@ -93,6 +93,7 @@ enum PICLANG_COMMANDS
     PICLANG_CALL/* Call a subroutine (using the lables) */,
     PICLANG_RETURN/* Return from a subroutine */,
     PICLANG_EXIT/* Exit a program */,
+    PICLANG_FCLEAR/* Clears the picfs buffer */,
     PICLANG_NUM_COMMANDS
   };
 

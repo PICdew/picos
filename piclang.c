@@ -255,13 +255,12 @@ void PICLANG_next()
 	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
 	  break;
       }
-    case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH
-      {
+    case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH  KEEP FFLUSH before FCLEAR
 	picfs_write(0);
+    case PICLANG_FCLEAR:// KEEP FFLUSH before FCLEAR
 	memset(picfs_buffer,0,FS_BUFFER_SIZE);
 	PICLANG_file_buffer_index = 0;
 	break;
-      }
     case PICLANG_PRINTL:
       IO_putd(PICLANG_pop());
       IO_flush();

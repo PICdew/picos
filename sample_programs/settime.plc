@@ -3,43 +3,43 @@
  */
 def <main>
 {
-sprint("Hour: ");
-cr();
-m = getd();/* variables are barrowed from set Time program. Here m means hour d means minutes */
-putd(m);
-e = getch();
-if(e > 0x2f)
-{
-	if(e < 0x3a)
+  sprint("Hour: ");
+  cr();
+  m = getd();/* variables are barrowed from set Time program. Here m means hour d means minutes */
+  putd(m);
+  e = getch();
+  if(e > 0x2f)
+    {
+      if(e < 0x3a)
 	{
-		e = e - 0x30;
-		m = m*10 + e;
-		clear();
-		sprint("Hour: ");
-		cr();
-		putd(m);
-		e = getch();
+	  e = e - 0x30;
+	  m = m*10 + e;
+	  clear();
+	  sprint("Hour: ");
+	  cr();
+	  putd(m);
+	  e = getch();
 	}
-}
-clear();
-sprint("Minute: ");
-d = getd();
-putd(d);
-e = getch();
-if(e > 0x2f)
-{
-	if(e < 0x3a)
+    }
+  clear();
+  sprint("Minute: ");
+  d = getd();
+  putd(d);
+  e = getch();
+  if(e > 0x2f)
+    {
+      if(e < 0x3a)
 	{
-		e = e - 0x30;
-		d = d*10 + e;
-		clear();
-		sprint("Minute: ");
-		putd(d);
-		e = getch();
+	  e = e - 0x30;
+	  d = d*10 + e;
+	  clear();
+	  sprint("Minute: ");
+	  putd(d);
+	  e = getch();
 	}
-}
-settime(m,d);
-clear();
-sprint("Time Set!");
+    }
+  settime(m,d);
+  clear();
+  sprint("Time Set!");
 
 }

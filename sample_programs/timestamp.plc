@@ -1,41 +1,41 @@
+def <three_digit>
+{
+  t = pop();
+  if(t < 100)
+    {
+      fputd(0);
+      if(t < 10)
+	{
+	  fputd(0);
+	}
+    }
+  fputd(t);
+}
+
+def <two_digit>
+{
+  t = pop();
+  if(t < 10)
+    {
+      fputd(0);
+    }
+  fputd(t);
+}
+
 def <main>
 {
-fputd(2);
-y = time('Y');
-if(y < 100)
-{
-	fputd(0);
-	if(y < 10)
-	{
-		fputd(0);
-	}
-}
-fputd(y);
-y = time('m');
-if(y < 10)
-{
-	fputd(0);
-}
-fputd(y);
-y = time('d');
-if(y < 10)
-{
-	fputd(0);
-}
-fputd(y);
-fputch('T');
-y = time('H');
-if(y < 10)
-{
-	fputd(0);
-}
-fputd(y);
-y = time('M');
-if(y < 10)
-{
-	fputd(0);
-}
-fputd(y);
-fflush();
+  fputd(2);
+  time('Y');
+  call <three_digit>;
+  time('m');
+  call <two_digit>;
+  time('d');
+  call <two_digit>;
+  fputch('T');
+  time('H');
+  call <two_digit>;
+  time('M');
+  call <two_digit>;
+  fflush();
 
 }

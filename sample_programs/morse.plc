@@ -3,9 +3,14 @@
  */
 def <main>
 {
-a = argch();
-sprint("Morse:");
-cr();
-putch(a);
-morse(a);
+  sprint("Morse: ");
+  m = getch();
+  while(m != 0x4)
+    {
+      putch(m);
+      morse(m);
+      m = getch();
+    }
+  clear();
+  sprint("Done.");
 }

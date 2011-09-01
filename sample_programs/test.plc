@@ -1,19 +1,19 @@
 def <main>
 {
-a=argd();
-b=argd();
-putd(a);
-if(a < b)
-{
-	sprint(" lt ");
-}
-if(a > b)
-{
-	sprint(" gt ");
-}
-if(a == b)
-{
-	sprint(" eq ");
-}
-putd(b);
+  a=argd();
+  b=argd();
+  putd(a);
+  if(a < b)
+    {
+      sprint(" lt ");
+    }
+  if(a > b)
+    {
+      sprint(" gt ");
+    }
+  if(a == b)
+    {
+      sprint(" eq ");
+    }
+  putd(b);
 }

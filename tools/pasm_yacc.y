@@ -59,7 +59,8 @@ void yyerror(char *s);
 %token <sIndex> VARIABLE
 %token WHILE IF PUTCH PUTD EXIT SYSTEM SPRINT STRING CR
 %token MORSE TIME ARGD ARGCH SET_TIME SET_DATE GETD GETCH CLEAR
-%token FPUTCH FPUTD FFLUSH CALL EXIT_RETURN SUBROUTINE RETURN DEFINE ENDDEF
+%token FPUTCH FPUTD FFLUSH FCLEAR
+%token CALL EXIT_RETURN SUBROUTINE RETURN DEFINE ENDDEF PUSH POP
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -86,6 +87,8 @@ stmt:
         | EXIT_RETURN '(' ')' ';'        { $$ = opr(EXIT_RETURN,0); }
         | EXIT_RETURN '('  expr ')' ';'  { $$ = opr(EXIT_RETURN, 1, $3); }
         | RETURN stmt                     { $$ = opr(RETURN,1,$2);}
+        | PUSH '(' expr ')'              { $$ = opr(PUSH,1,$3); }
+| VARIABLE '=' POP '(' ')' ';'   { $$ = opr(POP,1,id($1)); }
         | CALL SUBROUTINE ';'            { $$ = opr(CALL,1,$2); }
         | DEFINE SUBROUTINE  stmt       {  $$ = opr(DEFINE,2,$2,$3);}
         | SYSTEM '(' expr ',' expr ')' ';'{ $$ = opr(SYSTEM,2,$3,$5);}
@@ -101,6 +104,7 @@ stmt:
         | FPUTCH '(' expr ')' ';'        { $$ = opr(FPUTCH,1,$3); }
         | FPUTD '(' expr ')' ';'        { $$ = opr(FPUTD,1,$3); }
         | FFLUSH '(' ')' ';'{$$ = opr(FFLUSH,0);}
+        | FCLEAR '(' ')' ';' { $$ = opr(FCLEAR,0); }
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
@@ -410,6 +414,9 @@ int lbl1, lbl2;
 	  insert_code(PICLANG_EXIT);
 	  insert_code(EOP);
 	  break;
+	case PUSH:
+	  ex(p->opr.op[0]);
+	  break;
 	case CALL:
 	  {
 	    struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
@@ -492,9 +499,12 @@ int lbl1, lbl2;
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tfputd\n");insert_code(PICLANG_FPUTD);
 	  break;
-        case '=':       
+        case '=':// KEEP POP AFTER '='       
             ex(p->opr.op[1]);
-            write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');insert_code( PICLANG_POP);insert_code(resolve_variable(p->opr.op[0]->id.i));
+	case POP:// KEEP POP AFTER '='
+            write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
+	    insert_code( PICLANG_POP);
+	    insert_code(resolve_variable(p->opr.op[0]->id.i));
             break;
         case UMINUS:    
             ex(p->opr.op[0]);
@@ -527,6 +537,10 @@ int lbl1, lbl2;
 	case FFLUSH:
 	  write_assembly(assembly_file,"\tfflush\n");
 	  insert_code(PICLANG_FFLUSH);
+	  break;
+	case FCLEAR:
+	  write_assembly(assembly_file,"\tfclear\n");
+	  insert_code(PICLANG_FCLEAR);
 	  break;
 	case CLEAR:
 	  write_assembly(assembly_file,"\tclear\n");

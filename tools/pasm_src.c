@@ -134,7 +134,7 @@ void resolve_labels(struct compiled_code* code)
     {
       switch(code->val)
 	{
-	case PICLANG_JMP:case PICLANG_JZ:// change labels to addresses
+	case PICLANG_JMP:case PICLANG_JZ:case PICLANG_CALL:// change labels to addresses
 	  if(code->next != NULL)
 	    {
 	      int label_addr = lookup_label(code_head, code->next->val);

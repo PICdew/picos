@@ -1,13 +1,14 @@
 def <main>
 {
-a = getch();
-while(a != 4)
-{
-	fputch(a);
-	putch(a);
-	a = getch();
-}
-clear();
-fflush();
-sprint("Done");
+  a = getch();
+  fclear();
+  while(a != 4)
+    {
+      fputch(a);
+      putch(a);
+      a = getch();
+    }
+  clear();
+  fflush();
+  sprint("Done");
 }

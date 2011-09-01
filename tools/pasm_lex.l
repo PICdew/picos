@@ -105,6 +105,7 @@ unsigned char do_crc(const char *str)
 "fputch"        return FPUTCH;
 "fputd"        return FPUTD;
 "fflush"        return FFLUSH;
+"fclear"        return FCLEAR;
 "system"        return SYSTEM;
 "sprint"        return SPRINT;
 "morse"         return MORSE;
@@ -120,6 +121,8 @@ unsigned char do_crc(const char *str)
 "return"        return RETURN;
 "def"           return DEFINE;
 "end"           return ENDDEF;
+"pop"           return POP;
+"push"          return PUSH;
 "quit"          return EXIT;
 
 [ \t\n]+        ;       /* ignore whitespace */

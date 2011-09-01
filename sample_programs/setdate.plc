@@ -3,61 +3,61 @@
  */
 def <main>
 {
-sprint("Month: ");
-cr();
-m = getd();
-putd(m);
-e = getch();
-if(e > 0x2f)
-{
-	if(e < 0x3a)
+  sprint("Month: ");
+  cr();
+  m = getd();
+  putd(m);
+  e = getch();
+  if(e > 0x2f)
+    {
+      if(e < 0x3a)
 	{
-		e = e - 0x30;
-		m = m*10 + e;
-		clear();
-		sprint("Month: ");
-		cr();
-		putd(m);
-		e = getch();
+	  e = e - 0x30;
+	  m = m*10 + e;
+	  clear();
+	  sprint("Month: ");
+	  cr();
+	  putd(m);
+	  e = getch();
 	}
-}
-clear();
-sprint("Day: ");
-d = getd();
-putd(d);
-e = getch();
-if(e > 0x2f)
-{
-	if(e < 0x3a)
+    }
+  clear();
+  sprint("Day: ");
+  d = getd();
+  putd(d);
+  e = getch();
+  if(e > 0x2f)
+    {
+      if(e < 0x3a)
 	{
-		e = e - 0x30;
-		d = d*10 + e;
-		clear();
-		sprint("Day: ");
-		putd(d);
-		e = getch();
+	  e = e - 0x30;
+	  d = d*10 + e;
+	  clear();
+	  sprint("Day: ");
+	  putd(d);
+	  e = getch();
 	}
-}
-clear();
-sprint("Year: ");
-y = getd();
-putd(y);
-e = getch();
-if(e > 0x2f)
-{
-	if(e < 0x3a)
+    }
+  clear();
+  sprint("Year: ");
+  y = getd();
+  putd(y);
+  e = getch();
+  if(e > 0x2f)
+    {
+      if(e < 0x3a)
 	{
-		e = e - 0x30;
-		y = y*10 + e;
-		clear();
-		sprint("Year: ");
-		putd(y);
-		e = getch();
+	  e = e - 0x30;
+	  y = y*10 + e;
+	  clear();
+	  sprint("Year: ");
+	  putd(y);
+	  e = getch();
 	}
-}
+    }
 
-setdate(m,d,y);
-clear();
-sprint("Date Set!");
+  setdate(m,d,y);
+  clear();
+  sprint("Date Set!");
 
 }
