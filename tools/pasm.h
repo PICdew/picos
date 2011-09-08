@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <limits.h>
 
-typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubroutine } nodeEnum;
+typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubroutine, typePCB } nodeEnum;
 // typeLabel is for label for jumps
 // typeCode is for compiled code
 

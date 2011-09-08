@@ -228,7 +228,7 @@ void freeNode(nodeType *p) {
 }
 
 void yyerror(char *s) {
-    fprintf(stdout, "%s\n", s);
+  fprintf(stdout, "%s: %s\n", s,yytext);
     exit(-1);
 }
 
@@ -697,6 +697,14 @@ const struct subroutine_map* get_subroutine(const char *name)
   exit(-1);
 }
 
+void set_pcb_type(struct compiled_code *the_pcb)
+{
+  if(the_pcb == NULL)
+    return;
+  the_pcb->type = typePCB;
+  set_pcb_type(the_pcb->next);
+}
+
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
 {
   int i;
@@ -731,7 +739,8 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   start_address->next = string_address;
   string_address->next = stack;
   end_of_stack->next = call_stack;
-  end_of_call_stack->next = NULL;// temporary to count PCB's size
+  end_of_call_stack->next = NULL;// temporary to count PCB's size and set PCB code types
+  set_pcb_type(size);
   start_address->val = CountCode(size);
 
   end_of_call_stack->next = the_code;
@@ -752,8 +761,10 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
     the_code->next = the_strings;
   else
     {
+      // In this case, there are no strings. So a single null-terminated character will indiate that.
       the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       the_code->next->val = 0;
+      the_code->next = NULL;
     }
   
   size->val =  CountCode(size);
