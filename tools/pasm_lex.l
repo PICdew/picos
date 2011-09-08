@@ -1,12 +1,14 @@
 %{
+#include "pasm.h"
+#include "pasm_yacc.h"
+#include "piclang.h"
+void yyerror(char *);
+
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <limits.h>
 
-#include "pasm.h"
-#include "pasm_yacc.h"
-void yyerror(char *);
 
 unsigned char do_crc(const char *str)
 {
@@ -25,14 +27,43 @@ unsigned char do_crc(const char *str)
 
 %}
 
+%x C_COMMENT
 
-%s C_COMMENT
+whitespace [ \t\n]+
+zero 0
+nonnegative [0-9]
+integer [1-9]{nonnegative}*
+exponent [eE][+-]{nonnegative}*
+decimal {zero}?{integer}*\.{nonnegative}*{exponent}?
+alpha [a-zA-Z]
+variable {alpha}({nonnegative}|{alpha}|[_])*
+hex 0x[0-9a-fA-F]*
+octal 0[0-9a-fA-F]*
+imagint {integer}[iI]
+imagdecimal {decimal}[iI]
+
 
 %%
 
 "/*"            BEGIN(C_COMMENT);
 <C_COMMENT>"*/" {BEGIN(INITIAL);}
 <C_COMMENT>. {}
+
+
+">="            return GE;
+"<="            return LE;
+"=="            return EQ;
+"!="            return NE;
+"while"         return WHILE;
+"if"            return IF;
+"else"          return ELSE;
+"call"          return CALL;
+"return"        return RETURN;
+"def"           return DEFINE;
+"quit"          return EXIT;
+"cr"            return PASM_CR;
+"pop"           return PASM_POP;
+
 
 \'[^\']\' {
                               yylval.iValue = yytext[1];
@@ -63,7 +94,7 @@ unsigned char do_crc(const char *str)
                   return INTEGER;
                  }
 
-\<[a-zA-Z_][0-9a-zA-Z_]*\>  {
+\<{variable}\>  {
                 size_t text_len = strlen(&yytext[1]);
                 yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
                 strncpy(yylval.nPtr->str.string,&yytext[1],text_len-1);// minus 1 for the end quotation mark
@@ -76,6 +107,14 @@ unsigned char do_crc(const char *str)
                 yylval.sIndex = *yytext - 'a';
                 return VARIABLE;
             }
+
+{variable} {
+              struct assembly_map *asmb = char2assembly(yytext);
+              if(asmb == NULL || asmb->opcode == PICLANG_NUM_COMMANDS)
+                 yyerror("syntax error");
+              yylval.iValue = asmb->opcode;
+              return FUNCT;
+           }
 
 0           {
                 yylval.iValue = atoi(yytext);
@@ -90,40 +129,6 @@ unsigned char do_crc(const char *str)
 [-,()<>=+*/;{}\[\]] {
                 return *yytext;
              }
-
-">="            return GE;
-"<="            return LE;
-"=="            return EQ;
-"!="            return NE;
-"while"         return WHILE;
-"if"            return IF;
-"else"          return ELSE;
-"putd"         return PUTD;
-"putch"         return PUTCH;
-"getch"         return GETCH;
-"getd"          return GETD;
-"fputch"        return FPUTCH;
-"fputd"        return FPUTD;
-"fflush"        return FFLUSH;
-"fclear"        return FCLEAR;
-"system"        return SYSTEM;
-"sprint"        return SPRINT;
-"morse"         return MORSE;
-"settime"       return SET_TIME;
-"setdate"       return SET_DATE;
-"time"          return TIME;
-"argd"          return ARGD;
-"argch"         return ARGCH;
-"cr"            return CR;
-"clear"         return CLEAR;
-"call"          return CALL;
-"exit"          return EXIT_RETURN;
-"return"        return RETURN;
-"def"           return DEFINE;
-"end"           return ENDDEF;
-"pop"           return POP;
-"push"          return PUSH;
-"quit"          return EXIT;
 
 [ \t\n]+        ;       /* ignore whitespace */
 

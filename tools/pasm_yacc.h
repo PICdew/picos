@@ -40,86 +40,48 @@
       know about them.  */
    enum yytokentype {
      INTEGER = 258,
-     VARIABLE = 259,
-     WHILE = 260,
-     IF = 261,
-     PUTCH = 262,
-     PUTD = 263,
-     EXIT = 264,
-     SYSTEM = 265,
-     SPRINT = 266,
+     FUNCT = 259,
+     VARIABLE = 260,
+     WHILE = 261,
+     IF = 262,
+     CALL = 263,
+     SUBROUTINE = 264,
+     RETURN = 265,
+     DEFINE = 266,
      STRING = 267,
-     CR = 268,
-     MORSE = 269,
-     TIME = 270,
-     ARGD = 271,
-     ARGCH = 272,
-     SET_TIME = 273,
-     SET_DATE = 274,
-     GETD = 275,
-     GETCH = 276,
-     CLEAR = 277,
-     FPUTCH = 278,
-     FPUTD = 279,
-     FFLUSH = 280,
-     FCLEAR = 281,
-     CALL = 282,
-     EXIT_RETURN = 283,
-     SUBROUTINE = 284,
-     RETURN = 285,
-     DEFINE = 286,
-     ENDDEF = 287,
-     PUSH = 288,
-     POP = 289,
-     IFX = 290,
-     ELSE = 291,
-     NE = 292,
-     EQ = 293,
-     LE = 294,
-     GE = 295,
-     UMINUS = 296
+     EXIT = 268,
+     PASM_CR = 269,
+     PASM_POP = 270,
+     IFX = 271,
+     ELSE = 272,
+     NE = 273,
+     EQ = 274,
+     LE = 275,
+     GE = 276,
+     UMINUS = 277
    };
 #endif
 /* Tokens.  */
 #define INTEGER 258
-#define VARIABLE 259
-#define WHILE 260
-#define IF 261
-#define PUTCH 262
-#define PUTD 263
-#define EXIT 264
-#define SYSTEM 265
-#define SPRINT 266
+#define FUNCT 259
+#define VARIABLE 260
+#define WHILE 261
+#define IF 262
+#define CALL 263
+#define SUBROUTINE 264
+#define RETURN 265
+#define DEFINE 266
 #define STRING 267
-#define CR 268
-#define MORSE 269
-#define TIME 270
-#define ARGD 271
-#define ARGCH 272
-#define SET_TIME 273
-#define SET_DATE 274
-#define GETD 275
-#define GETCH 276
-#define CLEAR 277
-#define FPUTCH 278
-#define FPUTD 279
-#define FFLUSH 280
-#define FCLEAR 281
-#define CALL 282
-#define EXIT_RETURN 283
-#define SUBROUTINE 284
-#define RETURN 285
-#define DEFINE 286
-#define ENDDEF 287
-#define PUSH 288
-#define POP 289
-#define IFX 290
-#define ELSE 291
-#define NE 292
-#define EQ 293
-#define LE 294
-#define GE 295
-#define UMINUS 296
+#define EXIT 268
+#define PASM_CR 269
+#define PASM_POP 270
+#define IFX 271
+#define ELSE 272
+#define NE 273
+#define EQ 274
+#define LE 275
+#define GE 276
+#define UMINUS 277
 
 
 
@@ -129,7 +91,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 52 "pasm_yacc.y"
+#line 54 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
     char sIndex;                /* symbol table index */
@@ -138,7 +100,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 142 "pasm_yacc.h"
+#line 104 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

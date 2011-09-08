@@ -58,6 +58,15 @@ struct subroutine_map
   struct subroutine_map *next;
 };
 
+struct assembly_map
+{
+  const char keyword[256];
+  int opcode;
+};
+
+struct assembly_map* char2assembly(const char *keyword);
+struct assembly_map* opcode2assembly(int opcode);
+
 void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
 #define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X)
 #define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X)

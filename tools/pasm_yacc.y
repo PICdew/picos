@@ -25,6 +25,8 @@ struct compiled_code *the_strings;
 struct compiled_code *the_strings_end;
 struct subroutine_map *subroutines;
 
+extern struct assembly_map opcodes[];
+
 char **string_list;
 size_t num_strings;
 int *variable_list;
@@ -55,12 +57,10 @@ void yyerror(char *s);
     nodeType *nPtr;             /* node pointer */
 };
 
-%token <iValue> INTEGER 
+%token <iValue> INTEGER FUNCT
 %token <sIndex> VARIABLE
-%token WHILE IF PUTCH PUTD EXIT SYSTEM SPRINT STRING CR
-%token MORSE TIME ARGD ARGCH SET_TIME SET_DATE GETD GETCH CLEAR
-%token FPUTCH FPUTD FFLUSH FCLEAR
-%token CALL EXIT_RETURN SUBROUTINE RETURN DEFINE ENDDEF PUSH POP
+%token WHILE IF CALL SUBROUTINE RETURN DEFINE STRING EXIT 
+%token PASM_CR PASM_POP
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -84,34 +84,17 @@ function:
 
 stmt: 
           ';'                            { $$ = opr(';', 2, NULL, NULL); }
-        | EXIT_RETURN '(' ')' ';'        { $$ = opr(EXIT_RETURN,0); }
-        | EXIT_RETURN '('  expr ')' ';'  { $$ = opr(EXIT_RETURN, 1, $3); }
         | RETURN stmt                     { $$ = opr(RETURN,1,$2);}
-        | PUSH '(' expr ')'              { $$ = opr(PUSH,1,$3); }
-| VARIABLE '=' POP '(' ')' ';'   { $$ = opr(POP,1,id($1)); }
-        | CALL SUBROUTINE ';'            { $$ = opr(CALL,1,$2); }
+        | CALL SUBROUTINE ';'            { $$ = opr(PICLANG_CALL,1,$2); }
         | DEFINE SUBROUTINE  stmt       {  $$ = opr(DEFINE,2,$2,$3);}
-        | SYSTEM '(' expr ',' expr ')' ';'{ $$ = opr(SYSTEM,2,$3,$5);}
-        | SYSTEM '(' expr ',' expr ',' expr ')' ';' {$$ = opr(SYSTEM,3,$3,$5,$7);}
-        | SPRINT '(' STRING ')' ';' {$$ = opr(SPRINT,1,$3);}
-        | MORSE '(' STRING ')' ';' {$$ = opr(MORSE,2,$3,con(PICLANG_MORSE_STRING));}
-        | MORSE '(' expr ')' ';' {$$ = opr(MORSE,2,$3,con(PICLANG_MORSE_CHAR));}
-        | SET_TIME '(' expr ',' expr ')' ';'{ $$ = opr(SET_TIME,2,$3,$5);}
-        | SET_DATE '(' expr ',' expr ',' expr ')' ';'{ $$ = opr(SET_DATE,3,$3,$5,$7);}
+        | PASM_CR '(' ')' ';'                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | expr ';'                       { $$ = $1; }
-        | PUTCH '(' expr ')' ';'                 { $$ = opr(PUTCH, 1, $3); }
-        | PUTD '(' expr ')' ';'        { $$ = opr(PUTD,1,$3); }
-        | FPUTCH '(' expr ')' ';'        { $$ = opr(FPUTCH,1,$3); }
-        | FPUTD '(' expr ')' ';'        { $$ = opr(FPUTD,1,$3); }
-        | FFLUSH '(' ')' ';'{$$ = opr(FFLUSH,0);}
-        | FCLEAR '(' ')' ';' { $$ = opr(FCLEAR,0); }
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
+        | VARIABLE '=' PASM_POP '(' ')' ';' { $$ = opr(PICLANG_POP,1,id($1)); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
-        | CR '(' ')' ';' {$$ = opr(PUTCH,1,con(0xa));}
-        | CLEAR '(' ')' ';'              { $$ = opr(CLEAR,0);}
         | EXIT {YYACCEPT;}
         ;
 
@@ -123,11 +106,11 @@ stmt_list:
 expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
-        | ARGD '(' ')'          { $$ = opr(ARGD,0);}
-        | ARGCH '(' ')'         { $$ = opr(ARGCH,0);}
-        | GETD '(' ')'          { $$ = opr(GETD,0);}
-        | GETCH '(' ')'         { $$ = opr(GETCH,0);}
-        | TIME '(' expr ')' { $$ = opr(TIME,1,$3);}
+        | FUNCT '(' STRING ')'  { $$ = opr($1,1,$3); }
+        | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
+        | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
+        | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
+        | FUNCT '(' ')'         { $$ = opr($1,0); }
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
         | expr '-' expr         { $$ = opr('-', 2, $1, $3); }
@@ -401,7 +384,7 @@ int lbl1, lbl2;
       }
     case typeOpr:
         switch(p->opr.oper) {
-	case EXIT_RETURN:
+	case EOP:
 	  if(p->opr.nops == 0)
 	    {
 	      write_assembly(assembly_file,"\tpushl\t0\n",0); 
@@ -414,10 +397,10 @@ int lbl1, lbl2;
 	  insert_code(PICLANG_EXIT);
 	  insert_code(EOP);
 	  break;
-	case PUSH:
+	case PICLANG_PUSH:
 	  ex(p->opr.op[0]);
 	  break;
-	case CALL:
+	case PICLANG_CALL:
 	  {
 	    struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
 	    write_assembly(assembly_file,"\tcall L%03d\n",subroutine->label);
@@ -483,25 +466,25 @@ int lbl1, lbl2;
 		insert_label(PICLANG_LABEL);
             }
             break;
-        case PUTD:     
+        case PICLANG_PRINT:     
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
 	  break;
-        case PUTCH:
+        case PICLANG_PRINTL:
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
 	  break;
-        case FPUTCH:
+        case PICLANG_FPUTCH:
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tfputch\n");insert_code(PICLANG_FPUTCH);
 	  break;
-        case FPUTD:
+        case PICLANG_FPUTD:
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tfputd\n");insert_code(PICLANG_FPUTD);
 	  break;
         case '=':// KEEP POP AFTER '='       
             ex(p->opr.op[1]);
-	case POP:// KEEP POP AFTER '='
+	case PICLANG_POP:// KEEP POP AFTER '='
             write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
 	    insert_code( PICLANG_POP);
 	    insert_code(resolve_variable(p->opr.op[0]->id.i));
@@ -510,7 +493,7 @@ int lbl1, lbl2;
             ex(p->opr.op[0]);
             write_assembly(assembly_file,"\tneg\n");
             break;
-        case SYSTEM:
+        case PICLANG_SYSTEM:
 	  {
 	    int op_counter = p->opr.nops - 1;
 	    for(;op_counter >= 0 ;op_counter--)
@@ -518,59 +501,59 @@ int lbl1, lbl2;
 	    write_assembly(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
 	    break;
 	  }
-	case SPRINT:
+	case PICLANG_SPRINT:
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tsprint\n");
 	  insert_code(PICLANG_SPRINT);
 	  break;
-	case MORSE:
+	case PICLANG_MORSE:
 	  ex(p->opr.op[1]);
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\tmorse\n");
 	  insert_code(PICLANG_MORSE);
 	  break;
-	case TIME:
+	case PICLANG_TIME:
 	  ex(p->opr.op[0]);
 	  write_assembly(assembly_file,"\ttime\n");
 	  insert_code(PICLANG_TIME);
 	  break;
-	case FFLUSH:
+	case PICLANG_FFLUSH:
 	  write_assembly(assembly_file,"\tfflush\n");
 	  insert_code(PICLANG_FFLUSH);
 	  break;
-	case FCLEAR:
+	case PICLANG_FCLEAR:
 	  write_assembly(assembly_file,"\tfclear\n");
 	  insert_code(PICLANG_FCLEAR);
 	  break;
-	case CLEAR:
+	case PICLANG_CLEAR:
 	  write_assembly(assembly_file,"\tclear\n");
 	  insert_code(PICLANG_CLEAR);
 	  break;
-	case SET_TIME:
+	case PICLANG_SET_TIME:
 	  ex(p->opr.op[0]);
 	  ex(p->opr.op[1]);
 	  write_assembly(assembly_file,"\tsettime\n");
 	  insert_code(PICLANG_SET_TIME);
 	  break;
-	case SET_DATE:
+	case PICLANG_SET_DATE:
 	  ex(p->opr.op[0]);
 	  ex(p->opr.op[1]);
 	  ex(p->opr.op[2]);
 	  write_assembly(assembly_file,"\tsetdate\n");
 	  insert_code(PICLANG_SET_DATE);
 	  break;
-	case ARGCH:
+	case PICLANG_ARGCH:
 	  write_assembly(assembly_file,"\targch\n");
 	  insert_code(PICLANG_ARGCH);
 	  break;
-	case ARGD:
+	case PICLANG_ARGD:
 	  write_assembly(assembly_file,"\targd\n");
 	  insert_code(PICLANG_ARGD);
 	  break;
-	case GETD:
+	case PICLANG_GETD:
 	  write_assembly(assembly_file,"\tgetd\n");insert_code(PICLANG_GETD);
 	  break;
-	case GETCH:
+	case PICLANG_GETCH:
 	  write_assembly(assembly_file,"\tgetch\n");insert_code(PICLANG_GETCH);
 	  break;
         default:

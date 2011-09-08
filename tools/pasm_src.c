@@ -201,4 +201,61 @@ size_t CountCode(struct compiled_code *the_code)
   return 1 + CountCode(the_code->next);
 }
 
+struct assembly_map opcodes[] = {
+  {"putd", PICLANG_PRINT},
+  {"putch", PICLANG_PRINTL},
+  {"getch", PICLANG_GETCH},
+  {"getd", PICLANG_GETD},
+  {"fputch", PICLANG_FPUTCH},
+  {"fputd", PICLANG_FPUTD},
+  {"fflush", PICLANG_FFLUSH},
+  {"fclear", PICLANG_FCLEAR},
+  {"system", PICLANG_SYSTEM},
+  {"sprint", PICLANG_SPRINT},
+  {"morse", PICLANG_MORSE},
+  {"settime", PICLANG_SET_TIME},
+  {"setdate", PICLANG_SET_DATE},
+  {"time", PICLANG_TIME},
+  {"argd", PICLANG_ARGD},
+  {"argch", PICLANG_ARGCH},
+  {"clear", PICLANG_CLEAR},
+  {"exit", EOP},
+  {"push", PICLANG_PUSH},
+  {"ENDofCMDS",PICLANG_NUM_COMMANDS}  
+};
+
+struct assembly_map* char2assembly(const char *keyword)
+{
+  struct assembly_map *curr_opcode;
+  if(keyword == NULL)
+    return NULL;
+  if(opcodes == NULL)
+    return NULL;
+  
+  curr_opcode = opcodes;
+  while(curr_opcode != NULL && curr_opcode->opcode != PICLANG_NUM_COMMANDS)
+    {
+      if(strcmp(curr_opcode->keyword,keyword) == 0)
+	break;
+      curr_opcode++;
+    }
+  return curr_opcode;
+}
+
+struct assembly_map* opcode2assembly(int opcode)
+{
+  struct assembly_map *curr_opcode;
+  if(opcodes == NULL)
+    return NULL;
+  
+  curr_opcode = opcodes;
+  while(opcodes != NULL && opcodes->opcode != PICLANG_NUM_COMMANDS)
+    {
+      if(opcodes->opcode == opcode)
+	break;
+      curr_opcode = curr_opcode++;
+    }
+  return curr_opcode;
+}
+
 
