@@ -13,6 +13,8 @@ AM_PROG_CC_C_O
 AC_PROG_LEX
 AC_PROG_YACC
 
+AC_DEFINE([bit], [int], [Ensures compatibility with picc, which uses bits as booleans])
+
 #For readline!
 #AC_ARG_WITH([readline],
 #            [AS_HELP_STRING([--without-readline],

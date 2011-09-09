@@ -67,3 +67,6 @@
 /* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */
 #define YYTEXT_POINTER 1
+
+/* Ensures compatibility with picc, which uses bits as booleans */
+#define bit int

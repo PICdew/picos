@@ -1,11 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
 #include "pasm.h"
 #include "pasm_yacc.h"
 #include "../piclang.h"
 #include "page.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
 
 extern FILE *assembly_file;
 
@@ -23,7 +24,7 @@ int write_assembly(FILE *stream, const char *format, ...)
 }
 
 #if 0
-void _attach_label(struct compiled_code *ptrlist_end, unsigned char label)
+void _attach_label(struct compiled_code *ptrlist_end, picos_size_t label)
 {
   if(ptrlist_end == NULL)
     return;
@@ -31,7 +32,7 @@ void _attach_label(struct compiled_code *ptrlist_end, unsigned char label)
 }
 #endif
 
-void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val)
+void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val)
 {
   struct compiled_code *list = *ptrlist;
   struct compiled_code *list_end = *ptrlist_end;
@@ -107,7 +108,7 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
   FPrintCode(hex_file,code->next,col,buffer,start_address,checksum,print_type);
 }
 
-int lookup_label(const struct compiled_code* code, unsigned char label)
+int lookup_label(const struct compiled_code* code, picos_size_t label)
 {
   int label_index = 0;
   if(code == NULL)
@@ -143,7 +144,7 @@ void resolve_labels(struct compiled_code* code)
 		  fprintf(stderr,"Could not resolve label %d\n",code->next->val);
 		  return;
 		}
-	      code->next->val = (unsigned char)label_addr;
+	      code->next->val = label_addr;
 	      code = code->next;
 	      continue;
 	    }
@@ -235,7 +236,7 @@ struct assembly_map opcodes[] = {
   {"ENDofCMDS",PICLANG_NUM_COMMANDS}  
 };
 
-struct assembly_map* char2assembly(const char *keyword)
+struct assembly_map* keyword2assembly(const char *keyword)
 {
   struct assembly_map *curr_opcode;
   if(keyword == NULL)

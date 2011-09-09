@@ -30,15 +30,16 @@
 
 // bitmap masks
 #define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
+typedef unsigned short picos_size_t;// On the picc, this is little endian!!!
 
 typedef struct{
-  char size;// size of program
+  picos_size_t size;// size of program
   char bitmap;// See bitmap mask defines above
   char num_pages;
-  char pc;// program counter
+  picos_size_t pc;// program counter
   char status;// Error status
-  char start_address;// Offset of SRAM used for program (after PCB)
-  char string_address;// Offset of string data (null terminated)
+  picos_size_t start_address;// Offset of SRAM used for program (after PCB)
+  picos_size_t string_address;// Offset of string data (null terminated)
   char stack[PICLANG_STACK_SIZE];
   char stack_head;
   char call_stack[PICLANG_CALL_STACK_SIZE];

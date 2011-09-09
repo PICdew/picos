@@ -2062,7 +2062,40 @@ void yyerror(char *s) {
 }
 
 
+void write_val_for_pic(FILE *binary_file,picos_size_t val)
+{
+  picos_size_t endiantest = 1;
+  int size;
+  char is_bigendian, *end; 
+  if(binary_file == NULL)
+    return;
 
+  // Ensure little endian is used.
+  size = sizeof(val);
+  end = (char*)&endiantest;
+  is_bigendian = *end;
+  if(is_bigendian)
+    {
+      //little endian
+      end = (char*)&val;
+      while(size > 0)
+	{
+	  fprintf(binary_file,"%c",*end);
+	  end++;
+	  size -= 8;
+	}
+    }
+  else
+    {
+      while(size > 0)
+	{
+	  fprintf(binary_file,"%c",(val & 0xff));
+	  val >> 8;
+	  size -= 8;
+	}
+    }
+  
+}
 
 
 static const char short_options[] = "a:e:ho:";
@@ -2180,7 +2213,7 @@ int main(int argc, char **argv)
       curr_code = the_code;
       while(curr_code != NULL)
 	{
-	  fputc(curr_code->val,binary_file);
+	  write_val_for_pic(binary_file,curr_code->val);
 	  curr_code = curr_code->next;
 	}
     }
@@ -2257,15 +2290,15 @@ int lbl1, lbl2;
 	case DEFINE:// KEEP RETURN AFTER DEFINE
 	  {
 	    const char *subroutine = p->opr.op[0]->str.string;
-	  write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
-	  insert_label(PICLANG_LABEL);
-	  insert_subroutine(subroutine,lbl1);
-	  ex(p->opr.op[1]);
-	  if(strcmp(subroutine,"main") == 0)
-	    {
-	      write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
-	      break;
-	    }
+	    write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
+	    insert_label(PICLANG_LABEL);
+	    insert_subroutine(subroutine,lbl1);
+	    ex(p->opr.op[1]);
+	    if(strcmp(subroutine,"main") == 0)
+	      {
+		write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
+		break;
+	      }
 	  }
 	case RETURN:// KEEP RETURN AFTER DEFINE
 	  ex(p->opr.op[0]);

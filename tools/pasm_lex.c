@@ -970,7 +970,7 @@ case 24:
 YY_RULE_SETUP
 #line 111 "pasm_lex.l"
 {
-              struct assembly_map *asmb = char2assembly(yytext);
+              struct assembly_map *asmb = keyword2assembly(yytext);
               if(asmb == NULL || asmb->opcode == PICLANG_NUM_COMMANDS)
                  yyerror("syntax error");
               yylval.iValue = asmb->opcode;

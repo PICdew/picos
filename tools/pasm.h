@@ -1,3 +1,5 @@
+#include "../piclang.h"
+
 #include <stdio.h>
 #include <limits.h>
 
@@ -45,8 +47,8 @@ extern int sym[26];
 
 struct compiled_code
 {
-  unsigned char label;
-  unsigned char val;
+  picos_size_t label;
+  picos_size_t val;
   nodeEnum type;
   struct compiled_code *next;
 };
@@ -64,10 +66,10 @@ struct assembly_map
   int opcode;
 };
 
-struct assembly_map* char2assembly(const char *keyword);
+struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 
-void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, unsigned char val);
+void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val);
 #define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X)
 #define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X)
 #define insert_label(X) insert_compiled_code(typeLabel, &the_code,&the_code_end,X)
@@ -76,7 +78,7 @@ void insert_subroutine(const char *name, size_t label);
 const struct subroutine_map* get_subroutine(const char *name);
 
 
-void _attach_label(struct compiled_code *ptrlist_end, unsigned char label);
+void _attach_label(struct compiled_code *ptrlist_end, picos_size_t label);
 extern int write_assembly(FILE *stream, const char *format, ...);
 
 enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
