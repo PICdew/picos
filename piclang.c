@@ -15,16 +15,14 @@
 #include "io.h"
 #include "utils.h"
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include <stdio.h>
 #include <string.h>
 
 #define PICLANG_error(code)  curr_process.status = code
 int PICLANG_next_process[] = {0xffff};
 char PICLANG_file_buffer_index;
+bit PICLANG_debug = FALSE;
+PCB curr_process;
 
 char PICLANG_load(unsigned int sram_addr)
 {
@@ -183,6 +181,10 @@ void PICLANG_next()
   command = PICLANG_get_next_byte();
   if(curr_process.status != PICLANG_SUCCESS)
     return;
+
+  if(PICLANG_debug == TRUE)
+    PICLANG_debug_out(command);
+  
   switch(command)
     {
     case EOP:

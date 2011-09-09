@@ -17,6 +17,7 @@
 
 extern char get_button_state();
 
+extern char button_port,button_phase;
 typedef char out_t;
 typedef char in_t;
 out_t outdev;

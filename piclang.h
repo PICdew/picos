@@ -10,6 +10,10 @@
 #ifndef PICLANG_H
 #define PICLANG_H 1
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #define EOP 0xff // end of program
 
 #ifndef DEFAULT_PICLANG_QUANTUM
@@ -44,7 +48,7 @@ typedef struct{
 #define PCB_MAGIC_NUMBER_OFFSET 4
 extern const char *PICLANG_magic_numbers;
 
-PCB curr_process;
+extern PCB curr_process;
 unsigned int curr_process_addr;// Address of first byte of program (including PCB) in memory that is currently running.
 volatile char PICLANG_quantum;
 extern int PICLANG_next_process[];
@@ -67,6 +71,9 @@ extern char PICLANG_save(char status);
 extern void PICLANG_next();
 
 extern char PICLANG_pop();
+
+extern bit PICLANG_debug;
+extern void PICLANG_debug_out(char opcode);//define to do something as a debugger
 
 enum PICLANG_COMMANDS
   {

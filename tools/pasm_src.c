@@ -202,25 +202,36 @@ size_t CountCode(struct compiled_code *the_code)
 }
 
 struct assembly_map opcodes[] = {
+  {"add", PICLANG_ADD},
+  {"sub", PICLANG_SUB}, 
+  {"mult", PICLANG_MULT},
+  {"pushl", PICLANG_PUSHL},
+  {"push", PICLANG_PUSH},
+  {"pop", PICLANG_POP},
   {"putd", PICLANG_PRINT},
   {"putch", PICLANG_PRINTL},
-  {"getch", PICLANG_GETCH},
-  {"getd", PICLANG_GETD},
+  {"clear", PICLANG_CLEAR},
+  {"sprint", PICLANG_SPRINT},
   {"fputch", PICLANG_FPUTCH},
   {"fputd", PICLANG_FPUTD},
   {"fflush", PICLANG_FFLUSH},
-  {"fclear", PICLANG_FCLEAR},
   {"system", PICLANG_SYSTEM},
-  {"sprint", PICLANG_SPRINT},
   {"morse", PICLANG_MORSE},
-  {"settime", PICLANG_SET_TIME},
-  {"setdate", PICLANG_SET_DATE},
   {"time", PICLANG_TIME},
   {"argd", PICLANG_ARGD},
+  {"settime", PICLANG_SET_TIME},
+  {"setdate", PICLANG_SET_DATE},
   {"argch", PICLANG_ARGCH},
-  {"clear", PICLANG_CLEAR},
+  {"getch", PICLANG_GETCH},
+  {"getd", PICLANG_GETD},
+  {"jz", PICLANG_JZ},
+  {"jmp", PICLANG_JMP},
+  {"complt", PICLANG_COMPLT},
+  {"compgt", PICLANG_COMPGT},
+  {"compeq", PICLANG_COMPEQ},
+  {"compne", PICLANG_COMPNE},
   {"exit", EOP},
-  {"push", PICLANG_PUSH},
+  {"fclear", PICLANG_FCLEAR},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS}  
 };
 
@@ -249,11 +260,11 @@ struct assembly_map* opcode2assembly(int opcode)
     return NULL;
   
   curr_opcode = opcodes;
-  while(opcodes != NULL && opcodes->opcode != PICLANG_NUM_COMMANDS)
+  while(curr_opcode != NULL && curr_opcode->opcode != PICLANG_NUM_COMMANDS)
     {
-      if(opcodes->opcode == opcode)
+      if(curr_opcode->opcode == opcode)
 	break;
-      curr_opcode = curr_opcode++;
+      curr_opcode++;
     }
   return curr_opcode;
 }

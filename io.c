@@ -18,6 +18,7 @@
 #include "config.h"
 #endif
 
+char button_port,button_phase;
 
 extern char getch(void);
 
