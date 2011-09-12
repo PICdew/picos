@@ -10,16 +10,17 @@
 
 extern FILE *assembly_file;
 
-
 int write_assembly(FILE *stream, const char *format, ...)
 {
   va_list va;
   int retval;
-  if(stream == NULL)
-    return 0;
-  va_start(va,format);
-  retval = vfprintf(stream,format,va);
-  va_end(va);
+
+  if(stream != NULL)
+    {
+      va_start(va,format);
+      retval = vfprintf(stream,format,va);
+      va_end(va);
+    }
   return retval;
 }
 
@@ -203,37 +204,37 @@ size_t CountCode(struct compiled_code *the_code)
 }
 
 struct assembly_map opcodes[] = {
-  {"add", PICLANG_ADD},
-  {"sub", PICLANG_SUB}, 
-  {"mult", PICLANG_MULT},
-  {"pushl", PICLANG_PUSHL},
-  {"push", PICLANG_PUSH},
-  {"pop", PICLANG_POP},
-  {"putd", PICLANG_PRINT},
-  {"putch", PICLANG_PRINTL},
-  {"clear", PICLANG_CLEAR},
-  {"sprint", PICLANG_SPRINT},
-  {"fputch", PICLANG_FPUTCH},
-  {"fputd", PICLANG_FPUTD},
-  {"fflush", PICLANG_FFLUSH},
-  {"system", PICLANG_SYSTEM},
-  {"morse", PICLANG_MORSE},
-  {"time", PICLANG_TIME},
-  {"argd", PICLANG_ARGD},
-  {"settime", PICLANG_SET_TIME},
-  {"setdate", PICLANG_SET_DATE},
-  {"argch", PICLANG_ARGCH},
-  {"getch", PICLANG_GETCH},
-  {"getd", PICLANG_GETD},
-  {"jz", PICLANG_JZ},
-  {"jmp", PICLANG_JMP},
-  {"complt", PICLANG_COMPLT},
-  {"compgt", PICLANG_COMPGT},
-  {"compeq", PICLANG_COMPEQ},
-  {"compne", PICLANG_COMPNE},
-  {"exit", EOP},
-  {"fclear", PICLANG_FCLEAR},
-  {"ENDofCMDS",PICLANG_NUM_COMMANDS}  
+  {"add", PICLANG_ADD, 0},
+  {"sub", PICLANG_SUB, 0}, 
+  {"mult", PICLANG_MULT, 0},
+  {"pushl", PICLANG_PUSHL, 1},
+  {"push", PICLANG_PUSH, 1},
+  {"pop", PICLANG_POP, 1},
+  {"putd", PICLANG_PRINT, 0},
+  {"putch", PICLANG_PRINTL, 0},
+  {"clear", PICLANG_CLEAR, 0},
+  {"sprint", PICLANG_SPRINT, 0},
+  {"fputch", PICLANG_FPUTCH, 0},
+  {"fputd", PICLANG_FPUTD, 0},
+  {"fflush", PICLANG_FFLUSH, 0},
+  {"system", PICLANG_SYSTEM, 0},
+  {"morse", PICLANG_MORSE, 0},
+  {"time", PICLANG_TIME, 0},
+  {"argd", PICLANG_ARGD, 0},
+  {"settime", PICLANG_SET_TIME, 0},
+  {"setdate", PICLANG_SET_DATE, 0},
+  {"argch", PICLANG_ARGCH, 0},
+  {"getch", PICLANG_GETCH, 0},
+  {"getd", PICLANG_GETD, 0},
+  {"jz", PICLANG_JZ, 1},
+  {"jmp", PICLANG_JMP, 1},
+  {"complt", PICLANG_COMPLT, 0},
+  {"compgt", PICLANG_COMPGT, 0},
+  {"compeq", PICLANG_COMPEQ, 0},
+  {"compne", PICLANG_COMPNE, 0},
+  {"exit", EOP, 0},
+  {"fclear", PICLANG_FCLEAR, 0},
+  {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 
 struct assembly_map* keyword2assembly(const char *keyword)

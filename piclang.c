@@ -65,7 +65,7 @@ char PICLANG_save(char saved_status)
 
   curr_process.status = saved_status;
   if(saved_status == PICLANG_SUSPENDED)
-    PICLANG_next_process[0] = curr_process_addr - PCB_MAGIC_NUMBER_OFFSET;
+    PICLANG_next_process[0] = curr_process_addr - PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
   else
     {
       PAGE_free(0);
@@ -103,11 +103,11 @@ void PICLANG_init()
  * AND the process status is set to PICLANG_PC_OVERFLOW. Therefore, to determine
  * and error, the status must be checked, not the return value.
  */
-char PICLANG_get_next_byte()
+picos_size_t PICLANG_get_next_word()
 {
   picos_size_t next = curr_process_addr + curr_process.pc*sizeof(picos_size_t);
   picos_size_t val;
-  if(curr_process.pc > curr_process.size - PCB_SIZE || next < curr_process_addr)
+  if(curr_process.pc > curr_process.string_address - curr_process.start_address || next < curr_process_addr)
     {
       PICLANG_error(PICLANG_PC_OVERFLOW);
       return 0xff;
@@ -178,7 +178,7 @@ void PICLANG_next()
       return;
     }
   
-  command = PICLANG_get_next_byte();
+  command = PICLANG_get_next_word();
   if(curr_process.status != PICLANG_SUCCESS)
     return;
 
@@ -206,11 +206,11 @@ void PICLANG_next()
       PICLANG_update_arith_status();
       break;
     case PICLANG_PUSHL:
-      PICLANG_pushl(PICLANG_get_next_byte());
+      PICLANG_pushl(PICLANG_get_next_word());
       break;
     case PICLANG_PUSH:
       {
-	picos_size_t val = PAGE_get(PICLANG_get_next_byte(),0/* replace with UID */);
+	picos_size_t val = PAGE_get(PICLANG_get_next_word(),0/* replace with UID */);
 	if(error_code != SUCCESS)
 	  PICLANG_error(error_code);
 	else
@@ -219,7 +219,7 @@ void PICLANG_next()
       }
     case PICLANG_POP:
       {
-	picos_size_t addr = PICLANG_get_next_byte();
+	picos_size_t addr = PICLANG_get_next_word();
 	PAGE_set(addr,PICLANG_pop(),0/* replace with UID */);
 	break;
       }
@@ -428,7 +428,7 @@ void PICLANG_next()
       }
     case PICLANG_JZ:case PICLANG_JMP:case PICLANG_CALL:
       {
-	picos_size_t label = PICLANG_get_next_byte();
+	picos_size_t label = PICLANG_get_next_word();
 	if(curr_process.status != PICLANG_SUCCESS)
 	  break;
 	if(command == PICLANG_CALL)

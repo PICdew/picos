@@ -41,6 +41,7 @@ void freeNode(nodeType *p);
 int ex(nodeType *p);
 int yylex(void);
  FILE *assembly_file;
+ FILE *lst_file;
 void yyerror(char *s);
  int resolve_string(const char *str, int *is_new);
  int resolve_variable(const int id);
@@ -252,7 +253,7 @@ void write_val_for_pic(FILE *binary_file,picos_size_t val)
 }
 
 
-static const char short_options[] = "a:e:ho:";
+static const char short_options[] = "a:e:hl:o:";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
@@ -261,6 +262,7 @@ static struct option long_options[] =
 	       {"asm", 1,NULL, 'a'},
 	       {"eeprom",1,NULL, 'e'},
 	       {"binary",1,NULL,'o'},
+	       {"list",1,NULL,'l'},
                {0, 0, 0, 0}
              };
 
@@ -281,6 +283,7 @@ void print_help()
   printf("--eeprom, -e <file> :\t Outputs \"__EEPROM_DATA(...)\" code for use\n");
   printf("                     \t with the Hi Tech C Compiler.\n");
   printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
+  printf("--list, -l <file> :\t Outputs a list of program addresses (PC values) for each assembly entry.\n");
 }
 
 int main(int argc, char **argv) 
@@ -316,6 +319,11 @@ int main(int argc, char **argv)
 	  assembly_file = fopen(optarg,"w");
 	  if(assembly_file == NULL)
 	    assembly_file = stdout;
+	  break;
+	case 'l':
+	  lst_file = fopen(optarg,"w");
+	  if(lst_file == NULL)
+	    lst_file = stdout;
 	  break;
 	case 'o':
 	  binary_file = fopen(optarg,"w");
@@ -372,6 +380,25 @@ int main(int argc, char **argv)
 	  else
 	    fprintf(binary_file,"%c",(char)curr_code->val);
 	  curr_code = curr_code->next;
+	}
+    }
+
+  if(lst_file != NULL)
+    {
+      struct assembly_map* curr;
+      curr_code = the_code;
+      for(;curr_code != NULL;curr_code = curr_code->next)
+	{
+	  if(curr_code->type == typePCB)
+	    continue;
+	  curr = opcode2assembly(curr_code->val);
+	  fprintf(lst_file,"(%d)\t%s",curr_code->label,curr->keyword);
+	  if(curr->has_arg)
+	    {
+	      curr_code = curr_code->next;
+	      fprintf(lst_file," %d",curr_code->val);
+	    }
+	  fprintf(lst_file,"\n");
 	}
     }
   

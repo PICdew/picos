@@ -63,7 +63,7 @@ struct subroutine_map
 struct assembly_map
 {
   const char keyword[256];
-  int opcode;
+  int opcode, has_arg;
 };
 
 struct assembly_map* keyword2assembly(const char *keyword);
