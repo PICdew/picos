@@ -50,11 +50,12 @@ typedef struct{
 #define PCB_MAGIC_NUMBER_OFFSET 2 // 2 x picos_size_t 
 extern const picos_size_t PICLANG_magic_numbers[PCB_MAGIC_NUMBER_OFFSET];
 
+extern bit PICLANG_debug;
 extern PCB curr_process;
 unsigned int curr_process_addr;// Address of first byte of program (including PCB) in memory that is currently running.
 volatile char PICLANG_quantum;
 extern int PICLANG_next_process[];
-volatile char PICLANG_system;// CRC hex value for system calls within piclan
+volatile picos_size_t PICLANG_system;// CRC hex value for system calls within piclan
 
 extern void PICLANG_init();
 
@@ -72,10 +73,9 @@ extern char PICLANG_save(char status);
 
 extern void PICLANG_next();
 
-extern char PICLANG_pop();
+extern picos_size_t PICLANG_pop();
 
-extern bit PICLANG_debug;
-extern void PICLANG_debug_out(char opcode);//define to do something as a debugger
+extern void PICLANG_debug_out(picos_size_t opcode);//define to do something as a debugger
 
 enum PICLANG_COMMANDS
   {

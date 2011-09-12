@@ -6,6 +6,11 @@
  *
  * This file prototypes the paged memory system used in PICOS.
  */
+#ifndef PICOS_PAGE
+#define PICOS_PAGE
+
+#include "utils.h"
+
 #ifndef NUM_PAGES
 #define NUM_PAGES 4
 #endif
@@ -15,7 +20,7 @@
 #endif
 
 volatile char PAGE_free_bitmap;
-volatile char PAGE_storage[NUM_PAGES][PAGE_SIZE + 1];// +1 for the program ID, which will be stored in the last byte of the page
+volatile picos_size_t PAGE_storage[NUM_PAGES][PAGE_SIZE + 1];// +1 for the program ID, which will be stored in the last byte of the page
 
 /**
  * Initializes the bitmap, where a 1 bit for each index into
@@ -39,9 +44,12 @@ void PAGE_free(char pid);
  * ALL of total pages listed as one long list from the first page to the
  * last.
  */
-char PAGE_get(char byte_index, char pid);
+picos_size_t PAGE_get(char byte_index, char pid);
 
 /**
  * Sets the byte in page memory to the given value.
  */
-void PAGE_set(char byte_index, char val, char pid);
+void PAGE_set(char byte_index, picos_size_t val, char pid);
+
+#endif // PICOS_PAGE
+

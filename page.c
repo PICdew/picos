@@ -62,7 +62,7 @@ void PAGE_free(char pid)
     }
 }
 
-char PAGE_get(char byte_index, char pid)
+picos_size_t PAGE_get(char byte_index, char pid)
 {
   char page_index = byte_index / PAGE_SIZE;
   byte_index = byte_index % PAGE_SIZE;
@@ -80,7 +80,7 @@ char PAGE_get(char byte_index, char pid)
   return PAGE_storage[page_index][byte_index];  
 }
 
-void PAGE_set(char byte_index, char val, char pid)
+void PAGE_set(char byte_index, picos_size_t val, char pid)
 {
   char page_index = byte_index / PAGE_SIZE;
   byte_index = byte_index % PAGE_SIZE;

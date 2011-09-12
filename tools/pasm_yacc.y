@@ -367,7 +367,10 @@ int main(int argc, char **argv)
       curr_code = the_code;
       while(curr_code != NULL)
 	{
-	  write_val_for_pic(binary_file,curr_code->val);
+	  if(curr_code->type != typeStr)
+	    write_val_for_pic(binary_file,curr_code->val);
+	  else
+	    fprintf(binary_file,"%c",(char)curr_code->val);
 	  curr_code = curr_code->next;
 	}
     }

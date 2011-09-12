@@ -27,18 +27,18 @@ PCB curr_process;
 char PICLANG_load(unsigned int sram_addr)
 {
   char size = 0,pos = 0,counter = 0;
-  char magic_numbers[PCB_MAGIC_NUMBER_OFFSET];
+  char magic_numbers[PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)];
   if(sram_addr == 0xffff)
     return PICLANG_NO_SUCH_PROGRAM;
 
   // Verify this is an executable with the magic number
-  SRAM_read(sram_addr,magic_numbers,PCB_MAGIC_NUMBER_OFFSET);
-  if(strncmp(magic_numbers,PICLANG_magic_numbers,PCB_MAGIC_NUMBER_OFFSET) != 0)
+  SRAM_read(sram_addr,magic_numbers,PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t));
+  if(strncmp(magic_numbers,PICLANG_magic_numbers,PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)) != 0)
     {
       error_code = PICLANG_INVALID_EXECUTABLE;
       return error_code;
     }
-  sram_addr += PCB_MAGIC_NUMBER_OFFSET;
+  sram_addr += PCB_MAGIC_NUMBER_OFFSET * sizeof(picos_size_t);
 
   // Load PCB into memory
   SRAM_read(sram_addr,&curr_process,PCB_SIZE);
@@ -105,20 +105,20 @@ void PICLANG_init()
  */
 char PICLANG_get_next_byte()
 {
-  unsigned int next = curr_process_addr + curr_process.pc;
-  char val;
+  picos_size_t next = curr_process_addr + curr_process.pc*sizeof(picos_size_t);
+  picos_size_t val;
   if(curr_process.pc > curr_process.size - PCB_SIZE || next < curr_process_addr)
     {
       PICLANG_error(PICLANG_PC_OVERFLOW);
       return 0xff;
     }
   curr_process.pc++;
-  next += curr_process.start_address;
-  SRAM_read(next,&val,1);
+  next += curr_process.start_address*sizeof(picos_size_t);
+  SRAM_read(next,&val,1*sizeof(picos_size_t));
   return val;
 }
 
-void PICLANG_pushl(char val)
+void PICLANG_pushl(picos_size_t val)
 {
   if(curr_process.stack_head >= PICLANG_STACK_SIZE)
     {
@@ -128,7 +128,7 @@ void PICLANG_pushl(char val)
   curr_process.stack[curr_process.stack_head++] = val;
 }
 
-char PICLANG_pop()
+picos_size_t PICLANG_pop()
 {
   if(curr_process.stack_head > PICLANG_STACK_SIZE)
     {
@@ -138,7 +138,7 @@ char PICLANG_pop()
   return curr_process.stack[--curr_process.stack_head];
 }
 
-void PICLANG_call_push(char val)
+void PICLANG_call_push(picos_size_t val)
 {
   if(curr_process.call_stack_head >= PICLANG_CALL_STACK_SIZE)
     {
@@ -148,7 +148,7 @@ void PICLANG_call_push(char val)
   curr_process.call_stack[curr_process.call_stack_head++] = val;
 }
 
-char PICLANG_call_pop()
+picos_size_t PICLANG_call_pop()
 {
   if(curr_process.call_stack_head > PICLANG_CALL_STACK_SIZE)
     {
@@ -168,7 +168,7 @@ void PICLANG_update_arith_status()
 
 void PICLANG_next()
 {
-  char command;
+  picos_size_t command;
   if(curr_process.size == 0)
     return;
 
@@ -196,7 +196,7 @@ void PICLANG_next()
       break;
     case PICLANG_SUB:
       {
-	char rhs = PICLANG_pop();
+	picos_size_t rhs = PICLANG_pop();
 	PICLANG_pushl(PICLANG_pop() - rhs);
 	PICLANG_update_arith_status();
 	break;
@@ -210,7 +210,7 @@ void PICLANG_next()
       break;
     case PICLANG_PUSH:
       {
-	char val = PAGE_get(PICLANG_get_next_byte(),0/* replace with UID */);
+	picos_size_t val = PAGE_get(PICLANG_get_next_byte(),0/* replace with UID */);
 	if(error_code != SUCCESS)
 	  PICLANG_error(error_code);
 	else
@@ -219,7 +219,7 @@ void PICLANG_next()
       }
     case PICLANG_POP:
       {
-	char addr = PICLANG_get_next_byte();
+	picos_size_t addr = PICLANG_get_next_byte();
 	PAGE_set(addr,PICLANG_pop(),0/* replace with UID */);
 	break;
       }
@@ -232,7 +232,7 @@ void PICLANG_next()
     case PICLANG_FPUTD:
       {
 	char hex_val[3];
-	dec_to_word(hex_val,PICLANG_pop());
+	dec_to_word(hex_val,(char)PICLANG_pop());
 	if(hex_val[0] != 0x30)
 	  picfs_buffer[PICLANG_file_buffer_index++] = hex_val[0];
 	if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
@@ -297,11 +297,11 @@ void PICLANG_next()
     case PICLANG_SPRINT:
       {
 	char ch;
-	unsigned int addr;
+	picos_size_t addr;
 	static bit should_flush;
-	addr = curr_process_addr + curr_process.string_address;
+	addr = curr_process_addr + curr_process.string_address*sizeof(picos_size_t);
 	addr += PICLANG_pop();
-	SRAM_read(addr++,&ch,1);
+	SRAM_read(addr++,&ch,sizeof(picos_size_t));
 	if(ch == 0)
 	  should_flush = FALSE;
 	else
@@ -428,7 +428,7 @@ void PICLANG_next()
       }
     case PICLANG_JZ:case PICLANG_JMP:case PICLANG_CALL:
       {
-	char label = PICLANG_get_next_byte();
+	picos_size_t label = PICLANG_get_next_byte();
 	if(curr_process.status != PICLANG_SUCCESS)
 	  break;
 	if(command == PICLANG_CALL)
@@ -452,8 +452,9 @@ void PICLANG_next()
       break;
     case PICLANG_COMPLT:
       {
-	char rhs = PICLANG_pop();
-	char lhs = PICLANG_pop();
+	picos_size_t lhs,rhs;
+	rhs = PICLANG_pop();
+	lhs = PICLANG_pop();
 	if(lhs < rhs)
 	  curr_process.bitmap |= PICLANG_ZERO;
 	else
@@ -462,8 +463,9 @@ void PICLANG_next()
       }
     case PICLANG_COMPGT:
       {
-	char rhs = PICLANG_pop();
-	char lhs = PICLANG_pop();
+	picos_size_t lhs,rhs;
+	rhs = PICLANG_pop();
+	lhs = PICLANG_pop();
 	if(lhs > rhs)
 	  curr_process.bitmap |= PICLANG_ZERO;
 	else
@@ -472,8 +474,9 @@ void PICLANG_next()
       }
     case PICLANG_COMPEQ:case PICLANG_COMPNE:
       {
-	char rhs = PICLANG_pop();
-	char lhs = PICLANG_pop();
+	picos_size_t lhs,rhs;
+	rhs = PICLANG_pop();
+	lhs = PICLANG_pop();
 	if(lhs == rhs)
 	  curr_process.bitmap |= PICLANG_ZERO;
 	else
