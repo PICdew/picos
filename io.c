@@ -12,13 +12,11 @@
 #include "picos_time.h"
 #include "utils.h"
 
-#include <string.h>
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-char button_port,button_phase;
+#include <string.h>
 
 extern char getch(void);
 

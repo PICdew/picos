@@ -6,6 +6,10 @@
  *
  * This file prototypes utility functions used throughout the PICOS.
  */
+#ifndef PICOS_UTILS
+#define PICOS_UTILS
+
+typedef unsigned short picos_size_t;// On the picc, this is little endian!!!
 
 extern void dec_to_word(char *three_chars, char hex);
 extern void hex_to_word(char *two_chars, char hex);
@@ -25,3 +29,6 @@ extern void picos_delay(unsigned long cycles);
 #define CRC_run 0x69
 #define CRC_usart2eeprom 0x5
 #define CRC_eeprom2usart 0x12
+
+
+#endif //PICOS_UTILS

@@ -2066,15 +2066,15 @@ void write_val_for_pic(FILE *binary_file,picos_size_t val)
 {
   picos_size_t endiantest = 1;
   int size;
-  char is_bigendian, *end; 
+  char is_littleendian, *end; 
   if(binary_file == NULL)
     return;
 
   // Ensure little endian is used.
-  size = sizeof(val);
+  size = sizeof(val);// in bytes
   end = (char*)&endiantest;
-  is_bigendian = *end;
-  if(is_bigendian)
+  is_littleendian = *end;
+  if(is_littleendian)
     {
       //little endian
       end = (char*)&val;
@@ -2082,7 +2082,7 @@ void write_val_for_pic(FILE *binary_file,picos_size_t val)
 	{
 	  fprintf(binary_file,"%c",*end);
 	  end++;
-	  size -= 8;
+	  size--;
 	}
     }
   else
@@ -2091,7 +2091,7 @@ void write_val_for_pic(FILE *binary_file,picos_size_t val)
 	{
 	  fprintf(binary_file,"%c",(val & 0xff));
 	  val >> 8;
-	  size -= 8;
+	  size--;
 	}
     }
   

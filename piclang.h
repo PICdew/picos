@@ -10,6 +10,8 @@
 #ifndef PICLANG_H
 #define PICLANG_H 1
 
+#include "utils.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -30,24 +32,23 @@
 
 // bitmap masks
 #define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
-typedef unsigned short picos_size_t;// On the picc, this is little endian!!!
 
 typedef struct{
   picos_size_t size;// size of program
-  char bitmap;// See bitmap mask defines above
-  char num_pages;
+  picos_size_t bitmap;// See bitmap mask defines above
+  picos_size_t num_pages;
   picos_size_t pc;// program counter
-  char status;// Error status
+  picos_size_t status;// Error status
   picos_size_t start_address;// Offset of SRAM used for program (after PCB)
   picos_size_t string_address;// Offset of string data (null terminated)
-  char stack[PICLANG_STACK_SIZE];
-  char stack_head;
-  char call_stack[PICLANG_CALL_STACK_SIZE];
-  char call_stack_head;
+  picos_size_t stack[PICLANG_STACK_SIZE];
+  picos_size_t stack_head;
+  picos_size_t call_stack[PICLANG_CALL_STACK_SIZE];
+  picos_size_t call_stack_head;
 }PCB;
 #define PCB_SIZE sizeof(PCB)
-#define PCB_MAGIC_NUMBER_OFFSET 4
-extern const char *PICLANG_magic_numbers;
+#define PCB_MAGIC_NUMBER_OFFSET 2 // 2 x picos_size_t 
+extern const picos_size_t PICLANG_magic_numbers[PCB_MAGIC_NUMBER_OFFSET];
 
 extern PCB curr_process;
 unsigned int curr_process_addr;// Address of first byte of program (including PCB) in memory that is currently running.

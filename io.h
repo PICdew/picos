@@ -8,6 +8,9 @@
  * Functions getch and putch should be implemented in hardware drivers
  * outside of PICOS.
  */
+#ifndef PICOS_IO
+#define PICOS_IO 
+
 #ifndef button_debounce_time 
 #define button_debounce_time 10 //ms
 #endif
@@ -17,7 +20,12 @@
 
 extern char get_button_state();
 
-extern char button_port,button_phase;
+#ifndef button_bits
+char button_bits;
+#define button_port button_bits
+#define button_phase 3
+#endif
+
 typedef char out_t;
 typedef char in_t;
 out_t outdev;
@@ -60,3 +68,6 @@ enum{
   IO_CMD_RSA_E,
   IO_CMD_RSA_D
 };
+
+
+#endif // PICOS_IO

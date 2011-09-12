@@ -217,6 +217,9 @@ static int FS_file_size(FS_Block *the_dir)
    
   if(the_dir == NULL)
     return 0;
+
+  log_msg("FS_file_size (0x%x)\n",the_dir);
+
   while(1)
     {
       if(the_dir[FS_INode_indirect] == 0)
@@ -510,6 +513,8 @@ static int FS_truncate(const char *path, off_t new_size)
 	  needed_blocks--;
 	}
       file_head[FS_INode_size] = new_size % FS_BLOCK_SIZE;
+      if(new_size == FS_BLOCK_SIZE)
+	file_head[FS_INode_size] = FS_BLOCK_SIZE;// for the case where the file is exactly 1 block, in which case there won't be more than one block pointer and the modulus above will produce zero.
       return 0;
     }
 

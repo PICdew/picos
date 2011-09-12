@@ -6,12 +6,14 @@
  *
  * This file provides various utility functions.
  */
+#include "utils.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include <stddef.h>
-const char *PICLANG_magic_numbers = "Foo";
+const picos_size_t PICLANG_magic_numbers[2] = {0x6f46,0x006f};
 
 void hex_to_word(char *two_chars, char hex)
 {
