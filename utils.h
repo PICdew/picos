@@ -11,7 +11,7 @@
 
 typedef unsigned short picos_size_t;// On the picc, this is little endian!!!
 
-extern void dec_to_word(char *three_chars, char hex);
+extern void dec_to_word(char *three_chars, picos_size_t hex);
 extern void hex_to_word(char *two_chars, char hex);
 extern void calculate_crc(char *crc, char newval);
 extern char TEMPERATURE_read();

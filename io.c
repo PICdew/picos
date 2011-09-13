@@ -20,15 +20,21 @@
 
 extern char getch(void);
 
-void IO_putd(char d)
+void IO_putd(picos_size_t d)
 {
-  char hex_val[3];
+  char hex_val[5], index;
+  static bit leading_digit;
   dec_to_word(&hex_val,d);
-  if(hex_val[0] != 0x30)
-    putch(hex_val[0]);
-  if(hex_val[1] != 0x30)
-    putch(hex_val[1]);
-  putch(hex_val[2]);
+  index = 0;
+  leading_digit = FALSE;
+  for(;index < 5;index++)
+    if(leading_digit == TRUE || hex_val[index] != 0x30)
+      {
+	putch(hex_val[index]);
+	leading_digit = TRUE;
+      }
+  if(leading_digit == FALSE)
+    putch(0x30);
 }
 
 void IO_puts(const char *str)

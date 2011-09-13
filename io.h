@@ -11,6 +11,8 @@
 #ifndef PICOS_IO
 #define PICOS_IO 
 
+#include "utils.h"
+
 #ifndef button_debounce_time 
 #define button_debounce_time 10 //ms
 #endif
@@ -46,7 +48,7 @@ void morse_ditdat_sound_blocking(char encoded);
 char morse_decode(char encode);
 
 void IO_puts(const char *str);
-void IO_putd(char d);
+void IO_putd(picos_size_t d);
 extern void IO_flush();
 
 extern void SRAM_write(unsigned int addr, const char *buffer, char n);

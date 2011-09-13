@@ -31,17 +31,24 @@ void hex_to_word(char *two_chars, char hex)
     }
 }
 
-void dec_to_word(char *three_chars, char hex)
+#include <stdio.h>
+void dec_to_word(char *five_chars, picos_size_t hex)
 {
-  if(three_chars == NULL)
+  if(five_chars == NULL)
     return;
-  three_chars[0] = hex/100;
-  three_chars[1] = hex/10;
-  three_chars[2] = hex - three_chars[0]*100 - three_chars[1]*10;
+  five_chars[0] = hex/10000;
+  hex -= five_chars[0]*10000;
+  five_chars[1] = hex/1000;
+  hex -= five_chars[1]*1000;
+  five_chars[2] = hex/100;
+  hex -= five_chars[2]*100;
+  five_chars[3] = hex/10;
+  hex -= five_chars[3]*10;
+  five_chars[4] = hex;
   
   hex = 0;// borrow hex as an index
-  for(;hex < 3;hex++)
-    three_chars[hex] += 0x30;//character
+  for(;hex < 5;hex++)
+    five_chars[hex] += 0x30;//character
 }
 
 void calculate_crc(char *crc, char newval)
