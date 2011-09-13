@@ -34,21 +34,22 @@ void hex_to_word(char *two_chars, char hex)
 #include <stdio.h>
 void dec_to_word(char *five_chars, picos_size_t hex)
 {
+  picos_size_t mask = 1;
+  char counter;
   if(five_chars == NULL)
     return;
-  five_chars[0] = hex/10000;
-  hex -= five_chars[0]*10000;
-  five_chars[1] = hex/1000;
-  hex -= five_chars[1]*1000;
-  five_chars[2] = hex/100;
-  hex -= five_chars[2]*100;
-  five_chars[3] = hex/10;
-  hex -= five_chars[3]*10;
-  five_chars[4] = hex;
-  
-  hex = 0;// borrow hex as an index
-  for(;hex < 5;hex++)
-    five_chars[hex] += 0x30;//character
+  counter = 1;
+  for(;counter < PICOS_SIZE_T_DECIMAL_DIGITS;counter++)
+    mask *= 10;
+  counter = 0;
+  for(;counter < PICOS_SIZE_T_DECIMAL_DIGITS-1;counter++)
+    {
+      five_chars[counter] = hex/mask;
+      hex -= five_chars[counter]*mask;
+      five_chars[counter] += 0x30;
+      mask /= 10;
+    }
+  five_chars[PICOS_SIZE_T_DECIMAL_DIGITS-1] = hex + 0x30;
 }
 
 void calculate_crc(char *crc, char newval)

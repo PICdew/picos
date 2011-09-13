@@ -22,7 +22,7 @@ extern char getch(void);
 
 void IO_putd(picos_size_t d)
 {
-  char hex_val[5], index;
+  char hex_val[PICOS_SIZE_T_DECIMAL_DIGITS], index;
   static bit leading_digit;
   dec_to_word(&hex_val,d);
   index = 0;

@@ -10,6 +10,7 @@
 #define PICOS_UTILS
 
 typedef unsigned short picos_size_t;// On the picc, this is little endian!!!
+#define PICOS_SIZE_T_DECIMAL_DIGITS 5
 
 extern void dec_to_word(char *three_chars, picos_size_t hex);
 extern void hex_to_word(char *two_chars, char hex);

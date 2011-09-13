@@ -231,7 +231,7 @@ void PICLANG_next()
       }
     case PICLANG_FPUTD:
       {
-	char hex_val[5], index;
+	char hex_val[PICOS_SIZE_T_DECIMAL_DIGITS], index;
 	dec_to_word(hex_val,(char)PICLANG_pop());
 	index = 0;
 	for(;index < 5;index++)
