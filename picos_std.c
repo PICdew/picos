@@ -1,7 +1,9 @@
 #include "picfs_error.h"
 #include "utils.h"
 #include "picfs.h"
+#include "io.h"
 
+#include <string.h>
 
 signed char picos_mount(picos_size_t addr)
 {
