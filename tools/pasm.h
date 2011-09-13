@@ -69,10 +69,10 @@ struct assembly_map
 struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 
-void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val);
-#define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X)
-#define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X)
-#define insert_label(X) insert_compiled_code(typeLabel, &the_code,&the_code_end,X)
+void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label);
+#define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X,0)
+#define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X,0)
+#define insert_label(X,Y) insert_compiled_code(typeLabel, &the_code,&the_code_end,X,Y)
 
 void insert_subroutine(const char *name, size_t label);
 const struct subroutine_map* get_subroutine(const char *name);

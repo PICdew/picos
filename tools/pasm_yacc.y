@@ -31,7 +31,7 @@ char **string_list;
 size_t num_strings;
 int *variable_list;
 size_t num_variables;
-static int lbl;
+extern picos_size_t label_counter;
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
@@ -386,16 +386,42 @@ int main(int argc, char **argv)
   if(lst_file != NULL)
     {
       struct assembly_map* curr;
+      int code_counter = 0;
       curr_code = the_code;
       for(;curr_code != NULL;curr_code = curr_code->next)
 	{
 	  if(curr_code->type == typePCB)
 	    continue;
 	  curr = opcode2assembly(curr_code->val);
-	  fprintf(lst_file,"(%d)\t%s",curr_code->label,curr->keyword);
+	  fprintf(lst_file,"(%d)\t",code_counter++);
+	  switch(curr->opcode)
+	    {
+	    case PICLANG_NUM_COMMANDS:
+	      if(curr_code->type == typeLabel)
+		{
+		  fprintf(lst_file,"L%03hu",curr_code->label);
+		  break;
+		}
+	      else if(curr_code->val == PICLANG_RETURN)
+		{
+		  fprintf(lst_file,"return");
+		  break;
+		}
+	      else if(curr_code->val == PICLANG_CALL)
+		{
+		  curr_code = curr_code->next;
+		  fprintf(lst_file,"call %hu",curr_code->val);
+		  code_counter++;
+		  break;
+		}
+	    default:
+	      fprintf(lst_file,"%s",curr->keyword);
+	      break;
+	    }
 	  if(curr->has_arg)
 	    {
 	      curr_code = curr_code->next;
+	      code_counter++;
 	      fprintf(lst_file," %d",curr_code->val);
 	    }
 	  fprintf(lst_file,"\n");
@@ -407,263 +433,269 @@ int main(int argc, char **argv)
 }
 
 int ex(nodeType *p) {
-int lbl1, lbl2;
+  int lbl1, lbl2;
 
-    if (!p) return 0;
-    switch(p->type) {
-    case typeCon:
-      write_assembly(assembly_file,"\tpushl\t0x%x\n", p->con.value); 
-      insert_code(PICLANG_PUSHL);
-      insert_code(p->con.value);
+  if (!p) return 0;
+  switch(p->type) {
+  case typeCon:
+    write_assembly(assembly_file,"\tpushl\t0x%x\n", p->con.value); 
+    insert_code(PICLANG_PUSHL);
+    insert_code(p->con.value);
+    break;
+  case typeId:        
+    write_assembly(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
+    insert_code(PICLANG_PUSH);
+    insert_code(resolve_variable(p->id.i));
+    break;
+  case typeStr:
+    {
+      char *pStr = p->str.string;
+      if(pStr != NULL)
+	{
+	  nodeType str_pointer;
+	  int is_new = TRUE;
+	  str_pointer.con.value = resolve_string(pStr,&is_new);
+	  str_pointer.type = typeCon;
+	  if(is_new)
+	    {
+	      write_assembly(assembly_file,"\tstore\t\"%s\"\n", pStr);
+	      while(pStr != NULL)
+		{
+		  insert_string(*pStr);
+		  if(*pStr == 0)
+		    break;
+		  pStr++;
+		}
+	    }
+	  ex(&str_pointer);
+	}
       break;
-    case typeId:        
-      write_assembly(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
-      insert_code(PICLANG_PUSH);
-      insert_code(resolve_variable(p->id.i));
+    }
+  case typeOpr:
+    switch(p->opr.oper) {
+    case EOP:
+      if(p->opr.nops == 0)
+	{
+	  write_assembly(assembly_file,"\tpushl\t0\n",0); 
+	  insert_code(PICLANG_PUSHL);
+	  insert_code(0);
+	}
+      else
+	ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\texit\n",0); 
+      insert_code(PICLANG_EXIT);
+      insert_code(EOP);
       break;
-    case typeStr:
+    case PICLANG_PUSH:
+      ex(p->opr.op[0]);
+      break;
+    case PICLANG_CALL:
       {
-	char *pStr = p->str.string;
-	if(pStr != NULL)
-	  {
-	    nodeType str_pointer;
-	    int is_new = TRUE;
-	    str_pointer.con.value = resolve_string(pStr,&is_new);
-	    str_pointer.type = typeCon;
-	    if(is_new)
-	      {
-		write_assembly(assembly_file,"\tstore\t\"%s\"\n", pStr);
-		while(pStr != NULL)
-		  {
-		    insert_string(*pStr);
-		    if(*pStr == 0)
-		      break;
-		    pStr++;
-		  }
-	      }
-	    ex(&str_pointer);
-	  }
+	struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
+	write_assembly(assembly_file,"\tcall L%03d\n",subroutine->label);
+	insert_code(PICLANG_CALL);
+	insert_code(subroutine->label);
 	break;
       }
-    case typeOpr:
-        switch(p->opr.oper) {
-	case EOP:
-	  if(p->opr.nops == 0)
-	    {
-	      write_assembly(assembly_file,"\tpushl\t0\n",0); 
-	      insert_code(PICLANG_PUSHL);
-	      insert_code(0);
-	    }
-	  else
-	    ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\texit\n",0); 
-	  insert_code(PICLANG_EXIT);
-	  insert_code(EOP);
-	  break;
-	case PICLANG_PUSH:
-	  ex(p->opr.op[0]);
-	  break;
-	case PICLANG_CALL:
+    case DEFINE:// KEEP RETURN AFTER DEFINE
+      {
+	const char *subroutine = p->opr.op[0]->str.string;
+	write_assembly(assembly_file,"L%03d:\n", (lbl1 = label_counter));
+	label_counter++;
+	insert_label(PICLANG_LABEL,lbl1);
+	insert_subroutine(subroutine,lbl1);
+	ex(p->opr.op[1]);
+	if(strcmp(subroutine,"main") == 0)
 	  {
-	    struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
-	    write_assembly(assembly_file,"\tcall L%03d\n",subroutine->label);
-	    insert_code(PICLANG_CALL);
-	    insert_code(subroutine->label);
+	    write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
 	    break;
 	  }
-	case DEFINE:// KEEP RETURN AFTER DEFINE
-	  {
-	    const char *subroutine = p->opr.op[0]->str.string;
-	    write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
-	    insert_label(PICLANG_LABEL);
-	    insert_subroutine(subroutine,lbl1);
-	    ex(p->opr.op[1]);
-	    if(strcmp(subroutine,"main") == 0)
-	      {
-		write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
-		break;
-	      }
-	  }
-	case RETURN:// KEEP RETURN AFTER DEFINE
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\treturn\n");
-	  insert_code(PICLANG_RETURN);
-	  break;
-        case WHILE:
-            write_assembly(assembly_file,"L%03d:\n", lbl1 = lbl++);
-	    insert_label(PICLANG_LABEL);
-            ex(p->opr.op[0]);
-            write_assembly(assembly_file,"\tjz\tL%03d\n", lbl2 = lbl++);
-	    insert_code(PICLANG_JZ);
-	    insert_code(lbl2);
-            ex(p->opr.op[1]);
-            write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl1);
-	    insert_code(PICLANG_JMP);
-	    insert_code(lbl1);
-            write_assembly(assembly_file,"L%03d:\n", lbl2);
-	    insert_label(PICLANG_LABEL);
-            break;
-        case IF:
-            ex(p->opr.op[0]);
-            if (p->opr.nops > 2) {
-                /* if else */
-                write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
-		insert_code(PICLANG_JZ);
-		insert_code(lbl1);
-                ex(p->opr.op[1]);
-                write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl2 = lbl++);
-		insert_code(PICLANG_JMP);
-		insert_code(lbl2);
-                write_assembly(assembly_file,"L%03d:\n", lbl1);
-		insert_label(PICLANG_LABEL);
-                ex(p->opr.op[2]);
-                write_assembly(assembly_file,"L%03d:\n", lbl2);
-		insert_label(PICLANG_LABEL);
-            } else {
-                /* if */
-                write_assembly(assembly_file,"\tjz\tL%03d\n", lbl1 = lbl++);
-		insert_code(PICLANG_JZ);
-		insert_code(lbl1);
-                ex(p->opr.op[1]);
-                write_assembly(assembly_file,"L%03d:\n", lbl1);
-		insert_label(PICLANG_LABEL);
-            }
-            break;
-        case PICLANG_PRINT:     
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
-	  break;
-        case PICLANG_PRINTL:
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
-	  break;
-        case PICLANG_FPUTCH:
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tfputch\n");insert_code(PICLANG_FPUTCH);
-	  break;
-        case PICLANG_FPUTD:
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tfputd\n");insert_code(PICLANG_FPUTD);
-	  break;
-        case '=':// KEEP POP AFTER '='       
-            ex(p->opr.op[1]);
-	case PICLANG_POP:// KEEP POP AFTER '='
-            write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
-	    insert_code( PICLANG_POP);
-	    insert_code(resolve_variable(p->opr.op[0]->id.i));
-            break;
-        case UMINUS:    
-            ex(p->opr.op[0]);
-            write_assembly(assembly_file,"\tneg\n");
-            break;
-        case PICLANG_SYSTEM:
-	  {
-	    int op_counter = p->opr.nops - 1;
-	    for(;op_counter >= 0 ;op_counter--)
-		ex(p->opr.op[op_counter]);
-	    write_assembly(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
-	    break;
-	  }
-	case PICLANG_SPRINT:
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tsprint\n");
-	  insert_code(PICLANG_SPRINT);
-	  break;
-	case PICLANG_MORSE:
-	  ex(p->opr.op[1]);
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\tmorse\n");
-	  insert_code(PICLANG_MORSE);
-	  break;
-	case PICLANG_TIME:
-	  ex(p->opr.op[0]);
-	  write_assembly(assembly_file,"\ttime\n");
-	  insert_code(PICLANG_TIME);
-	  break;
-	case PICLANG_FFLUSH:
-	  write_assembly(assembly_file,"\tfflush\n");
-	  insert_code(PICLANG_FFLUSH);
-	  break;
-	case PICLANG_FCLEAR:
-	  write_assembly(assembly_file,"\tfclear\n");
-	  insert_code(PICLANG_FCLEAR);
-	  break;
-	case PICLANG_CLEAR:
-	  write_assembly(assembly_file,"\tclear\n");
-	  insert_code(PICLANG_CLEAR);
-	  break;
-	case PICLANG_SET_TIME:
-	  ex(p->opr.op[0]);
-	  ex(p->opr.op[1]);
-	  write_assembly(assembly_file,"\tsettime\n");
-	  insert_code(PICLANG_SET_TIME);
-	  break;
-	case PICLANG_SET_DATE:
-	  ex(p->opr.op[0]);
-	  ex(p->opr.op[1]);
-	  ex(p->opr.op[2]);
-	  write_assembly(assembly_file,"\tsetdate\n");
-	  insert_code(PICLANG_SET_DATE);
-	  break;
-	case PICLANG_ARGCH:
-	  write_assembly(assembly_file,"\targch\n");
-	  insert_code(PICLANG_ARGCH);
-	  break;
-	case PICLANG_ARGD:
-	  write_assembly(assembly_file,"\targd\n");
-	  insert_code(PICLANG_ARGD);
-	  break;
-	case PICLANG_GETD:
-	  write_assembly(assembly_file,"\tgetd\n");insert_code(PICLANG_GETD);
-	  break;
-	case PICLANG_GETCH:
-	  write_assembly(assembly_file,"\tgetch\n");insert_code(PICLANG_GETCH);
-	  break;
-        default:
-            ex(p->opr.op[0]);
-            ex(p->opr.op[1]);
-            switch(p->opr.oper) {
-            case '+':   
-	      write_assembly(assembly_file,"\tadd \n"); 
-	      insert_code(PICLANG_ADD);
-	      break;
-            case '-':   
-	      write_assembly(assembly_file,"\tsub\n");
-	      insert_code(PICLANG_SUB); 
-	      break; 
-            case '*':   
-	      write_assembly(assembly_file,"\tmul\n");
-	      insert_code(PICLANG_MULT); 
-	      break;
-            case '/':   
-	      write_assembly(assembly_file,"\tdiv\n"); 
-	      break;
-            case '<':   
-	      write_assembly(assembly_file,"\tcompLT\n"); 
-	      insert_code(PICLANG_COMPLT);
-	      break;
-            case '>':   
-	      write_assembly(assembly_file,"\tcompGT\n"); 
-	      insert_code(PICLANG_COMPGT);
-	      break;
-            case GE:    
-	      write_assembly(assembly_file,"\tcompGE\n"); 
-	      break;
-            case LE:   
-	      write_assembly(assembly_file,"\tcompLE\n"); 
-	      break;
-            case NE:    
-	      write_assembly(assembly_file,"\tcompNE\n"); 
-	      insert_code(PICLANG_COMPNE);
-	      break;
-            case EQ:    
-	      write_assembly(assembly_file,"\tcompEQ\n"); 
-	      insert_code(PICLANG_COMPEQ);
-	      break;
-            }
-        }
+      }
+    case RETURN:// KEEP RETURN AFTER DEFINE
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\treturn\n");
+      insert_code(PICLANG_RETURN);
+      break;
+    case WHILE:
+      write_assembly(assembly_file,"L%03d:\n", (lbl1 = label_counter));
+      insert_label(PICLANG_LABEL,lbl1);
+      label_counter++;
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tjz\tL%03d\n", (lbl2 = label_counter));
+      label_counter++;
+      insert_code(PICLANG_JZ);
+      insert_code(lbl2);
+      ex(p->opr.op[1]);
+      write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl1);
+      insert_code(PICLANG_JMP);
+      insert_code(lbl1);
+      write_assembly(assembly_file,"L%03d:\n", lbl2);
+      insert_label(PICLANG_LABEL,lbl2);
+      break;
+    case IF:
+      ex(p->opr.op[0]);
+      if (p->opr.nops > 2) {
+	/* if else */
+	write_assembly(assembly_file,"\tjz\tL%03d\n", (lbl1 = label_counter));
+	label_counter++;
+	insert_code(PICLANG_JZ);
+	insert_code(lbl1);
+	ex(p->opr.op[1]);
+	write_assembly(assembly_file,"\tjmp\tL%03d\n", (lbl2 = label_counter));
+	label_counter++;
+	insert_code(PICLANG_JMP);
+	insert_code(lbl2);
+	write_assembly(assembly_file,"L%03d:\n", lbl1);
+	insert_label(PICLANG_LABEL,lbl1);
+	ex(p->opr.op[2]);
+	write_assembly(assembly_file,"L%03d:\n", lbl2);
+	insert_label(PICLANG_LABEL,lbl2);
+      } else {
+	/* if */
+	write_assembly(assembly_file,"\tjz\tL%03d\n", (lbl1 = label_counter));
+	label_counter++;
+	insert_code(PICLANG_JZ);
+	insert_code(lbl1);
+	ex(p->opr.op[1]);
+	write_assembly(assembly_file,"L%03d:\n", lbl1);
+	insert_label(PICLANG_LABEL,lbl1);
+      }
+      break;
+    case PICLANG_PRINT:     
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
+      break;
+    case PICLANG_PRINTL:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
+      break;
+    case PICLANG_FPUTCH:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tfputch\n");insert_code(PICLANG_FPUTCH);
+      break;
+    case PICLANG_FPUTD:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tfputd\n");insert_code(PICLANG_FPUTD);
+      break;
+    case '=':// KEEP POP AFTER '='       
+      ex(p->opr.op[1]);
+    case PICLANG_POP:// KEEP POP AFTER '='
+      write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
+      insert_code( PICLANG_POP);
+      insert_code(resolve_variable(p->opr.op[0]->id.i));
+      break;
+    case UMINUS:    
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tneg\n");
+      break;
+    case PICLANG_SYSTEM:
+      {
+	int op_counter = p->opr.nops - 1;
+	for(;op_counter >= 0 ;op_counter--)
+	  ex(p->opr.op[op_counter]);
+	write_assembly(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
+	break;
+      }
+    case PICLANG_SPRINT:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tsprint\n");
+      insert_code(PICLANG_SPRINT);
+      break;
+    case PICLANG_MORSE:
+      ex(p->opr.op[1]);
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tmorse\n");
+      insert_code(PICLANG_MORSE);
+      break;
+    case PICLANG_TIME:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\ttime\n");
+      insert_code(PICLANG_TIME);
+      break;
+    case PICLANG_FFLUSH:
+      write_assembly(assembly_file,"\tfflush\n");
+      insert_code(PICLANG_FFLUSH);
+      break;
+    case PICLANG_FCLEAR:
+      write_assembly(assembly_file,"\tfclear\n");
+      insert_code(PICLANG_FCLEAR);
+      break;
+    case PICLANG_CLEAR:
+      write_assembly(assembly_file,"\tclear\n");
+      insert_code(PICLANG_CLEAR);
+      break;
+    case PICLANG_SET_TIME:
+      ex(p->opr.op[0]);
+      ex(p->opr.op[1]);
+      write_assembly(assembly_file,"\tsettime\n");
+      insert_code(PICLANG_SET_TIME);
+      break;
+    case PICLANG_SET_DATE:
+      ex(p->opr.op[0]);
+      ex(p->opr.op[1]);
+      ex(p->opr.op[2]);
+      write_assembly(assembly_file,"\tsetdate\n");
+      insert_code(PICLANG_SET_DATE);
+      break;
+    case PICLANG_ARGCH:
+      write_assembly(assembly_file,"\targch\n");
+      insert_code(PICLANG_ARGCH);
+      break;
+    case PICLANG_ARGD:
+      write_assembly(assembly_file,"\targd\n");
+      insert_code(PICLANG_ARGD);
+      break;
+    case PICLANG_GETD:
+      write_assembly(assembly_file,"\tgetd\n");insert_code(PICLANG_GETD);
+      break;
+    case PICLANG_GETCH:
+      write_assembly(assembly_file,"\tgetch\n");insert_code(PICLANG_GETCH);
+      break;
+    default:
+      ex(p->opr.op[0]);
+      ex(p->opr.op[1]);
+      switch(p->opr.oper) {
+      case '+':   
+	write_assembly(assembly_file,"\tadd \n"); 
+	insert_code(PICLANG_ADD);
+	break;
+      case '-':   
+	write_assembly(assembly_file,"\tsub\n");
+	insert_code(PICLANG_SUB); 
+	break; 
+      case '*':   
+	write_assembly(assembly_file,"\tmul\n");
+	insert_code(PICLANG_MULT); 
+	break;
+      case '/':   
+	write_assembly(assembly_file,"\tdiv\n"); 
+	break;
+      case '<':   
+	write_assembly(assembly_file,"\tcompLT\n"); 
+	insert_code(PICLANG_COMPLT);
+	break;
+      case '>':   
+	write_assembly(assembly_file,"\tcompGT\n"); 
+	insert_code(PICLANG_COMPGT);
+	break;
+      case GE:    
+	write_assembly(assembly_file,"\tcompGE\n"); 
+	break;
+      case LE:   
+	write_assembly(assembly_file,"\tcompLE\n"); 
+	break;
+      case NE:    
+	write_assembly(assembly_file,"\tcompNE\n"); 
+	insert_code(PICLANG_COMPNE);
+	break;
+      case EQ:    
+	write_assembly(assembly_file,"\tcompEQ\n"); 
+	insert_code(PICLANG_COMPEQ);
+	break;
+      }
     }
-    return 0;
+  }
+  return 0;
 }
 
 int resolve_string(const char *str, int *is_new)
@@ -822,9 +854,10 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
       magic_number = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       magic_number->next = size;
       magic_number->val = PICLANG_magic_numbers[i];
+      magic_number->type = typePCB;
       size = magic_number;
     }
-
+  
 
   return size;
 }

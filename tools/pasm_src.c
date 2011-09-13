@@ -9,6 +9,7 @@
 #include <stdarg.h>
 
 extern FILE *assembly_file;
+picos_size_t label_counter = 0;
 
 int write_assembly(FILE *stream, const char *format, ...)
 {
@@ -33,7 +34,7 @@ void _attach_label(struct compiled_code *ptrlist_end, picos_size_t label)
 }
 #endif
 
-void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val)
+void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label)
 {
   struct compiled_code *list = *ptrlist;
   struct compiled_code *list_end = *ptrlist_end;
@@ -43,14 +44,14 @@ void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct 
       *ptrlist_end = *ptrlist;
       list = *ptrlist;
       list->val = val;
-      list->label = 0;
+      list->label = label;
       list->type = type;
       list->next = NULL;
       return;
     }
   
   list_end->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  list_end->next->label = list_end->label + 1;
+  list_end->next->label = label;
   *ptrlist_end = list_end->next;
   (*ptrlist_end)->next = NULL;
   (*ptrlist_end)->val = val;
@@ -111,17 +112,19 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
 
 int lookup_label(const struct compiled_code* code, picos_size_t label)
 {
-  int label_index = 0;
+  int code_counter = 0;
   if(code == NULL)
     return -1;
   for(;code != NULL;code = code->next)
     {
+      if(code->type == typePCB)
+	continue;
       if(code->type == typeLabel)
 	{
-	  if(label_index == label)
-	    return code->label;
-	  label_index++;
+	  if(code->label == label)
+	    return code_counter;
 	}
+      code_counter++;
     }
   return -1;
 }
@@ -145,7 +148,7 @@ void resolve_labels(struct compiled_code* code)
 		  fprintf(stderr,"Could not resolve label %d\n",code->next->val);
 		  return;
 		}
-	      code->next->val = label_addr;
+	      code->next->val = (picos_size_t)label_addr;
 	      code = code->next;
 	      continue;
 	    }

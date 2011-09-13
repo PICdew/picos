@@ -99,7 +99,7 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
   num_bytes = sb[FS_SuperBlock_block_size]*sb[FS_SuperBlock_num_blocks];
   
   for(;curr_byte < num_bytes;curr_byte++)
-    insert_compiled_code(typeCode,&code,&code_end,sb[curr_byte]);
+    insert_compiled_code(typeCode,&code,&code_end,sb[curr_byte],0);
   
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));
   FPrintCode(eeprom_file,code,0,hex_buffer,0x4200,0,type);

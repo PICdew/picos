@@ -1,0 +1,97 @@
+def <do_math>
+{
+  c = pop();
+  r = pop();
+  l = pop();
+  
+  if(c == '*')
+    {
+      push(l*r);
+      return;
+    }
+  if(c == '+')
+    {
+      push(l+r);
+      return;
+    }
+  if(c == '-')
+    {
+      push(l-r);
+      return;
+    }
+  push(l);
+}
+
+def <update_digit>
+{
+  n = pop();
+  v = pop();
+  v = v*10 - 0x30;
+  v = v + n;
+  push(v);
+}
+
+def <main>
+{
+  a = 0;/* lhs */
+  b = 0;/* rhs */
+  o = 0;/* operator */
+  i = getch();
+  while(i != 'q')
+    {
+      if(i == '*')
+	{
+	  o = i;
+	  putch(i);
+	}
+      else if( i == '+')
+	{
+	  o = i;
+	  putch(i);
+	}
+      else if( i == '-')
+	{
+	  o = i;
+	  putch(i);
+	}
+      else if(i == 0xa)
+	{
+	  push(a);
+	  push(b);
+	  push(o);
+	  call <do_math>;
+	  a = pop();
+	  b = 0;
+	  o = 0;
+	  clear();
+	  putd(a);
+	}
+      else if(i > 0x2f)
+	{
+	  if(i < ':')
+	    {
+	      if(o == 0)
+		{
+		  push(a);
+		  push(i);
+		  call <update_digit>;
+		  a = pop();
+		  clear();
+		  putd(a);
+		}
+	      else
+		{
+		  push(b);
+		  push(i);
+		  call <update_digit>;
+		  b = pop();
+		  clear();
+		  putd(a);
+		  putch(o);
+		  putd(b);
+		}
+	    }
+	}
+        i = getch();
+    }
+}
