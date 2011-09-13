@@ -82,6 +82,8 @@ const char* ARG_gets()
   if(ARG_next >= ARG_SIZE)
     return NULL;
   next_word = &ARG_buffer[ARG_next];
+  if(*next_word == 0)
+    return NULL;// end of args
   while(ARG_next != ARG_SIZE)
     {
       if(ARG_buffer[ARG_next] == ' ')

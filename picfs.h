@@ -24,7 +24,8 @@ enum {PICFS_SET, PICFS_CURR, PICFS_END,PICFS_REVERSE};
 
 #define ST_SIZE 0 // size is 2 bytes, big endian
 
-char picfs_pwd[4];// working directory
+#define SDCARD_ADDR_SIZE 4// Number of bytes in a SD card address (big endian)
+char picfs_pwd[SDCARD_ADDR_SIZE];// working directory
 volatile FS_Unit picfs_buffer[FS_BUFFER_SIZE];
 
 signed char picfs_mount(const char *addr);

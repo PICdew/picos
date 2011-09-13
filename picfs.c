@@ -26,7 +26,8 @@ char picfs_fh_bitmap = 0xff;
 #define ISOPEN(fh) ((fh & ~picfs_fh_bitmap) == 0)
 #define FS_BLOCK_SIZE FS_BUFFER_SIZE
 
-char picfs_mtab_bitmap = 0x3f;// six entries in the table
+#define PICFS_MTAB_BITMAP_DEFAULT 0x3f// six entries in the table
+char picfs_mtab_bitmap = PICFS_MTAB_BITMAP_DEFAULT;
 #define MTAB_ENTRY_MAX 6
 #define SIZE_picfs_mtab_entry 4
 
@@ -205,26 +206,38 @@ signed char picfs_chdir(char mount_point)
 /**
  * Resolves a block id to its SD address
  */
-static void picfs_getblock(char *addr, FS_Unit block_id)
+static signed char picfs_getblock(char *addr, FS_Unit block_id)
 {
   unsigned int larger;
+  char counter;
   if(addr == NULL)
-    return;
+    return error_return(PICFS_EINVAL);
+
+  if(picfs_mtab_bitmap == PICFS_MTAB_BITMAP_DEFAULT)
+    return error_return(PICFS_EINVAL);
+  
+  counter = 0;
+  larger = picfs_pwd[SDCARD_ADDR_SIZE - 2];
+  larger <<= 8;
+  larger = picfs_pwd[SDCARD_ADDR_SIZE - 1];
   
   addr[0] = addr[1] = 0;
-  larger = block_id * FS_BLOCK_SIZE;
+  if(0xffff - block_id*FS_BLOCK_SIZE < larger)
+    addr[1] = 1;
+  larger += block_id * FS_BLOCK_SIZE;
   addr[3] = larger & 0xff;
   larger &= 0xff00;
   addr[2] = larger >> 8;
-  
+
+  return SUCCESS;
 }
 
 static char picfs_buffer_block(FS_Unit block_id)
 {
-  char addr[4];
+  char addr[SDCARD_ADDR_SIZE];
   picfs_getblock(addr,block_id);
   SD_read(addr,picfs_buffer,FS_BUFFER_SIZE);
-  return 0;
+  return SUCCESS;
 }
 
 /**
