@@ -13,8 +13,10 @@ typedef struct {
 } conNodeType;
 
 /* identifiers */
-typedef struct {
-    int i;                      /* subscript to sym array */
+typedef struct idNodeType_NODE {
+  int i;// index in page memory (zero indexed), when viewed as flat memory
+  char name[FILENAME_MAX];// variable name used in program
+  struct idNodeType_NODE *next;
 } idNodeType;
 
 /* operators */
