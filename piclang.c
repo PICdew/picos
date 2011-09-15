@@ -232,12 +232,27 @@ void PICLANG_next()
     case PICLANG_FPUTD:
       {
 	char hex_val[PICOS_SIZE_T_DECIMAL_DIGITS], index;
-	dec_to_word(hex_val,(char)PICLANG_pop());
+	static bit leading_digit;
+	dec_to_word(hex_val,PICLANG_pop());
 	index = 0;
+	leading_digit = FALSE;
 	for(;index < 5;index++)
 	  {
-	    if(hex_val[index] != 0x30)
-	      picfs_buffer[PICLANG_file_buffer_index++] = hex_val[index];
+	    if(leading_digit == TRUE || hex_val[index] != 0x30)
+	      {
+		picfs_buffer[PICLANG_file_buffer_index++] = hex_val[index];
+		leading_digit = TRUE;
+	      }
+	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
+	      {
+		picfs_write(0);
+		memset(picfs_buffer,0,FS_BUFFER_SIZE);
+		PICLANG_file_buffer_index = 0;
+	      }
+	  }
+	if(leading_digit == FALSE)
+	  {
+	    picfs_buffer[PICLANG_file_buffer_index++] = '0';
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
 		picfs_write(0);

@@ -43,22 +43,23 @@
      FUNCT = 259,
      VARIABLE = 260,
      WHILE = 261,
-     IF = 262,
-     CALL = 263,
-     SUBROUTINE = 264,
-     RETURN = 265,
-     DEFINE = 266,
-     STRING = 267,
-     EXIT = 268,
-     PASM_CR = 269,
-     PASM_POP = 270,
-     IFX = 271,
-     ELSE = 272,
-     NE = 273,
-     EQ = 274,
-     LE = 275,
-     GE = 276,
-     UMINUS = 277
+     BREAK = 262,
+     IF = 263,
+     CALL = 264,
+     SUBROUTINE = 265,
+     RETURN = 266,
+     DEFINE = 267,
+     STRING = 268,
+     EXIT = 269,
+     PASM_CR = 270,
+     PASM_POP = 271,
+     IFX = 272,
+     ELSE = 273,
+     NE = 274,
+     EQ = 275,
+     LE = 276,
+     GE = 277,
+     UMINUS = 278
    };
 #endif
 /* Tokens.  */
@@ -66,22 +67,23 @@
 #define FUNCT 259
 #define VARIABLE 260
 #define WHILE 261
-#define IF 262
-#define CALL 263
-#define SUBROUTINE 264
-#define RETURN 265
-#define DEFINE 266
-#define STRING 267
-#define EXIT 268
-#define PASM_CR 269
-#define PASM_POP 270
-#define IFX 271
-#define ELSE 272
-#define NE 273
-#define EQ 274
-#define LE 275
-#define GE 276
-#define UMINUS 277
+#define BREAK 262
+#define IF 263
+#define CALL 264
+#define SUBROUTINE 265
+#define RETURN 266
+#define DEFINE 267
+#define STRING 268
+#define EXIT 269
+#define PASM_CR 270
+#define PASM_POP 271
+#define IFX 272
+#define ELSE 273
+#define NE 274
+#define EQ 275
+#define LE 276
+#define GE 277
+#define UMINUS 278
 
 
 
@@ -91,7 +93,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 54 "pasm_yacc.y"
+#line 55 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
     idNodeType variable;          /* symbol table index */
@@ -100,7 +102,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 104 "pasm_yacc.h"
+#line 106 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

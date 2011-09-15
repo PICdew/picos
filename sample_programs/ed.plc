@@ -1,3 +1,6 @@
+/**
+ * This program reads input and stores it in the mounted filesystem's raw file.
+ */
 def <main>
 {
   a = getch();

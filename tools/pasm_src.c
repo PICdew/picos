@@ -156,6 +156,8 @@ void resolve_labels(struct compiled_code* code)
 	default:
 	  break;
 	}
+      if((opcode2assembly(code->val))->has_arg)
+	code = code->next;
     }
 }
 

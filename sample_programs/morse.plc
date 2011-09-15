@@ -1,5 +1,5 @@
 /**
- * For a character supplied to the command line, the Morse code is generated
+ * Reads text input and produces Morse Code.
  */
 def <main>
 {

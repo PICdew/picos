@@ -55,6 +55,7 @@ imagdecimal {decimal}[iI]
 "=="            return EQ;
 "!="            return NE;
 "while"         return WHILE;
+"break"         return BREAK;
 "if"            return IF;
 "else"          return ELSE;
 "call"          return CALL;

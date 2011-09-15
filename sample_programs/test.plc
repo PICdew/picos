@@ -1,3 +1,6 @@
+/**
+ * Pointless program to compare two numbers (from command line)
+ */
 def <main>
 {
   a=argd();

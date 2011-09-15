@@ -32,6 +32,7 @@ size_t num_strings;
 
 idNodeType *variable_list = NULL;// Variable table
 extern picos_size_t label_counter;
+ int break_to_label;
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
@@ -59,7 +60,7 @@ void yyerror(char *s);
 
 %token <iValue> INTEGER FUNCT
 %token <variable> VARIABLE
-%token WHILE IF CALL SUBROUTINE RETURN DEFINE STRING EXIT 
+%token WHILE BREAK IF CALL SUBROUTINE RETURN DEFINE STRING EXIT 
 %token PASM_CR PASM_POP
 %nonassoc IFX
 %nonassoc ELSE
@@ -92,6 +93,7 @@ stmt:
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
         | VARIABLE '=' PASM_POP '(' ')' ';' { $$ = opr(PICLANG_POP,1,id($1)); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
+        | BREAK ';'                      { $$ = opr(BREAK, 0); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
@@ -302,7 +304,7 @@ int main(int argc, char **argv)
   string_list = NULL;num_strings = 0;
   variable_list = NULL;
   subroutines = NULL;
-
+  break_to_label = -1;
   while(TRUE)
     {    
       opt = getopt_long(argc,argv,short_options,long_options,&opt_index);
@@ -393,6 +395,8 @@ int main(int argc, char **argv)
 	{
 	  if(curr_code->type == typePCB)
 	    continue;
+	  if(curr_code->type == typeStr)
+	    break;
 	  curr = opcode2assembly(curr_code->val);
 	  fprintf(lst_file,"(%d)\t",code_counter++);
 	  switch(curr->opcode)
@@ -427,6 +431,22 @@ int main(int argc, char **argv)
 	    }
 	  fprintf(lst_file,"\n");
 	}
+      // print strings
+      if(curr_code != NULL)
+	fprintf(lst_file,"Strings:\n\"");
+      for(;curr_code != NULL;curr_code = curr_code->next)
+	{
+	  if(curr_code->val == 0)
+	    {
+	      fprintf(lst_file,"\"\n");
+	      if(curr_code->next != NULL)
+		fprintf(lst_file,"\"");
+	    }
+	  else if(curr_code->val == '"')
+	    fprintf(lst_file,"\"%c",curr_code->val);
+	  else
+	    fprintf(lst_file,"%c",curr_code->val);
+	}
     }
   
   FreeCode(the_code);
@@ -435,7 +455,7 @@ int main(int argc, char **argv)
 
 int ex(nodeType *p) {
   int lbl1, lbl2;
-
+  int previous_break_to_label = break_to_label;
   if (!p) return 0;
   switch(p->type) {
   case typeCon:
@@ -459,7 +479,7 @@ int ex(nodeType *p) {
 	  str_pointer.type = typeCon;
 	  if(is_new)
 	    {
-	      write_assembly(assembly_file,"\tstore\t\"%s\"\n", pStr);
+	      write_assembly(assembly_file,"\"%s\":", pStr);
 	      while(pStr != NULL)
 		{
 		  insert_string(*pStr);
@@ -493,7 +513,7 @@ int ex(nodeType *p) {
     case PICLANG_CALL:
       {
 	struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
-	write_assembly(assembly_file,"\tcall L%03d\n",subroutine->label);
+	write_assembly(assembly_file,"\tcall\tL%03d\n",subroutine->label);
 	insert_code(PICLANG_CALL);
 	insert_code(subroutine->label);
 	break;
@@ -517,6 +537,16 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\treturn\n");
       insert_code(PICLANG_RETURN);
       break;
+    case BREAK:
+      if(break_to_label < 0)
+	{
+	  yyerror("Not within a block from which to break");
+	  exit(-1);
+	}
+      write_assembly(assembly_file,"\tjmp\tL%03d\n", break_to_label);
+      insert_code(PICLANG_JMP);
+      insert_code(break_to_label);
+      break;
     case WHILE:
       write_assembly(assembly_file,"L%03d:\n", (lbl1 = label_counter));
       insert_label(PICLANG_LABEL,lbl1);
@@ -524,6 +554,7 @@ int ex(nodeType *p) {
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tjz\tL%03d\n", (lbl2 = label_counter));
       label_counter++;
+      break_to_label = lbl2;
       insert_code(PICLANG_JZ);
       insert_code(lbl2);
       ex(p->opr.op[1]);
@@ -532,6 +563,7 @@ int ex(nodeType *p) {
       insert_code(lbl1);
       write_assembly(assembly_file,"L%03d:\n", lbl2);
       insert_label(PICLANG_LABEL,lbl2);
+      break_to_label = previous_break_to_label;
       break;
     case IF:
       ex(p->opr.op[0]);

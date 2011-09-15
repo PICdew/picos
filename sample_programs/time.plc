@@ -1,4 +1,17 @@
 /**
+ * Forces 2 digits to be used.
+ */
+def <two_digit>
+{
+  two_digit = pop();
+  if(two_digit < 10)
+    {
+      putd(0);
+    }
+  putd(two_digit);
+}
+
+/**
  * This is a program that will display the date
  */
 def <main>
@@ -9,5 +22,6 @@ def <main>
   cr();
   putd(time('H'));
   putch(':');
-  putd(time('M'));
+  time('M');
+  call <two_digit>;
 }
