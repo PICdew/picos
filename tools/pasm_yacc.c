@@ -100,13 +100,13 @@ extern struct assembly_map opcodes[];
 
 char **string_list;
 size_t num_strings;
-int *variable_list;
-size_t num_variables;
+
+idNodeType *variable_list = NULL;// Variable table
 extern picos_size_t label_counter;
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
-nodeType *id(int i);
+nodeType *id(idNodeType var);
 nodeType *con(int value);
 void freeNode(nodeType *p);
 int ex(nodeType *p);
@@ -115,16 +115,15 @@ int yylex(void);
  FILE *lst_file;
 void yyerror(char *s);
  int resolve_string(const char *str, int *is_new);
- int resolve_variable(const int id);
+ int resolve_variable(const char *name);// Looks up a variable and retrieves its page memory index. If the variable does not yet exist, it will be added to the list.
  extern char *yytext;
  extern char *last_string;
  nodeType* store_string(const char *);
   
- int sym[26];                    /* symbol table */
 
 
 /* Line 189 of yacc.c  */
-#line 128 "pasm_yacc.c"
+#line 127 "pasm_yacc.c"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -203,16 +202,16 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 55 "pasm_yacc.y"
+#line 54 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
-    char sIndex;                /* symbol table index */
+    idNodeType variable;          /* symbol table index */
     nodeType *nPtr;             /* node pointer */
 
 
 
 /* Line 214 of yacc.c  */
-#line 216 "pasm_yacc.c"
+#line 215 "pasm_yacc.c"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -224,7 +223,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 228 "pasm_yacc.c"
+#line 227 "pasm_yacc.c"
 
 #ifdef short
 # undef short
@@ -525,10 +524,10 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    78,    78,    82,    83,    87,    88,    89,    90,    91,
-      92,    93,    94,    95,    96,    97,    98,    99,   103,   104,
-     108,   109,   110,   111,   112,   113,   114,   115,   116,   117,
-     118,   119,   120,   121,   122,   123,   124,   125,   126
+       0,    77,    77,    81,    82,    86,    87,    88,    89,    90,
+      91,    92,    93,    94,    95,    96,    97,    98,   102,   103,
+     107,   108,   109,   110,   111,   112,   113,   114,   115,   116,
+     117,   118,   119,   120,   121,   122,   123,   124,   125
 };
 #endif
 
@@ -1507,259 +1506,259 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 78 "pasm_yacc.y"
+#line 77 "pasm_yacc.y"
     { YYACCEPT; }
     break;
 
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 82 "pasm_yacc.y"
+#line 81 "pasm_yacc.y"
     { ex((yyvsp[(2) - (2)].nPtr)); freeNode((yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 5:
 
 /* Line 1455 of yacc.c  */
-#line 87 "pasm_yacc.y"
+#line 86 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, NULL, NULL); }
     break;
 
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 88 "pasm_yacc.y"
+#line 87 "pasm_yacc.y"
     { (yyval.nPtr) = opr(RETURN,1,(yyvsp[(2) - (2)].nPtr));}
     break;
 
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 89 "pasm_yacc.y"
+#line 88 "pasm_yacc.y"
     { (yyval.nPtr) = opr(PICLANG_CALL,1,(yyvsp[(2) - (3)].nPtr)); }
     break;
 
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 90 "pasm_yacc.y"
+#line 89 "pasm_yacc.y"
     {  (yyval.nPtr) = opr(DEFINE,2,(yyvsp[(2) - (3)].nPtr),(yyvsp[(3) - (3)].nPtr));}
     break;
 
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 91 "pasm_yacc.y"
+#line 90 "pasm_yacc.y"
     { (yyval.nPtr) = opr(PICLANG_PRINTL,1,con(0xa));}
     break;
 
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 92 "pasm_yacc.y"
+#line 91 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (2)].nPtr); }
     break;
 
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 93 "pasm_yacc.y"
-    { (yyval.nPtr) = opr('=', 2, id((yyvsp[(1) - (4)].sIndex)), (yyvsp[(3) - (4)].nPtr)); }
+#line 92 "pasm_yacc.y"
+    { (yyval.nPtr) = opr('=', 2, id((yyvsp[(1) - (4)].variable)), (yyvsp[(3) - (4)].nPtr)); }
     break;
 
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 94 "pasm_yacc.y"
-    { (yyval.nPtr) = opr(PICLANG_POP,1,id((yyvsp[(1) - (6)].sIndex))); }
+#line 93 "pasm_yacc.y"
+    { (yyval.nPtr) = opr(PICLANG_POP,1,id((yyvsp[(1) - (6)].variable))); }
     break;
 
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 95 "pasm_yacc.y"
+#line 94 "pasm_yacc.y"
     { (yyval.nPtr) = opr(WHILE, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 96 "pasm_yacc.y"
+#line 95 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 2, (yyvsp[(3) - (5)].nPtr), (yyvsp[(5) - (5)].nPtr)); }
     break;
 
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 97 "pasm_yacc.y"
+#line 96 "pasm_yacc.y"
     { (yyval.nPtr) = opr(IF, 3, (yyvsp[(3) - (7)].nPtr), (yyvsp[(5) - (7)].nPtr), (yyvsp[(7) - (7)].nPtr)); }
     break;
 
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 98 "pasm_yacc.y"
+#line 97 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 99 "pasm_yacc.y"
+#line 98 "pasm_yacc.y"
     {YYACCEPT;}
     break;
 
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 103 "pasm_yacc.y"
+#line 102 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(1) - (1)].nPtr); }
     break;
 
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 104 "pasm_yacc.y"
+#line 103 "pasm_yacc.y"
     { (yyval.nPtr) = opr(';', 2, (yyvsp[(1) - (2)].nPtr), (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 108 "pasm_yacc.y"
+#line 107 "pasm_yacc.y"
     { (yyval.nPtr) = con((yyvsp[(1) - (1)].iValue)); }
     break;
 
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 109 "pasm_yacc.y"
-    { (yyval.nPtr) = id((yyvsp[(1) - (1)].sIndex)); }
+#line 108 "pasm_yacc.y"
+    { (yyval.nPtr) = id((yyvsp[(1) - (1)].variable)); }
     break;
 
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 110 "pasm_yacc.y"
+#line 109 "pasm_yacc.y"
     { (yyval.nPtr) = opr((yyvsp[(1) - (4)].iValue),1,(yyvsp[(3) - (4)].nPtr)); }
     break;
 
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 111 "pasm_yacc.y"
+#line 110 "pasm_yacc.y"
     { (yyval.nPtr) = opr((yyvsp[(1) - (4)].iValue),1,(yyvsp[(3) - (4)].nPtr)); }
     break;
 
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 112 "pasm_yacc.y"
+#line 111 "pasm_yacc.y"
     { (yyval.nPtr) = opr((yyvsp[(1) - (6)].iValue),2,(yyvsp[(3) - (6)].nPtr),(yyvsp[(5) - (6)].nPtr)); }
     break;
 
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 113 "pasm_yacc.y"
+#line 112 "pasm_yacc.y"
     { (yyval.nPtr) = opr((yyvsp[(1) - (8)].iValue),3,(yyvsp[(3) - (8)].nPtr),(yyvsp[(5) - (8)].nPtr),(yyvsp[(7) - (8)].nPtr)); }
     break;
 
   case 26:
 
 /* Line 1455 of yacc.c  */
-#line 114 "pasm_yacc.y"
+#line 113 "pasm_yacc.y"
     { (yyval.nPtr) = opr((yyvsp[(1) - (3)].iValue),0); }
     break;
 
   case 27:
 
 /* Line 1455 of yacc.c  */
-#line 115 "pasm_yacc.y"
+#line 114 "pasm_yacc.y"
     { (yyval.nPtr) = opr(UMINUS, 1, (yyvsp[(2) - (2)].nPtr)); }
     break;
 
   case 28:
 
 /* Line 1455 of yacc.c  */
-#line 116 "pasm_yacc.y"
+#line 115 "pasm_yacc.y"
     { (yyval.nPtr) = opr('+', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 29:
 
 /* Line 1455 of yacc.c  */
-#line 117 "pasm_yacc.y"
+#line 116 "pasm_yacc.y"
     { (yyval.nPtr) = opr('-', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 30:
 
 /* Line 1455 of yacc.c  */
-#line 118 "pasm_yacc.y"
+#line 117 "pasm_yacc.y"
     { (yyval.nPtr) = opr('*', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 31:
 
 /* Line 1455 of yacc.c  */
-#line 119 "pasm_yacc.y"
+#line 118 "pasm_yacc.y"
     { (yyval.nPtr) = opr('/', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 32:
 
 /* Line 1455 of yacc.c  */
-#line 120 "pasm_yacc.y"
+#line 119 "pasm_yacc.y"
     { (yyval.nPtr) = opr('<', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 33:
 
 /* Line 1455 of yacc.c  */
-#line 121 "pasm_yacc.y"
+#line 120 "pasm_yacc.y"
     { (yyval.nPtr) = opr('>', 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 34:
 
 /* Line 1455 of yacc.c  */
-#line 122 "pasm_yacc.y"
+#line 121 "pasm_yacc.y"
     { (yyval.nPtr) = opr(GE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 35:
 
 /* Line 1455 of yacc.c  */
-#line 123 "pasm_yacc.y"
+#line 122 "pasm_yacc.y"
     { (yyval.nPtr) = opr(LE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 36:
 
 /* Line 1455 of yacc.c  */
-#line 124 "pasm_yacc.y"
+#line 123 "pasm_yacc.y"
     { (yyval.nPtr) = opr(NE, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 37:
 
 /* Line 1455 of yacc.c  */
-#line 125 "pasm_yacc.y"
+#line 124 "pasm_yacc.y"
     { (yyval.nPtr) = opr(EQ, 2, (yyvsp[(1) - (3)].nPtr), (yyvsp[(3) - (3)].nPtr)); }
     break;
 
   case 38:
 
 /* Line 1455 of yacc.c  */
-#line 126 "pasm_yacc.y"
+#line 125 "pasm_yacc.y"
     { (yyval.nPtr) = (yyvsp[(2) - (3)].nPtr); }
     break;
 
 
 
 /* Line 1455 of yacc.c  */
-#line 1763 "pasm_yacc.c"
+#line 1762 "pasm_yacc.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1971,7 +1970,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 129 "pasm_yacc.y"
+#line 128 "pasm_yacc.y"
 
 
 void insert_subroutine(const char *name, size_t label)
@@ -2007,7 +2006,7 @@ nodeType *con(int value) {
     return p;
 }
 
-nodeType *id(int i) {
+nodeType *id(idNodeType variable_node) {
     nodeType *p;
     size_t nodeSize;
 
@@ -2018,7 +2017,9 @@ nodeType *id(int i) {
 
     /* copy information */
     p->type = typeId;
-    p->id.i = i;
+    p->id.i = variable_node.i;
+    strcpy(p->id.name, variable_node.name);
+    p->id.next = NULL;
 
     return p;
 }
@@ -2145,7 +2146,7 @@ int main(int argc, char **argv)
   the_code_end = the_code = NULL;
   the_strings = the_strings = NULL;
   string_list = NULL;num_strings = 0;
-  variable_list = NULL;num_variables = 0;
+  variable_list = NULL;
   subroutines = NULL;
 
   while(TRUE)
@@ -2214,7 +2215,7 @@ int main(int argc, char **argv)
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
-  pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,num_variables);
+  pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
 
   if(binary_file != NULL)
     {
@@ -2289,9 +2290,9 @@ int ex(nodeType *p) {
     insert_code(p->con.value);
     break;
   case typeId:        
-    write_assembly(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
+    write_assembly(assembly_file,"\tpush\t%s\n", p->id.name);
     insert_code(PICLANG_PUSH);
-    insert_code(resolve_variable(p->id.i));
+    insert_code(resolve_variable(p->id.name));
     break;
   case typeStr:
     {
@@ -2426,9 +2427,9 @@ int ex(nodeType *p) {
     case '=':// KEEP POP AFTER '='       
       ex(p->opr.op[1]);
     case PICLANG_POP:// KEEP POP AFTER '='
-      write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
+      write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
       insert_code( PICLANG_POP);
-      insert_code(resolve_variable(p->opr.op[0]->id.i));
+      insert_code(resolve_variable(p->opr.op[0]->id.name));
       break;
     case UMINUS:    
       ex(p->opr.op[0]);
@@ -2574,26 +2575,52 @@ int resolve_string(const char *str, int *is_new)
   return retval;
 }
 
-int resolve_variable(const int id)
+int count_variables()
+{
+  int retval = 0;
+  const idNodeType *it = variable_list;
+  while(it != NULL)
+    {
+      retval++;
+      it = it->next;
+    }
+  return retval;
+}
+
+int resolve_variable(const char *name)
 {
   int i;
+  idNodeType *curr_variable = variable_list;
+  if(name == NULL)
+    {
+      yyerror("Invalid variable name: NULL POINTER\n");
+      return -1;
+    }
+
   if(variable_list == NULL)
     {
-      variable_list = (int*)malloc(sizeof(int));
-      variable_list[0] = id;
-      num_variables = 1;
+      variable_list = (idNodeType*)malloc(sizeof(idNodeType));
+      variable_list->i = 0;
+      strcpy(variable_list->name,name);
+      variable_list->next = NULL;
       return 0;
     }
   
-  i = 0;
-  for(;i<num_variables;i++)
-    if(variable_list[i] == id)
-      return i;
-  
-  variable_list = (int*)realloc(variable_list,(num_variables+1)*sizeof(int));
-  variable_list[num_variables++] = id;
-  return num_variables - 1;
-  
+  while(curr_variable != NULL)
+    {
+      if(strcmp(curr_variable->name,name) == 0)
+	return curr_variable->i;
+      curr_variable = curr_variable->next;
+    }
+
+  // At this point, the variable does not exist.
+  curr_variable = (idNodeType*)malloc(sizeof(idNodeType));
+  strcpy(curr_variable->name,name);
+  curr_variable->i = count_variables();
+  curr_variable->next = variable_list;
+  variable_list = curr_variable;
+
+  return curr_variable->i;
 }
 
 const struct subroutine_map* get_subroutine(const char *name)

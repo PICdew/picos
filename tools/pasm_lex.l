@@ -103,15 +103,15 @@ imagdecimal {decimal}[iI]
                 return SUBROUTINE;
            }
 
-[a-z]       { 
-                yylval.sIndex = *yytext - 'a';
-                return VARIABLE;
-            }
-
 {variable} {
               struct assembly_map *asmb = keyword2assembly(yytext);
               if(asmb == NULL || asmb->opcode == PICLANG_NUM_COMMANDS)
-                 yyerror("syntax error");
+              {
+                strcpy(yylval.variable.name,yytext);
+                yylval.variable.i = -1;
+                yylval.variable.next = NULL;
+                return VARIABLE;
+              }
               yylval.iValue = asmb->opcode;
               return FUNCT;
            }

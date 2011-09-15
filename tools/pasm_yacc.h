@@ -91,10 +91,10 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 55 "pasm_yacc.y"
+#line 54 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
-    char sIndex;                /* symbol table index */
+    idNodeType variable;          /* symbol table index */
     nodeType *nPtr;             /* node pointer */
 
 

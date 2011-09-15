@@ -29,13 +29,13 @@ extern struct assembly_map opcodes[];
 
 char **string_list;
 size_t num_strings;
-int *variable_list;
-size_t num_variables;
+
+idNodeType *variable_list = NULL;// Variable table
 extern picos_size_t label_counter;
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
-nodeType *id(int i);
+nodeType *id(idNodeType var);
 nodeType *con(int value);
 void freeNode(nodeType *p);
 int ex(nodeType *p);
@@ -44,22 +44,21 @@ int yylex(void);
  FILE *lst_file;
 void yyerror(char *s);
  int resolve_string(const char *str, int *is_new);
- int resolve_variable(const int id);
+ int resolve_variable(const char *name);// Looks up a variable and retrieves its page memory index. If the variable does not yet exist, it will be added to the list.
  extern char *yytext;
  extern char *last_string;
  nodeType* store_string(const char *);
   
- int sym[26];                    /* symbol table */
 %}
 
 %union {
     int iValue;                 /* integer value */
-    char sIndex;                /* symbol table index */
+    idNodeType variable;          /* symbol table index */
     nodeType *nPtr;             /* node pointer */
 };
 
 %token <iValue> INTEGER FUNCT
-%token <sIndex> VARIABLE
+%token <variable> VARIABLE
 %token WHILE IF CALL SUBROUTINE RETURN DEFINE STRING EXIT 
 %token PASM_CR PASM_POP
 %nonassoc IFX
@@ -161,7 +160,7 @@ nodeType *con(int value) {
     return p;
 }
 
-nodeType *id(int i) {
+nodeType *id(idNodeType variable_node) {
     nodeType *p;
     size_t nodeSize;
 
@@ -172,7 +171,9 @@ nodeType *id(int i) {
 
     /* copy information */
     p->type = typeId;
-    p->id.i = i;
+    p->id.i = variable_node.i;
+    strcpy(p->id.name, variable_node.name);
+    p->id.next = NULL;
 
     return p;
 }
@@ -299,7 +300,7 @@ int main(int argc, char **argv)
   the_code_end = the_code = NULL;
   the_strings = the_strings = NULL;
   string_list = NULL;num_strings = 0;
-  variable_list = NULL;num_variables = 0;
+  variable_list = NULL;
   subroutines = NULL;
 
   while(TRUE)
@@ -368,7 +369,7 @@ int main(int argc, char **argv)
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
-  pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,num_variables);
+  pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
 
   if(binary_file != NULL)
     {
@@ -443,9 +444,9 @@ int ex(nodeType *p) {
     insert_code(p->con.value);
     break;
   case typeId:        
-    write_assembly(assembly_file,"\tpush\t%c\n", p->id.i + 'a');
+    write_assembly(assembly_file,"\tpush\t%s\n", p->id.name);
     insert_code(PICLANG_PUSH);
-    insert_code(resolve_variable(p->id.i));
+    insert_code(resolve_variable(p->id.name));
     break;
   case typeStr:
     {
@@ -580,9 +581,9 @@ int ex(nodeType *p) {
     case '=':// KEEP POP AFTER '='       
       ex(p->opr.op[1]);
     case PICLANG_POP:// KEEP POP AFTER '='
-      write_assembly(assembly_file,"\tpop\t%c\n", p->opr.op[0]->id.i + 'a');
+      write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
       insert_code( PICLANG_POP);
-      insert_code(resolve_variable(p->opr.op[0]->id.i));
+      insert_code(resolve_variable(p->opr.op[0]->id.name));
       break;
     case UMINUS:    
       ex(p->opr.op[0]);
@@ -728,26 +729,52 @@ int resolve_string(const char *str, int *is_new)
   return retval;
 }
 
-int resolve_variable(const int id)
+int count_variables()
+{
+  int retval = 0;
+  const idNodeType *it = variable_list;
+  while(it != NULL)
+    {
+      retval++;
+      it = it->next;
+    }
+  return retval;
+}
+
+int resolve_variable(const char *name)
 {
   int i;
+  idNodeType *curr_variable = variable_list;
+  if(name == NULL)
+    {
+      yyerror("Invalid variable name: NULL POINTER\n");
+      return -1;
+    }
+
   if(variable_list == NULL)
     {
-      variable_list = (int*)malloc(sizeof(int));
-      variable_list[0] = id;
-      num_variables = 1;
+      variable_list = (idNodeType*)malloc(sizeof(idNodeType));
+      variable_list->i = 0;
+      strcpy(variable_list->name,name);
+      variable_list->next = NULL;
       return 0;
     }
   
-  i = 0;
-  for(;i<num_variables;i++)
-    if(variable_list[i] == id)
-      return i;
-  
-  variable_list = (int*)realloc(variable_list,(num_variables+1)*sizeof(int));
-  variable_list[num_variables++] = id;
-  return num_variables - 1;
-  
+  while(curr_variable != NULL)
+    {
+      if(strcmp(curr_variable->name,name) == 0)
+	return curr_variable->i;
+      curr_variable = curr_variable->next;
+    }
+
+  // At this point, the variable does not exist.
+  curr_variable = (idNodeType*)malloc(sizeof(idNodeType));
+  strcpy(curr_variable->name,name);
+  curr_variable->i = count_variables();
+  curr_variable->next = variable_list;
+  variable_list = curr_variable;
+
+  return curr_variable->i;
 }
 
 const struct subroutine_map* get_subroutine(const char *name)
