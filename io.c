@@ -6,15 +6,16 @@
  *
  * This file has the code for the abstract IO functions.
  */
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "arg.h"
 #include "usart.h"
 #include "io.h"
 #include "picos_time.h"
 #include "utils.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <string.h>
 
