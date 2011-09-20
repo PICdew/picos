@@ -59,7 +59,9 @@
      EQ = 275,
      LE = 276,
      GE = 277,
-     UMINUS = 278
+     BSR = 278,
+     BSL = 279,
+     UMINUS = 280
    };
 #endif
 /* Tokens.  */
@@ -83,7 +85,9 @@
 #define EQ 275
 #define LE 276
 #define GE 277
-#define UMINUS 278
+#define BSR 278
+#define BSL 279
+#define UMINUS 280
 
 
 
@@ -102,7 +106,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 106 "pasm_yacc.h"
+#line 110 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

@@ -214,6 +214,8 @@ struct assembly_map opcodes[] = {
   {"sub", PICLANG_SUB, 0}, 
   {"mult", PICLANG_MULT, 0},
   {"div", PICLANG_DIV, 0},
+  {"bsl", PICLANG_BSL, 0},
+  {"bsr", PICLANG_BSR, 0},
   {"pushl", PICLANG_PUSHL, 1},
   {"push", PICLANG_PUSH, 1},
   {"pop", PICLANG_POP, 1},

@@ -65,7 +65,7 @@ void yyerror(char *s);
 %nonassoc IFX
 %nonassoc ELSE
 
-%left GE LE EQ NE '>' '<'
+%left BSL BSR GE LE EQ NE '>' '<'
 %left '+' '-'
 %left '*' '/'
 %left '%'
@@ -122,6 +122,8 @@ expr:
         | expr '<' expr         { $$ = opr('<', 2, $1, $3); }
         | expr '>' expr         { $$ = opr('>', 2, $1, $3); }
         | expr '%' expr         { $$ = opr('%', 2, $1, $3); }
+        | expr BSL expr          { $$ = opr(BSL, 2, $1, $3); }
+        | expr BSR expr          { $$ = opr(BSR, 2, $1, $3); }
         | expr GE expr          { $$ = opr(GE, 2, $1, $3); }
         | expr LE expr          { $$ = opr(LE, 2, $1, $3); }
         | expr NE expr          { $$ = opr(NE, 2, $1, $3); }
@@ -690,8 +692,16 @@ int ex(nodeType *p) {
       ex(p->opr.op[0]);
       ex(p->opr.op[1]);
       switch(p->opr.oper) {
+      case BSR:
+	write_assembly(assembly_file,"\tbsr \n");
+	insert_code(PICLANG_BSR);
+	break;
+      case BSL:
+	write_assembly(assembly_file,"\tbsl \n");
+	insert_code(PICLANG_BSL);
+	break;
       case '%':
-	write_assembly(assembly_file,"\tadd \n"); 
+	write_assembly(assembly_file,"\tmod \n"); 
 	insert_code(PICLANG_MOD);
 	break;
       case '+':   

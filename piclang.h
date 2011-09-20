@@ -114,6 +114,8 @@ enum PICLANG_COMMANDS
     PICLANG_FCLEAR/* Clears the picfs buffer */,
     PICLANG_MOD/* Modulus operator */,
     PICLANG_DIV/* INTEGER quotient */,
+    PICLANG_BSL/* Bit shift left */,
+    PICLANG_BSR/* Bit shift right */,
     PICLANG_NUM_COMMANDS
   };
 

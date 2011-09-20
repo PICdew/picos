@@ -24,6 +24,14 @@ def <do_math>
     {
       l = l / r;/* integer division */
     }
+  else if(c == '<')
+    {
+      l = l << r;
+    }
+  else if(c == '>')
+    {
+      l = l >> r;
+    }
   push(l);
 }
 
@@ -65,6 +73,16 @@ def <main>
 	  putch(i);
 	}
       else if( i == '/')
+	{
+	  o = i;
+	  putch(i);
+	}
+      else if( i == '<')
+	{
+	  o = i;
+	  putch(i);
+	}
+      else if( i == '>')
 	{
 	  o = i;
 	  putch(i);

@@ -49,7 +49,8 @@ imagdecimal {decimal}[iI]
 <C_COMMENT>"*/" {BEGIN(INITIAL);}
 <C_COMMENT>. {}
 
-
+">>"            return BSR;
+"<<"            return BSL;
 ">="            return GE;
 "<="            return LE;
 "=="            return EQ;

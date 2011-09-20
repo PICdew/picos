@@ -247,6 +247,19 @@ void PICLANG_next()
 	IO_flush();
 	break;
       }
+    case PICLANG_BSL: case PICLANG_BSR:// bit shifts
+      {
+	picos_size_t val, shift_amount;
+	shift_amount = PICLANG_pop();
+	val = PICLANG_pop();
+	if(command == PICLANG_BSL)
+	  val <<= shift_amount;
+	else
+	  val >>= shift_amount;
+	PICLANG_pushl(val);
+	PICLANG_update_arith_status();
+	break;
+      }
     case PICLANG_FPUTD:
       {
 	char hex_val[PICOS_SIZE_T_DECIMAL_DIGITS], index;
