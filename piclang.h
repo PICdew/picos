@@ -112,6 +112,8 @@ enum PICLANG_COMMANDS
     PICLANG_RETURN/* Return from a subroutine */,
     PICLANG_EXIT/* Exit a program */,
     PICLANG_FCLEAR/* Clears the picfs buffer */,
+    PICLANG_MOD/* Modulus operator */,
+    PICLANG_DIV/* INTEGER quotient */,
     PICLANG_NUM_COMMANDS
   };
 

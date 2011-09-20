@@ -127,7 +127,7 @@ imagdecimal {decimal}[iI]
                 return INTEGER;
             }
 
-[-,()<>=+*/;{}\[\]] {
+[-,()<>=+*/;{}\[\]%] {
                 return *yytext;
              }
 

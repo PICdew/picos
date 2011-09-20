@@ -68,6 +68,7 @@ void yyerror(char *s);
 %left GE LE EQ NE '>' '<'
 %left '+' '-'
 %left '*' '/'
+%left '%'
 %nonassoc UMINUS
 
 %type <nPtr> stmt expr stmt_list STRING SUBROUTINE
@@ -120,6 +121,7 @@ expr:
         | expr '/' expr         { $$ = opr('/', 2, $1, $3); }
         | expr '<' expr         { $$ = opr('<', 2, $1, $3); }
         | expr '>' expr         { $$ = opr('>', 2, $1, $3); }
+        | expr '%' expr         { $$ = opr('%', 2, $1, $3); }
         | expr GE expr          { $$ = opr(GE, 2, $1, $3); }
         | expr LE expr          { $$ = opr(LE, 2, $1, $3); }
         | expr NE expr          { $$ = opr(NE, 2, $1, $3); }
@@ -688,6 +690,10 @@ int ex(nodeType *p) {
       ex(p->opr.op[0]);
       ex(p->opr.op[1]);
       switch(p->opr.oper) {
+      case '%':
+	write_assembly(assembly_file,"\tadd \n"); 
+	insert_code(PICLANG_MOD);
+	break;
       case '+':   
 	write_assembly(assembly_file,"\tadd \n"); 
 	insert_code(PICLANG_ADD);
@@ -702,6 +708,7 @@ int ex(nodeType *p) {
 	break;
       case '/':   
 	write_assembly(assembly_file,"\tdiv\n"); 
+	insert_code(PICLANG_DIV);
 	break;
       case '<':   
 	write_assembly(assembly_file,"\tcompLT\n"); 

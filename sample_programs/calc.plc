@@ -6,18 +6,23 @@ def <do_math>
   
   if(c == '*')
     {
-      push(l*r);
-      return;
+      l = l*r;
     }
-  if(c == '+')
+  else if(c == '+')
     {
-      push(l+r);
-      return;
+      l = l+r;
     }
-  if(c == '-')
+  else if(c == '-')
     {
-      push(l-r);
-      return;
+      l = l-r;
+    }
+  else if(c == '%')
+    {
+      l = l % r;
+    }
+  else if(c == '/')
+    {
+      l = l / r;/* integer division */
     }
   push(l);
 }
@@ -50,6 +55,16 @@ def <main>
 	  putch(i);
 	}
       else if( i == '-')
+	{
+	  o = i;
+	  putch(i);
+	}
+      else if( i == '%')
+	{
+	  o = i;
+	  putch(i);
+	}
+      else if( i == '/')
 	{
 	  o = i;
 	  putch(i);

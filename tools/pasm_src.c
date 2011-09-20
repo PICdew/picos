@@ -209,9 +209,11 @@ size_t CountCode(struct compiled_code *the_code)
 }
 
 struct assembly_map opcodes[] = {
+  {"mod", PICLANG_MOD, 0},
   {"add", PICLANG_ADD, 0},
   {"sub", PICLANG_SUB, 0}, 
   {"mult", PICLANG_MULT, 0},
+  {"div", PICLANG_DIV, 0},
   {"pushl", PICLANG_PUSHL, 1},
   {"push", PICLANG_PUSH, 1},
   {"pop", PICLANG_POP, 1},

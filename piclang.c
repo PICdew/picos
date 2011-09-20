@@ -194,6 +194,24 @@ void PICLANG_next()
       PICLANG_pushl(PICLANG_pop() + PICLANG_pop());
       PICLANG_update_arith_status();
       break;
+    case PICLANG_MOD:case PICLANG_DIV:
+      {
+	picos_size_t divisor, rem, quotient;
+	divisor = PICLANG_pop();
+	rem = PICLANG_pop();
+	quotient = 0;
+	while(rem >= divisor)
+	  {
+	    rem -= divisor;
+	    quotient++;
+	  }
+	if(command == PICLANG_MOD)
+	  PICLANG_pushl(rem);
+	else
+	  PICLANG_pushl(quotient);
+	PICLANG_update_arith_status();
+	break;
+      }
     case PICLANG_SUB:
       {
 	picos_size_t rhs = PICLANG_pop();
