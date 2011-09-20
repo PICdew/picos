@@ -47,9 +47,9 @@
      IF = 263,
      CALL = 264,
      SUBROUTINE = 265,
-     RETURN = 266,
-     DEFINE = 267,
-     STRING = 268,
+     STRING = 266,
+     RETURN = 267,
+     DEFINE = 268,
      EXIT = 269,
      PASM_CR = 270,
      PASM_POP = 271,
@@ -73,9 +73,9 @@
 #define IF 263
 #define CALL 264
 #define SUBROUTINE 265
-#define RETURN 266
-#define DEFINE 267
-#define STRING 268
+#define STRING 266
+#define RETURN 267
+#define DEFINE 268
 #define EXIT 269
 #define PASM_CR 270
 #define PASM_POP 271

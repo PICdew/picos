@@ -60,7 +60,8 @@ void yyerror(char *s);
 
 %token <iValue> INTEGER FUNCT
 %token <variable> VARIABLE
-%token WHILE BREAK IF CALL SUBROUTINE RETURN DEFINE STRING EXIT 
+%type <nPtr> stmt expr stmt_list STRING SUBROUTINE
+%token WHILE BREAK IF CALL SUBROUTINE STRING RETURN DEFINE EXIT 
 %token PASM_CR PASM_POP
 %nonassoc IFX
 %nonassoc ELSE
@@ -71,7 +72,6 @@ void yyerror(char *s);
 %left '%'
 %nonassoc UMINUS
 
-%type <nPtr> stmt expr stmt_list STRING SUBROUTINE
 
 %%
 
@@ -109,11 +109,12 @@ stmt_list:
 expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
-        | FUNCT '(' STRING ')'  { $$ = opr($1,1,$3); }
+        | STRING                         { $$ = opr(typeStr, 1, $1); }
         | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
         | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
         | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
         | FUNCT '(' ')'         { $$ = opr($1,0); }
+        | expr '[' expr ']' { $$ = opr('[',2, $1,$3); }
         | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
         | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
         | expr '-' expr         { $$ = opr('-', 2, $1, $3); }
@@ -692,6 +693,10 @@ int ex(nodeType *p) {
       ex(p->opr.op[0]);
       ex(p->opr.op[1]);
       switch(p->opr.oper) {
+      case '[':// array access
+	write_assembly(assembly_file,"\tderef\n");
+	insert_code(PICLANG_DEREF);
+	break;
       case BSR:
 	write_assembly(assembly_file,"\tbsr \n");
 	insert_code(PICLANG_BSR);

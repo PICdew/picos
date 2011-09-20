@@ -247,6 +247,16 @@ void PICLANG_next()
 	IO_flush();
 	break;
       }
+    case PICLANG_DEREF:
+      {
+	picos_size_t addr,val;
+	addr = PICLANG_pop();// array index
+	addr += PICLANG_pop();// array starting address
+	addr += curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
+	SRAM_read(addr,&val,sizeof(picos_size_t));
+	PICLANG_pushl(val);
+	break;
+      }
     case PICLANG_BSL: case PICLANG_BSR:// bit shifts
       {
 	picos_size_t val, shift_amount;
@@ -336,14 +346,14 @@ void PICLANG_next()
 	static bit should_flush;
 	addr = curr_process_addr + curr_process.string_address*sizeof(picos_size_t);
 	addr += PICLANG_pop();
-	SRAM_read(addr++,&ch,sizeof(picos_size_t));
+	SRAM_read(addr++,&ch,1);
 	if(ch == 0)
 	  should_flush = FALSE;
 	else
 	  should_flush = TRUE;
 	while(ch != 0)
 	  {
-	    putch(ch);
+	    putch((char)ch);
 	    SRAM_read(addr++,&ch,1);
 	  }
 	if(should_flush == TRUE)
