@@ -249,11 +249,12 @@ void PICLANG_next()
       }
     case PICLANG_DEREF:
       {
-	picos_size_t addr,val;
+	picos_size_t addr;
+	char val;
 	addr = PICLANG_pop();// array index
 	addr += PICLANG_pop();// array starting address
 	addr += curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
-	SRAM_read(addr,&val,sizeof(picos_size_t));
+	SRAM_read(addr,&val,1);
 	PICLANG_pushl(val);
 	break;
       }
@@ -530,6 +531,15 @@ void PICLANG_next()
 	  curr_process.bitmap ^= PICLANG_ZERO;
 	break;
       }
+    case PICLANG_AND:
+      PICLANG_pushl(PICLANG_pop() & PICLANG_pop());
+      break;
+    case PICLANG_OR:
+      PICLANG_pushl(PICLANG_pop() | PICLANG_pop());
+      break;
+    case PICLANG_NOT:
+      PICLANG_pushl(~PICLANG_pop());
+      break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);
       break;

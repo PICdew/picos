@@ -123,6 +123,9 @@ expr:
         | expr '<' expr         { $$ = opr('<', 2, $1, $3); }
         | expr '>' expr         { $$ = opr('>', 2, $1, $3); }
         | expr '%' expr         { $$ = opr('%', 2, $1, $3); }
+        | expr '&' expr         { $$ = opr('&', 2, $1, $3); }
+        | expr '|' expr         { $$ = opr('|', 2, $1, $3); }
+        | '~' expr              { $$ = opr('~', 1, $2); }
         | expr BSL expr          { $$ = opr(BSL, 2, $1, $3); }
         | expr BSR expr          { $$ = opr(BSR, 2, $1, $3); }
         | expr GE expr          { $$ = opr(GE, 2, $1, $3); }
@@ -689,6 +692,11 @@ int ex(nodeType *p) {
     case PICLANG_GETCH:
       write_assembly(assembly_file,"\tgetch\n");insert_code(PICLANG_GETCH);
       break;
+    case '~':
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tnot\n");
+      insert_code(PICLANG_NOT);
+      break;
     default:
       ex(p->opr.op[0]);
       ex(p->opr.op[1]);
@@ -704,6 +712,14 @@ int ex(nodeType *p) {
       case BSL:
 	write_assembly(assembly_file,"\tbsl \n");
 	insert_code(PICLANG_BSL);
+	break;
+      case '&':
+	write_assembly(assembly_file,"\tand\n");
+	insert_code(PICLANG_AND);
+	break;
+      case '|':
+	write_assembly(assembly_file,"\tor\n");
+	insert_code(PICLANG_OR);
 	break;
       case '%':
 	write_assembly(assembly_file,"\tmod \n"); 

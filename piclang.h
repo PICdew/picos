@@ -116,6 +116,9 @@ enum PICLANG_COMMANDS
     PICLANG_DIV/* INTEGER quotient */,
     PICLANG_BSL/* Bit shift left */,
     PICLANG_BSR/* Bit shift right */,
+    PICLANG_AND/* Bitwise and */,
+    PICLANG_OR/* Bitwise or */,
+    PICLANG_NOT/* Bitwise complement */,
     PICLANG_DEREF/* dereference operation */,
     PICLANG_NUM_COMMANDS
   };
