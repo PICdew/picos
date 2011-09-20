@@ -1,0 +1,99 @@
+def <error_out>
+{
+  clear();
+  sprint("ERROR!");
+  exit(-1);
+}
+
+def <encode>
+{
+  base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  encode = pop();
+  if(encode > 63)
+    call <error_out>;
+  
+  push(base64[encode]);
+}
+
+def <main>
+{
+  keys = "sure.";/* "This is a test!"; */
+  size = argd();
+  idx = 0;
+  shift = 0;
+  next = 0;
+  mask = 0;
+  while(idx < size)
+    {
+      curr = keys[idx];
+      
+      /* Extract portion of next character */
+      shift = idx%3;
+      /* mask = 2*(shift+1);
+      mask = 1 << mask;
+      mask = mask - 1;
+      curr = (curr & ~mask) & 0xff;
+
+      /* new values * /
+      shift = (shift + 1)*2;
+      if((idx % 2) == 0)
+	{
+	  curr = curr >> shift;
+	  next = keys[idx] & mask;
+	  next = next << 4;
+	}
+      */
+      if(shift == 0)
+	{
+	  next = keys[idx] & 3;
+	  next = next << 4;
+	  curr = curr & 0x7c;
+	  curr = curr >> 2;
+	  push(curr);
+	  call <encode>;
+	  curr = pop();
+	  putch(curr);
+	}
+      else if(shift == 1)
+	{
+	  curr = curr & 0xf0;
+	  curr = curr >> 4;
+	  curr = curr + next;
+	  next = keys[idx] & 0xf;
+	  next = next << 2;
+	  push(curr);
+	  call <encode>;
+	  curr = pop();
+	  putch(curr);
+	}
+      else
+	{
+	  curr = curr & 0xc0;
+	  curr = curr >> 6;
+	  curr = curr + next;
+	  push(curr);
+	  call <encode>;
+	  curr = pop();
+	  putch(curr);
+	  curr = keys[idx] & 0x3f;
+	  push(curr);
+	  call <encode>;
+	  curr = pop();
+	  putch(curr);
+	}
+      
+      idx = idx + 1;
+    }
+
+  shift = idx % 3;
+  if(shift > 0)
+    {
+      push(next);
+      call <encode>;
+      curr = pop();
+      putch(curr);
+      putch('=');
+      if(shift == 1)
+	putch('=');
+    }
+}
