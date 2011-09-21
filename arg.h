@@ -6,6 +6,9 @@
  *
  * This function provides a buffered system for handling command arguments.
  */
+#ifndef ARG_H
+#define ARG_H
+
 #define ARG_SIZE 17
 
 enum {ARG_SHELL,ARG_PICLANG};
@@ -32,3 +35,7 @@ signed char ARG_getd();
 void ARG_putch(char ch);
 signed char ARG_getch();
 const char* ARG_gets();
+
+char ARG_count();
+
+#endif

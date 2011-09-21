@@ -97,3 +97,28 @@ const char* ARG_gets()
   return next_word;
 }
 
+char ARG_count()
+{
+  char count = 1;
+  while(ARG_gets() != NULL)
+    count++;
+  return count;
+}
+
+const char* ARG_get(char index)
+{
+  char count = 0;
+  const char *curr = ARG_buffer;
+
+  while(curr != NULL)
+    {
+      if(count == index)
+	break;
+      curr = ARG_gets();
+      count++;
+    }
+
+  return curr;
+}
+
+
