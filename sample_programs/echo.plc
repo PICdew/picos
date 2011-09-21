@@ -1,0 +1,13 @@
+def <main>
+{
+  clear();
+  nargs = argc;
+  i = 1;
+  while(i<nargs)
+    {
+      sprint(argv[i]);
+      i = i+1;
+      if(i != nargs)
+	putch(' ');
+    }
+}

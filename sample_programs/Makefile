@@ -11,3 +11,4 @@ all:
 	pasm -o fs/timestamp timestamp.plc
 	pasm -o fs/calc calc.plc
 	pasm -o fs/base64 base64.plc
+	pasm -o fs/echo echo.plc
