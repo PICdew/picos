@@ -241,6 +241,22 @@ void PICLANG_next()
 	PAGE_set(addr,PICLANG_pop(),0/* replace with UID */);
 	break;
       }
+    case PICLANG_ARGC:
+      PICLANG_pushl(ARG_count());
+      break;
+    case PICLANG_ARGV:
+      {
+	picos_size_t nth_arg = PICLANG_pop();
+	signed char idx;
+	idx = ARG_get(nth_arg);
+	if(idx < 0)
+	  {
+	    PICLANG_error(PICLANG_INVALID_PARAMETER);
+	    break;
+	  }
+	PICLANG_pushl((picos_size_t)idx);
+	break;
+      }
     case PICLANG_PRINT:
       {
 	putch(PICLANG_pop());
@@ -249,11 +265,20 @@ void PICLANG_next()
       }
     case PICLANG_DEREF:
       {
-	picos_size_t addr;
+	picos_size_t addr, array;
 	char val;
 	addr = PICLANG_pop();// array index
-	addr += PICLANG_pop();// array starting address
-	addr += curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
+	array = PICLANG_pop();// array starting address
+	if(array < ARG_SIZE)
+	  {
+	    extern char ARG_buffer[ARG_SIZE];
+	    PICLANG_pushl(*(ARG_buffer+array+addr));
+	    break;
+	  }
+	
+	// string section
+	array -= ARG_SIZE;
+	addr += array + curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
 	SRAM_read(addr,&val,1);
 	PICLANG_pushl(val);
 	break;
@@ -343,10 +368,20 @@ void PICLANG_next()
     case PICLANG_SPRINT:
       {
 	char ch;
-	picos_size_t addr;
+	picos_size_t addr, string_pointer;
 	static bit should_flush;
+
+	// string addresses start with arguments then const strings in executable
+	string_pointer = PICLANG_pop();
+	if(string_pointer < ARG_SIZE)
+	  {
+	    extern char ARG_buffer[ARG_SIZE];
+	    IO_puts(ARG_buffer + string_pointer);
+	    IO_flush();
+	    break;
+	  }
 	addr = curr_process_addr + curr_process.string_address*sizeof(picos_size_t);
-	addr += PICLANG_pop();
+	addr += string_pointer - ARG_SIZE;
 	SRAM_read(addr++,&ch,1);
 	if(ch == 0)
 	  should_flush = FALSE;

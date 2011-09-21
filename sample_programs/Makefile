@@ -10,3 +10,4 @@ all:
 	pasm -o fs/ed ed.plc
 	pasm -o fs/timestamp timestamp.plc
 	pasm -o fs/calc calc.plc
+	pasm -o fs/base64 base64.plc

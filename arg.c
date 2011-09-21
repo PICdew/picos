@@ -105,11 +105,18 @@ char ARG_count()
   return count;
 }
 
-const char* ARG_get(char index)
+signed char ARG_get(char index)
 {
   char count = 0;
   const char *curr = ARG_buffer;
 
+  for(;count < ARG_SIZE;count++)
+    if(ARG_buffer[count] == 0)
+      ARG_buffer[count] = ' ';
+       
+  count = 0;
+  ARG_next = 0;
+  curr = ARG_gets();
   while(curr != NULL)
     {
       if(count == index)
@@ -118,7 +125,9 @@ const char* ARG_get(char index)
       count++;
     }
 
-  return curr;
+  if(curr == NULL)
+    return -1;
+  return (signed char)(curr - ARG_buffer);
 }
 
 

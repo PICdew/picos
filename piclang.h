@@ -99,6 +99,8 @@ enum PICLANG_COMMANDS
     PICLANG_SET_TIME,
     PICLANG_SET_DATE,
     PICLANG_ARGCH,
+    PICLANG_ARGC/* Number of arguments including command */,
+    PICLANG_ARGV/* Get the index of the first character of the specified command argument*/,
     PICLANG_GETCH/* retrieve a character from stdin */,
     PICLANG_GETD/* retrieve a decimial integer from 0 to 9 from stdin */,
     PICLANG_JZ/* jump if zero */,

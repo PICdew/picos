@@ -3,6 +3,7 @@
 #include "../piclang.h"
 #include "utils.h"
 #include "../page.h"
+#include "../arg.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,7 +63,7 @@ void yyerror(char *s);
 %token <variable> VARIABLE
 %type <nPtr> stmt expr stmt_list STRING SUBROUTINE
 %token WHILE BREAK IF CALL SUBROUTINE STRING RETURN DEFINE EXIT 
-%token PASM_CR PASM_POP
+%token PASM_CR PASM_POP ARGV ARGC
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -110,6 +111,8 @@ expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
         | STRING                         { $$ = opr(typeStr, 1, $1); }
+        | ARGC                  { $$ = opr(PICLANG_ARGC,0); }
+        | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
         | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
         | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
         | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
@@ -483,7 +486,7 @@ int ex(nodeType *p) {
 	{
 	  nodeType str_pointer;
 	  int is_new = TRUE;
-	  str_pointer.con.value = resolve_string(pStr,&is_new);
+	  str_pointer.con.value = resolve_string(pStr,&is_new) + ARG_SIZE;// when referencing strings, arguments will go first.
 	  str_pointer.type = typeCon;
 	  if(is_new)
 	    {
@@ -605,6 +608,15 @@ int ex(nodeType *p) {
     case PICLANG_PRINT:     
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
+      break;
+    case PICLANG_ARGV:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\targv\n");
+      insert_code(PICLANG_ARGV);
+      break;
+    case PICLANG_ARGC:
+      write_assembly(assembly_file,"\targc\n");
+      insert_code(PICLANG_ARGC);
       break;
     case PICLANG_PRINTL:
       ex(p->opr.op[0]);

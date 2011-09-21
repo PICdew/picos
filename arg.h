@@ -37,5 +37,5 @@ signed char ARG_getch();
 const char* ARG_gets();
 
 char ARG_count();
-
+signed char ARG_get(char index);
 #endif

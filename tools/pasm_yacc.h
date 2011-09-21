@@ -53,15 +53,17 @@
      EXIT = 269,
      PASM_CR = 270,
      PASM_POP = 271,
-     IFX = 272,
-     ELSE = 273,
-     NE = 274,
-     EQ = 275,
-     LE = 276,
-     GE = 277,
-     BSR = 278,
-     BSL = 279,
-     UMINUS = 280
+     ARGV = 272,
+     ARGC = 273,
+     IFX = 274,
+     ELSE = 275,
+     NE = 276,
+     EQ = 277,
+     LE = 278,
+     GE = 279,
+     BSR = 280,
+     BSL = 281,
+     UMINUS = 282
    };
 #endif
 /* Tokens.  */
@@ -79,15 +81,17 @@
 #define EXIT 269
 #define PASM_CR 270
 #define PASM_POP 271
-#define IFX 272
-#define ELSE 273
-#define NE 274
-#define EQ 275
-#define LE 276
-#define GE 277
-#define BSR 278
-#define BSL 279
-#define UMINUS 280
+#define ARGV 272
+#define ARGC 273
+#define IFX 274
+#define ELSE 275
+#define NE 276
+#define EQ 277
+#define LE 278
+#define GE 279
+#define BSR 280
+#define BSL 281
+#define UMINUS 282
 
 
 
@@ -97,7 +101,7 @@ typedef union YYSTYPE
 {
 
 /* Line 1676 of yacc.c  */
-#line 55 "pasm_yacc.y"
+#line 56 "pasm_yacc.y"
 
     int iValue;                 /* integer value */
     idNodeType variable;          /* symbol table index */
@@ -106,7 +110,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 110 "pasm_yacc.h"
+#line 114 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

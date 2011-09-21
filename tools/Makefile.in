@@ -58,7 +58,8 @@ fs_DEPENDENCIES =
 fs_LINK = $(CCLD) $(fs_CFLAGS) $(CFLAGS) $(fs_LDFLAGS) $(LDFLAGS) -o \
 	$@
 am_pasm_OBJECTS = pasm-pasm_lex.$(OBJEXT) pasm-pasm_yacc.$(OBJEXT) \
-	pasm-pasm_src.$(OBJEXT) pasm-utils.$(OBJEXT)
+	pasm-pasm_src.$(OBJEXT) pasm-utils.$(OBJEXT) \
+	pasm-arg.$(OBJEXT)
 pasm_OBJECTS = $(am_pasm_OBJECTS)
 pasm_DEPENDENCIES =
 pasm_LINK = $(CCLD) $(pasm_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
@@ -186,7 +187,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_YFLAGS = -d
 pasm_CFLAGS = -DNOT_FOR_PIC -I../
-pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c ../utils.c
+pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c
 pasm_LDADD = -lm
 fs_SOURCES = fs.c pasm_src.c ../utils.c
 fs_CFLAGS = -I../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse 
@@ -306,6 +307,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-arg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_lex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_yacc.Po@am__quote@
@@ -422,6 +424,20 @@ pasm-utils.obj: ../utils.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../utils.c' object='pasm-utils.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-utils.obj `if test -f '../utils.c'; then $(CYGPATH_W) '../utils.c'; else $(CYGPATH_W) '$(srcdir)/../utils.c'; fi`
+
+pasm-arg.o: ../arg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-arg.o -MD -MP -MF $(DEPDIR)/pasm-arg.Tpo -c -o pasm-arg.o `test -f '../arg.c' || echo '$(srcdir)/'`../arg.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-arg.Tpo $(DEPDIR)/pasm-arg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../arg.c' object='pasm-arg.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-arg.o `test -f '../arg.c' || echo '$(srcdir)/'`../arg.c
+
+pasm-arg.obj: ../arg.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-arg.obj -MD -MP -MF $(DEPDIR)/pasm-arg.Tpo -c -o pasm-arg.obj `if test -f '../arg.c'; then $(CYGPATH_W) '../arg.c'; else $(CYGPATH_W) '$(srcdir)/../arg.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-arg.Tpo $(DEPDIR)/pasm-arg.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../arg.c' object='pasm-arg.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-arg.obj `if test -f '../arg.c'; then $(CYGPATH_W) '../arg.c'; else $(CYGPATH_W) '$(srcdir)/../arg.c'; fi`
 
 .l.c:
 	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)

@@ -65,7 +65,8 @@ imagdecimal {decimal}[iI]
 "quit"          return EXIT;
 "cr"            return PASM_CR;
 "pop"           return PASM_POP;
-
+"argv"          return ARGV;
+"argc"          return ARGC;
 
 \'[^\']\' {
                               yylval.iValue = yytext[1];
