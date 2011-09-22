@@ -229,6 +229,10 @@ struct assembly_map opcodes[] = {
   {"fputch", PICLANG_FPUTCH, 0},
   {"fputd", PICLANG_FPUTD, 0},
   {"fflush", PICLANG_FFLUSH, 0},
+  {"fclear", PICLANG_FCLEAR, 0},
+  {"fopen", PICLANG_FOPEN, 0},
+  {"fclose", PICLANG_FCLOSE, 0},
+  {"fread", PICLANG_FREAD, 0},
   {"system", PICLANG_SYSTEM, 0},
   {"morse", PICLANG_MORSE, 0},
   {"time", PICLANG_TIME, 0},
@@ -245,7 +249,6 @@ struct assembly_map opcodes[] = {
   {"compeq", PICLANG_COMPEQ, 0},
   {"compne", PICLANG_COMPNE, 0},
   {"exit", EOP, 0},
-  {"fclear", PICLANG_FCLEAR, 0},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 

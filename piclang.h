@@ -30,6 +30,9 @@
 #define PICLANG_CALL_STACK_SIZE 0x8
 #endif
 
+#define PICLANG_STRING_OFFSET (ARG_SIZE + FS_BUFFER_SIZE)
+
+
 // bitmap masks
 #define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
 
@@ -92,6 +95,10 @@ enum PICLANG_COMMANDS
     PICLANG_FPUTCH,
     PICLANG_FPUTD,
     PICLANG_FFLUSH,
+    PICLANG_FCLEAR/* Clears the picfs buffer */,
+    PICLANG_FOPEN,
+    PICLANG_FCLOSE,
+    PICLANG_FREAD,
     PICLANG_SYSTEM,
     PICLANG_MORSE,
     PICLANG_TIME,
@@ -113,7 +120,6 @@ enum PICLANG_COMMANDS
     PICLANG_CALL/* Call a subroutine (using the lables) */,
     PICLANG_RETURN/* Return from a subroutine */,
     PICLANG_EXIT/* Exit a program */,
-    PICLANG_FCLEAR/* Clears the picfs buffer */,
     PICLANG_MOD/* Modulus operator */,
     PICLANG_DIV/* INTEGER quotient */,
     PICLANG_BSL/* Bit shift left */,

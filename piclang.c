@@ -130,7 +130,7 @@ void PICLANG_pushl(picos_size_t val)
 
 picos_size_t PICLANG_pop()
 {
-  if(curr_process.stack_head > PICLANG_STACK_SIZE)
+  if(curr_process.stack_head > PICLANG_STACK_SIZE || curr_process.stack_head == 0)
     {
       PICLANG_error(PICLANG_SEGV);
       return 0;
@@ -288,9 +288,15 @@ void PICLANG_next()
 	    PICLANG_pushl(*(ARG_buffer+a+b));
 	    break;
 	  }
+	else if(b < ARG_SIZE + FS_BUFFER_SIZE)
+	  {
+	    b -= ARG_SIZE;
+	    PICLANG_pushl(*(picfs_buffer+a+b));
+	    break;
+	  }
 	
 	// string section
-	b -= ARG_SIZE;
+	b -= ARG_SIZE + FS_BUFFER_SIZE;
 	a += b + curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
 	SRAM_read(a,&ch1,1);
 	c = ch1;
@@ -350,9 +356,57 @@ void PICLANG_next()
     case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH  KEEP FFLUSH before FCLEAR
 	picfs_write(0);
     case PICLANG_FCLEAR:// KEEP FFLUSH before FCLEAR
-	memset(picfs_buffer,0,FS_BUFFER_SIZE);
-	PICLANG_file_buffer_index = 0;
+      memset(picfs_buffer,0,FS_BUFFER_SIZE);
+      PICLANG_file_buffer_index = 0;
+      break;
+    case PICLANG_FOPEN:
+      {
+	a = PICLANG_pop();
+	if(a < ARG_SIZE)
+	  {
+	    sch1 = picfs_open(ARG_buffer+a);
+	  }
+	else if(a < ARG_SIZE + FS_BUFFER_SIZE)
+	  {
+	    a -= ARG_SIZE;
+	    sch1 = picfs_open(picfs_buffer+a);
+	  }
+	else
+	  {
+	    c = 0;
+	    a -= ARG_SIZE + FS_BUFFER_SIZE;
+	    a += curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
+	    for(;c< PICFS_FILENAME_MAX;a++,c++)
+	      {
+		SRAM_read(a,&picfs_buffer[c],1);
+		if(picfs_buffer[c] == 0)
+		  break;
+	      }
+	    sch1 = picfs_open(picfs_buffer);
+	  }
+	PICLANG_pushl(sch1);
 	break;
+      }
+    case PICLANG_FCLOSE:
+      a = PICLANG_pop();
+      picfs_close(a);
+      break;
+    case PICLANG_FREAD:
+      a = PICLANG_pop();
+      sch1 = picfs_read(a);
+      b = sch1;
+      if(sch1 < 0)
+	{
+	  if(error_code == PICFS_EOF)
+	    {
+	      b = -1;
+	      error_code = SUCCESS;
+	    }
+	  else
+	    PICLANG_error(error_code);
+	}
+      PICLANG_pushl(b);
+      break;
     case PICLANG_PRINTL:
       IO_putd(PICLANG_pop());
       IO_flush();
@@ -387,8 +441,15 @@ void PICLANG_next()
 	    IO_flush();
 	    break;
 	  }
+	else if(a < ARG_SIZE + FS_BUFFER_SIZE)
+	  {
+	    a -= ARG_SIZE;
+	    IO_puts(picfs_buffer + a);
+	    IO_flush();
+	    break;
+	  }
 	/*addr*/b = curr_process_addr + curr_process.string_address*sizeof(picos_size_t);
-	b += a - ARG_SIZE;
+	b += a - ARG_SIZE - FS_BUFFER_SIZE;
 	SRAM_read(b++,&ch1,1);
 	if(ch1 == 0)
 	  flag1 = FALSE;

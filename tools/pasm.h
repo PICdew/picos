@@ -1,4 +1,6 @@
 #include "../piclang.h"
+#include "../arg.h"
+#include "fs.h"
 
 #include <stdio.h>
 #include <limits.h>

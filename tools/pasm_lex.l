@@ -67,6 +67,9 @@ imagdecimal {decimal}[iI]
 "pop"           return PASM_POP;
 "argv"          return ARGV;
 "argc"          return ARGC;
+"fin"           return FIN;
+"feof"          return FEOF;
+
 
 \'[^\']\' {
                               yylval.iValue = yytext[1];

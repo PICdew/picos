@@ -3,7 +3,6 @@
 #include "../piclang.h"
 #include "utils.h"
 #include "../page.h"
-#include "../arg.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +29,7 @@ extern struct assembly_map opcodes[];
 
 char **string_list;
 size_t num_strings;
+picos_size_t FS_BUFFER_SIZE;
 
 idNodeType *variable_list = NULL;// Variable table
 extern picos_size_t label_counter;
@@ -63,7 +63,7 @@ void yyerror(char *s);
 %token <variable> VARIABLE
 %type <nPtr> stmt expr stmt_list STRING SUBROUTINE
 %token WHILE BREAK IF CALL SUBROUTINE STRING RETURN DEFINE EXIT 
-%token PASM_CR PASM_POP ARGV ARGC
+%token PASM_CR PASM_POP ARGV ARGC FIN FEOF
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -110,8 +110,10 @@ stmt_list:
 expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
-        | STRING                         { $$ = opr(typeStr, 1, $1); }
+        | STRING                         { $$ = con(handle_string($1->str.string)); }
         | ARGC                  { $$ = opr(PICLANG_ARGC,0); }
+        | FIN                   { $$ = con(ARG_SIZE); }
+        | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
         | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
         | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
@@ -171,6 +173,33 @@ nodeType *con(int value) {
     p->con.value = value;
 
     return p;
+}
+
+int handle_string(const char *pStr)
+{
+  int retval = -1;
+  if(pStr != NULL)
+    {
+      int is_new = TRUE;
+      retval = resolve_string(pStr,&is_new) + PICLANG_STRING_OFFSET;// when referencing strings, arguments will go first.
+      if(is_new)
+	{
+	  if(assembly_file != NULL)
+	    write_assembly(assembly_file,"\t; \"%s\" = %d\n", pStr,retval);
+	  while(pStr != NULL)
+	    {
+	      insert_string(*pStr);
+	      if(*pStr == 0)
+		break;
+	      pStr++;
+	    }
+	}
+    }
+  else
+    {
+      yyerror("Invalid string");
+    }
+  return retval;
 }
 
 nodeType *id(idNodeType variable_node) {
@@ -267,7 +296,7 @@ void write_val_for_pic(FILE *binary_file,picos_size_t val)
 }
 
 
-static const char short_options[] = "a:e:hl:o:";
+static const char short_options[] = "a:b:e:hl:o:";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
@@ -277,6 +306,7 @@ static struct option long_options[] =
 	       {"eeprom",1,NULL, 'e'},
 	       {"binary",1,NULL,'o'},
 	       {"list",1,NULL,'l'},
+	       {"buffer_size",1,NULL,'b'},
                {0, 0, 0, 0}
              };
 
@@ -298,6 +328,7 @@ void print_help()
   printf("                     \t with the Hi Tech C Compiler.\n");
   printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
   printf("--list, -l <file> :\t Outputs a list of program addresses (PC values) for each assembly entry.\n");
+  printf("--block_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)");
 }
 
 int main(int argc, char **argv) 
@@ -316,6 +347,8 @@ int main(int argc, char **argv)
   variable_list = NULL;
   subroutines = NULL;
   break_to_label = -1;
+  FS_BUFFER_SIZE = 128;
+  
   while(TRUE)
     {    
       opt = getopt_long(argc,argv,short_options,long_options,&opt_index);
@@ -329,6 +362,12 @@ int main(int argc, char **argv)
 	  if(hex_file == NULL)
 	    hex_file = stdout;
 	  break;
+	case 'b':
+	  if(sscanf(optarg,"%hu",&FS_BUFFER_SIZE) != 1)
+	    {
+	      fprintf(stderr,"Could not read buffers size: %s\n",optarg);
+	      exit(-1);
+	    }
 	case 'a':
 	  assembly_file = fopen(optarg,"w");
 	  if(assembly_file == NULL)
@@ -479,30 +518,6 @@ int ex(nodeType *p) {
     insert_code(PICLANG_PUSH);
     insert_code(resolve_variable(p->id.name));
     break;
-  case typeStr:
-    {
-      char *pStr = p->str.string;
-      if(pStr != NULL)
-	{
-	  nodeType str_pointer;
-	  int is_new = TRUE;
-	  str_pointer.con.value = resolve_string(pStr,&is_new) + ARG_SIZE;// when referencing strings, arguments will go first.
-	  str_pointer.type = typeCon;
-	  if(is_new)
-	    {
-	      write_assembly(assembly_file,"\"%s\":", pStr);
-	      while(pStr != NULL)
-		{
-		  insert_string(*pStr);
-		  if(*pStr == 0)
-		    break;
-		  pStr++;
-		}
-	    }
-	  ex(&str_pointer);
-	}
-      break;
-    }
   case typeOpr:
     switch(p->opr.oper) {
     case EOP:
@@ -629,6 +644,18 @@ int ex(nodeType *p) {
     case PICLANG_FPUTD:
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tfputd\n");insert_code(PICLANG_FPUTD);
+      break;
+    case PICLANG_FOPEN:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tfopen\n");insert_code(PICLANG_FOPEN);
+      break;
+    case PICLANG_FCLOSE:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tfclose\n");insert_code(PICLANG_FCLOSE);
+      break;
+    case PICLANG_FREAD:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
     case '=':// KEEP POP AFTER '='       
       ex(p->opr.op[1]);
