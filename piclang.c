@@ -169,6 +169,13 @@ void PICLANG_update_arith_status()
 void PICLANG_next()
 {
   picos_size_t command;
+  picos_size_t a,b,c;// parameters, can be shared
+  signed char sch1;// signed char parameters
+  char ch1;// char parameter
+  static bit flag1;
+
+  extern char ARG_buffer[ARG_SIZE];
+
   if(curr_process.size == 0)
     return;
 
@@ -196,119 +203,124 @@ void PICLANG_next()
       break;
     case PICLANG_MOD:case PICLANG_DIV:
       {
-	picos_size_t divisor, rem, quotient;
-	divisor = PICLANG_pop();
-	rem = PICLANG_pop();
-	quotient = 0;
-	while(rem >= divisor)
+	// a/b --> c rem a
+	b = PICLANG_pop();
+	a = PICLANG_pop();
+	c = 0;
+	while(a >= b)
 	  {
-	    rem -= divisor;
-	    quotient++;
+	    a -= b;
+	    c++;
 	  }
 	if(command == PICLANG_MOD)
-	  PICLANG_pushl(rem);
+	  PICLANG_pushl(a);
 	else
-	  PICLANG_pushl(quotient);
+	  PICLANG_pushl(c);
 	PICLANG_update_arith_status();
 	break;
       }
     case PICLANG_SUB:
       {
-	picos_size_t rhs = PICLANG_pop();
-	PICLANG_pushl(PICLANG_pop() - rhs);
+	b = PICLANG_pop();
+	a = PICLANG_pop();
+	PICLANG_pushl(a - b);
 	PICLANG_update_arith_status();
 	break;
       }
     case PICLANG_MULT:
-      PICLANG_pushl(PICLANG_pop() * PICLANG_pop());
+      a = PICLANG_pop();
+      b = PICLANG_pop();
+      c = a*b;
+      PICLANG_pushl(c);
       PICLANG_update_arith_status();
       break;
     case PICLANG_PUSHL:
-      PICLANG_pushl(PICLANG_get_next_word());
+      a = PICLANG_get_next_word();
+      PICLANG_pushl(a);
       break;
     case PICLANG_PUSH:
       {
-	picos_size_t val = PAGE_get(PICLANG_get_next_word(),0/* replace with UID */);
+	a = PICLANG_get_next_word();
+	b = PAGE_get(a,0/* replace with UID */);
 	if(error_code != SUCCESS)
 	  PICLANG_error(error_code);
 	else
-	  PICLANG_pushl(val);
+	  PICLANG_pushl(b);
 	break;
       }
     case PICLANG_POP:
       {
-	picos_size_t addr = PICLANG_get_next_word();
-	PAGE_set(addr,PICLANG_pop(),0/* replace with UID */);
+	a = PICLANG_get_next_word();
+	b = PICLANG_pop();
+	PAGE_set(a,b,0/* replace with UID */);
 	break;
       }
     case PICLANG_ARGC:
-      PICLANG_pushl(ARG_count());
+      a = ARG_count();
+      PICLANG_pushl(a);
       break;
     case PICLANG_ARGV:
       {
-	picos_size_t nth_arg = PICLANG_pop();
-	signed char idx;
-	idx = ARG_get(nth_arg);
-	if(idx < 0)
+	a = PICLANG_pop();
+	sch1 = ARG_get(a);
+	if(sch1 < 0)
 	  {
 	    PICLANG_error(PICLANG_INVALID_PARAMETER);
 	    break;
 	  }
-	PICLANG_pushl((picos_size_t)idx);
+	b = (picos_size_t)sch1;
+	PICLANG_pushl(b);
 	break;
       }
     case PICLANG_PRINT:
       {
-	putch(PICLANG_pop());
+	a = PICLANG_pop();
+	putch(a);
 	IO_flush();
 	break;
       }
     case PICLANG_DEREF:
       {
-	picos_size_t addr, array;
-	char val;
-	addr = PICLANG_pop();// array index
-	array = PICLANG_pop();// array starting address
-	if(array < ARG_SIZE)
+	a = PICLANG_pop();// array index
+	b = PICLANG_pop();// array starting address
+	if(b < ARG_SIZE)
 	  {
-	    extern char ARG_buffer[ARG_SIZE];
-	    PICLANG_pushl(*(ARG_buffer+array+addr));
+	    PICLANG_pushl(*(ARG_buffer+a+b));
 	    break;
 	  }
 	
 	// string section
-	array -= ARG_SIZE;
-	addr += array + curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
-	SRAM_read(addr,&val,1);
-	PICLANG_pushl(val);
+	b -= ARG_SIZE;
+	a += b + curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
+	SRAM_read(a,&ch1,1);
+	c = ch1;
+	PICLANG_pushl(c);
 	break;
       }
     case PICLANG_BSL: case PICLANG_BSR:// bit shifts
       {
-	picos_size_t val, shift_amount;
-	shift_amount = PICLANG_pop();
-	val = PICLANG_pop();
+	a /*shift_amount*/ = PICLANG_pop();
+	b /*val*/ = PICLANG_pop();
 	if(command == PICLANG_BSL)
-	  val <<= shift_amount;
+	  b <<= a;
 	else
-	  val >>= shift_amount;
-	PICLANG_pushl(val);
+	  b >>= a;
+	PICLANG_pushl(b);
 	PICLANG_update_arith_status();
 	break;
       }
     case PICLANG_FPUTD:
       {
-	char hex_val[PICOS_SIZE_T_DECIMAL_DIGITS], index;
-	static bit leading_digit;
+	char hex_val[PICOS_SIZE_T_DECIMAL_DIGITS];//ch1 = index
 	dec_to_word(hex_val,PICLANG_pop());
-	index = 0;
-	leading_digit = FALSE;
-	for(;index < 5;index++)
+	ch1 = 0;
+	flag1 = FALSE;
+	for(;ch1 < 5;ch1++)
 	  {
-	    if(leading_digit == TRUE || hex_val[index] != 0x30)
+	    if(flag1 == TRUE || hex_val[ch1] != 0x30)
 	      {
-		picfs_buffer[PICLANG_file_buffer_index++] = hex_val[index];
-		leading_digit = TRUE;
+		picfs_buffer[PICLANG_file_buffer_index++] = hex_val[ch1];
+		flag1 = TRUE;
 	      }
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
@@ -317,7 +329,7 @@ void PICLANG_next()
 		PICLANG_file_buffer_index = 0;
 	      }
 	  }
-	if(leading_digit == FALSE)
+	if(flag1 == FALSE)
 	  {
 	    picfs_buffer[PICLANG_file_buffer_index++] = '0';
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
@@ -355,44 +367,39 @@ void PICLANG_next()
       }
     case PICLANG_GETD:
       {
-	char dec = getch();
-	if(dec < '0' || dec > '9')
+	ch1 = getch();
+	if(ch1 < '0' || ch1 > '9')
 	  {
 	    PICLANG_error(ARG_INVALID);
 	    break;
 	  }
-	dec -= 0x30;
-	PICLANG_pushl(dec);
+	ch1 -= 0x30;
+	PICLANG_pushl(ch1);
 	break;
       }
     case PICLANG_SPRINT:
       {
-	char ch;
-	picos_size_t addr, string_pointer;
-	static bit should_flush;
-
 	// string addresses start with arguments then const strings in executable
-	string_pointer = PICLANG_pop();
-	if(string_pointer < ARG_SIZE)
+	/*string_pointer*/a = PICLANG_pop();
+	if(a < ARG_SIZE)
 	  {
-	    extern char ARG_buffer[ARG_SIZE];
-	    IO_puts(ARG_buffer + string_pointer);
+	    IO_puts(ARG_buffer + a);
 	    IO_flush();
 	    break;
 	  }
-	addr = curr_process_addr + curr_process.string_address*sizeof(picos_size_t);
-	addr += string_pointer - ARG_SIZE;
-	SRAM_read(addr++,&ch,1);
-	if(ch == 0)
-	  should_flush = FALSE;
+	/*addr*/b = curr_process_addr + curr_process.string_address*sizeof(picos_size_t);
+	b += a - ARG_SIZE;
+	SRAM_read(b++,&ch1,1);
+	if(ch1 == 0)
+	  flag1 = FALSE;
 	else
-	  should_flush = TRUE;
-	while(ch != 0)
+	  flag1 = TRUE;
+	while(ch1 != 0)
 	  {
-	    putch((char)ch);
-	    SRAM_read(addr++,&ch,1);
+	    putch(ch1);
+	    SRAM_read(b++,&ch1,1);
 	  }
-	if(should_flush == TRUE)
+	if(flag1 == TRUE)
 	  IO_flush();
 	break;
       }
@@ -403,14 +410,13 @@ void PICLANG_next()
     case PICLANG_MORSE:
       {
 	char two[2];
-	unsigned int addr;
-	addr = PICLANG_pop();
+	/*addr*/a = PICLANG_pop();
 	two[1] = PICLANG_pop();//char or string?
 	if(two[1] == PICLANG_MORSE_STRING)
-	  SRAM_read(addr++,two,1);
+	  SRAM_read(a++,two,1);
 	else
 	  {
-	    two[0] = (char)addr;
+	    two[0] = (char)a;
 	    two[1] = 0;
 	    morse_sound(two);
 	    break;
@@ -419,15 +425,15 @@ void PICLANG_next()
 	while(two[0] != 0)
 	  {
 	    morse_sound(two);
-	    SRAM_read(addr++,two,1);
+	    SRAM_read(a++,two,1);
 	  }
 	break;
       }
     case PICLANG_TIME:
       {
 	TIME_t *thetime = TIME_get();
-	char key = PICLANG_pop();
-	switch(key)
+	ch1 = PICLANG_pop();
+	switch(ch1)
 	  {
 	  case 'Y':
 	    PICLANG_pushl(thetime->year);
@@ -486,41 +492,41 @@ void PICLANG_next()
       }
     case PICLANG_ARGD:
       {
-	signed char argd = ARG_getd();
-	if(argd < 0)
+	sch1 = ARG_getd();
+	if(sch1 < 0)
 	  {
 	    PICLANG_error(error_code);
 	    break;
 	  }
-	PICLANG_pushl((char)argd);
+	PICLANG_pushl((char)sch1);
 	PICLANG_update_arith_status();
 	break;
       }
     case PICLANG_ARGCH:
       {
-	signed char argch = ARG_getch();
-	if(argch < 0)
+	sch1 = ARG_getch();
+	if(sch1 < 0)
 	  {
 	    PICLANG_error(error_code);
 	    break;
 	  }
-	PICLANG_pushl((char)argch);
+	PICLANG_pushl((char)sch1);
 	break;
       }
     case PICLANG_JZ:case PICLANG_JMP:case PICLANG_CALL:
       {
-	picos_size_t label = PICLANG_get_next_word();
+	a = PICLANG_get_next_word();
 	if(curr_process.status != PICLANG_SUCCESS)
 	  break;
 	if(command == PICLANG_CALL)
 	  {
 	    PICLANG_call_push(curr_process.pc);
-	    curr_process.pc = label;
+	    curr_process.pc = a;
 	  }
 	else if(command == PICLANG_JMP)
-	  curr_process.pc = label;
+	  curr_process.pc = a;
 	else if((curr_process.bitmap & PICLANG_ZERO) == 0)
-	  curr_process.pc = label;
+	  curr_process.pc = a;
 	break;
       }
     case PICLANG_RETURN:
@@ -533,10 +539,9 @@ void PICLANG_next()
       break;
     case PICLANG_COMPLT:
       {
-	picos_size_t lhs,rhs;
-	rhs = PICLANG_pop();
-	lhs = PICLANG_pop();
-	if(lhs < rhs)
+	b = PICLANG_pop();
+	a = PICLANG_pop();
+	if(a < b)
 	  curr_process.bitmap |= PICLANG_ZERO;
 	else
 	  curr_process.bitmap &= ~PICLANG_ZERO;
@@ -544,10 +549,9 @@ void PICLANG_next()
       }
     case PICLANG_COMPGT:
       {
-	picos_size_t lhs,rhs;
-	rhs = PICLANG_pop();
-	lhs = PICLANG_pop();
-	if(lhs > rhs)
+	b = PICLANG_pop();
+	a = PICLANG_pop();
+	if(a > b)
 	  curr_process.bitmap |= PICLANG_ZERO;
 	else
 	  curr_process.bitmap &= ~PICLANG_ZERO;
@@ -555,10 +559,9 @@ void PICLANG_next()
       }
     case PICLANG_COMPEQ:case PICLANG_COMPNE:
       {
-	picos_size_t lhs,rhs;
-	rhs = PICLANG_pop();
-	lhs = PICLANG_pop();
-	if(lhs == rhs)
+	b = PICLANG_pop();
+	a = PICLANG_pop();
+	if(a == b)
 	  curr_process.bitmap |= PICLANG_ZERO;
 	else
 	  curr_process.bitmap &= ~PICLANG_ZERO;
@@ -567,13 +570,18 @@ void PICLANG_next()
 	break;
       }
     case PICLANG_AND:
-      PICLANG_pushl(PICLANG_pop() & PICLANG_pop());
+      a = PICLANG_pop();
+      b = PICLANG_pop();
+      PICLANG_pushl(a & b);
       break;
     case PICLANG_OR:
-      PICLANG_pushl(PICLANG_pop() | PICLANG_pop());
+      a = PICLANG_pop();
+      b = PICLANG_pop();
+      PICLANG_pushl(a | b);
       break;
     case PICLANG_NOT:
-      PICLANG_pushl(~PICLANG_pop());
+      a = PICLANG_pop();
+      PICLANG_pushl(~a);
       break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_error(PICLANG_UNKNOWN_COMMAND);

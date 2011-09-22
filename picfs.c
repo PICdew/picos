@@ -533,5 +533,3 @@ char picfs_is_open(file_t fh)
     return TRUE;
   return FALSE;
 }
-#if 0// working on adding these functions...
-#endif
