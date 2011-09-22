@@ -191,13 +191,13 @@ static signed char picfs_getdir(char *addr, char mount_point)
 
 signed char picfs_chdir(char mount_point)
 {
-  char oldpwd[4];
+  char oldpwd[SDCARD_ADDR_SIZE];
   signed char retval = 0;
-  memcpy(oldpwd,picfs_pwd,4);
+  memcpy(oldpwd,picfs_pwd,SDCARD_ADDR_SIZE);
   retval = picfs_getdir(picfs_pwd,mount_point);
   if(retval != SUCCESS)
     {
-      memcpy(picfs_pwd,oldpwd,4);
+      memcpy(picfs_pwd,oldpwd,SDCARD_ADDR_SIZE);
       return -1;
     }
   return 0;
@@ -248,7 +248,7 @@ static char picfs_buffer_block(FS_Unit block_id)
  */
 signed char picfs_open(const char *name)
 {
-  char addr[4], inode[4];
+  char addr[SDCARD_ADDR_SIZE], inode[SDCARD_ADDR_SIZE];
   char ch, pointer;
   if(picfs_fh_bitmap == 0)
     return error_return(PICFS_ENFILE);
@@ -304,7 +304,7 @@ signed char picfs_open(const char *name)
 signed char picfs_stat(file_t fh)
 {
   unsigned int size = 0;
-  char addr[4];
+  char addr[SDCARD_ADDR_SIZE];
   char inode,val;
   if(!ISOPEN(fh))
     return error_return(PICFS_EBADF);
@@ -389,7 +389,7 @@ signed char picfs_seek(file_t fh, offset_t offset, char whence)
 signed char picfs_write(file_t fh)
 {
   char num_free,first_block,second_block;
-  char addr[4], buffer[FS_BLOCK_SIZE];
+  char addr[SDCARD_ADDR_SIZE], buffer[FS_BLOCK_SIZE];
   SD_read(picfs_pwd,buffer,FS_BLOCK_SIZE);
   num_free = buffer[FS_SuperBlock_num_free_blocks];
   
@@ -462,7 +462,7 @@ signed char picfs_read(file_t fh)
 {
   char inode,ptr,eeprom_addr = fh*FILE_HANDLE_SIZE;
   offset_t nextnode;
-  char addr[4];
+  char addr[SDCARD_ADDR_SIZE];
 
   //Is this file open?
   if(!ISOPEN(fh))
