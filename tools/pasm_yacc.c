@@ -2605,7 +2605,7 @@ int ex(nodeType *p) {
     case DEFINE:// KEEP RETURN AFTER DEFINE
       {
 	const char *subroutine = p->opr.op[0]->str.string;
-	write_assembly(assembly_file,"L%03d:\n", (lbl1 = label_counter));
+	write_assembly(assembly_file,"L%03d:\t;<%s>\n", (lbl1 = label_counter),subroutine);
 	label_counter++;
 	insert_label(PICLANG_LABEL,lbl1);
 	insert_subroutine(subroutine,lbl1);

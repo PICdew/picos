@@ -5,7 +5,17 @@ def <error_out>
   exit(-1);
 }
 
-def <encode>
+def <output>
+{
+  output_val = pop();
+  putch(output_val);
+  if(should_save != 0)
+    {
+      fputch(output_val);
+    }
+}
+
+def <translate>
 {
   base64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   encode = pop();
@@ -15,6 +25,58 @@ def <encode>
   push(base64[encode]);
 }
 
+def <encode>
+{
+  val = pop();
+      shift = idx%3;
+
+      if(shift == 0)
+	{
+	  next = val & 3;
+	  next = next << 4;
+	  curr = val & 0x7c;
+	  curr = curr >> 2;
+	  push(curr);
+	  call <translate>;
+	  curr = pop();
+	  push(curr);
+	  call <output>;
+	}
+      else if(shift == 1)
+	{
+	  curr = val & 0xf0;
+	  curr = curr >> 4;
+	  curr = curr + next;
+	  next = val & 0xf;
+	  next = next << 2;
+	  push(curr);
+	  call <translate>;
+	  curr = pop();
+	  push(curr);
+	  call <output>;
+	}
+      else
+	{
+	  curr = val & 0xc0;
+	  curr = curr >> 6;
+	  curr = curr + next;
+	  push(curr);
+	  call <translate>;
+	  curr = pop();
+	  push(curr);
+	  call <output>;
+	  curr = val & 0x3f;
+	  push(curr);
+	  call <translate>;
+	  curr = pop();
+	  push(curr);
+	  call <output>;
+	}
+      
+      idx = idx + 1;
+
+}
+
 def <main>
 {
   idx = 0;
@@ -22,14 +84,26 @@ def <main>
   next = 0;
   mask = 0;
   do_encode = 1;
+  should_save = 0;
+  
+  sprint("Save?");
+  cr();
+  sprint("y or n");
+  input = getch();
+  if(input == 'y')
+    {
+      should_save = 1;
+      fclear();
+    }
 
+  clear();
   sprint("Enter e or d");
-  val = getch();
-  if(val == 'e')
+  input = getch();
+  if(input == 'e')
     {
       do_encode = 1;
     }
-  else if(val == 'q')
+  else if(input == 'q')
     {
       exit(0);
     }
@@ -41,65 +115,29 @@ def <main>
     }
 
   clear();
-  val = getch();
-  while(val != 0x4)
+  input = getch();
+  while(input != 0x4)
     {
-      curr = val;
-      
-      shift = idx%3;
-
-      if(shift == 0)
-	{
-	  next = val & 3;
-	  next = next << 4;
-	  curr = curr & 0x7c;
-	  curr = curr >> 2;
-	  push(curr);
-	  call <encode>;
-	  curr = pop();
-	  putch(curr);
-	}
-      else if(shift == 1)
-	{
-	  curr = curr & 0xf0;
-	  curr = curr >> 4;
-	  curr = curr + next;
-	  next = val & 0xf;
-	  next = next << 2;
-	  push(curr);
-	  call <encode>;
-	  curr = pop();
-	  putch(curr);
-	}
-      else
-	{
-	  curr = curr & 0xc0;
-	  curr = curr >> 6;
-	  curr = curr + next;
-	  push(curr);
-	  call <encode>;
-	  curr = pop();
-	  putch(curr);
-	  curr = val & 0x3f;
-	  push(curr);
-	  call <encode>;
-	  curr = pop();
-	  putch(curr);
-	}
-      
-      idx = idx + 1;
-      val = getch();
+      push(input);
+      call <encode>;
+      input = getch();
     }
 
   shift = idx % 3;
   if(shift > 0)
     {
       push(next);
-      call <encode>;
+      call <translate>;
       curr = pop();
-      putch(curr);
-      putch('=');
+      push(curr);
+      call <output>;
+      push('=');
+      call <output>;
       if(shift == 1)
-	putch('=');
+	{
+	  push('=');
+	  call <output>;
+	}
     }
+  fflush();
 }

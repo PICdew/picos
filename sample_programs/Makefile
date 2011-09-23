@@ -12,3 +12,4 @@ all:
 	pasm -o fs/calc calc.plc
 	pasm -o fs/base64 base64.plc
 	pasm -o fs/echo echo.plc
+	pasm -o fs/less less.plc
