@@ -14,6 +14,7 @@
 #include "arg.h"
 #include "io.h"
 #include "utils.h"
+#include "sram.h"
 
 #include <stdio.h>
 #include <string.h>

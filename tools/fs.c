@@ -1151,17 +1151,11 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
   dev = fopen(filename,"r");
   if(dev == NULL)
     return NULL;
-  
+
   fseek(dev,0,SEEK_END);
   len = ftell(dev);
   rewind(dev);
   
-  if(len % the_state->block_size != 0)
-    {
-      error_log("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n",filename,len,the_state->block_size);
-      return NULL;
-    }
-
   super_block = (FS_Unit*)malloc(len);
   if(fread(super_block,1,len,dev) != len)
     {
@@ -1174,6 +1168,15 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
   
   the_state->block_size = super_block[FS_SuperBlock_block_size];
   the_state->num_blocks = super_block[FS_SuperBlock_num_blocks];
+
+  if(len != the_state->num_blocks * the_state->block_size)
+    {
+      error_log("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n\tNumber of Blocks: %d\n",filename,len,the_state->block_size,the_state->num_blocks);
+      return NULL;
+    }
+
+
+
   return super_block;
 }
 
