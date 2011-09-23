@@ -94,7 +94,6 @@ stmt:
         | PASM_CR '(' ')' ';'                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | expr ';'                       { $$ = $1; }
         | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
-        | VARIABLE '=' PASM_POP '(' ')' ';' { $$ = opr(PICLANG_POP,1,id($1)); }
         | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
         | BREAK ';'                      { $$ = opr(BREAK, 0); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
@@ -116,6 +115,7 @@ expr:
         | FIN                   { $$ = con(ARG_SIZE); }
         | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
+        | PASM_POP '(' ')'      { $$ = opr(PICLANG_POP,0); }
         | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
         | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
         | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
@@ -658,9 +658,10 @@ int ex(nodeType *p) {
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
-    case '=':// KEEP POP AFTER '='       
+    case PICLANG_POP:
+      break;// do nothing.
+    case '=':
       ex(p->opr.op[1]);
-    case PICLANG_POP:// KEEP POP AFTER '='
       write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
       insert_code( PICLANG_POP);
       insert_code(resolve_variable(p->opr.op[0]->id.name));
