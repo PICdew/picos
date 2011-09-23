@@ -73,6 +73,7 @@ void yyerror(char *s);
 %left '%'
 %nonassoc UMINUS
 
+%locations
 
 %%
 
@@ -255,7 +256,7 @@ void freeNode(nodeType *p) {
 }
 
 void yyerror(char *s) {
-  fprintf(stdout, "%s: %s\n", s,yytext);
+  fprintf(stdout, "(%d - %d) %s: %s\n",yylloc.first_line,yylloc.last_line, s,yytext);
     exit(-1);
 }
 

@@ -169,7 +169,20 @@ extern FILE *yyin, *yyout;
 #define EOB_ACT_END_OF_FILE 1
 #define EOB_ACT_LAST_MATCH 2
 
-    #define YY_LESS_LINENO(n)
+    /* Note: We specifically omit the test for yy_rule_can_match_eol because it requires
+     *       access to the local variable yy_act. Since yyless() is a macro, it would break
+     *       existing scanners that call yyless() from OUTSIDE yylex. 
+     *       One obvious solution it to make yy_act a global. I tried that, and saw
+     *       a 5% performance hit in a non-yylineno scanner, because yy_act is
+     *       normally declared as a register variable-- so it is not worth it.
+     */
+    #define  YY_LESS_LINENO(n) \
+            do { \
+                int yyl;\
+                for ( yyl = n; yyl < yyleng; ++yyl )\
+                    if ( yytext[yyl] == '\n' )\
+                        --yylineno;\
+            }while(0)
     
 /* Return all but the first "n" matched characters back to the input stream. */
 #define yyless(n) \
@@ -518,6 +531,12 @@ static yyconst flex_int16_t yy_chk[210] =
        96,   96,   96,   96,   96,   96,   96,   96,   96
     } ;
 
+/* Table of booleans, true if rule could match eol. */
+static yyconst flex_int32_t yy_rule_can_match_eol[37] =
+    {   0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0,     };
+
 static yy_state_type yy_last_accepting_state;
 static char *yy_last_accepting_cpos;
 
@@ -544,6 +563,8 @@ void yyerror(char *);
 #include <string.h>
 #include <limits.h>
 
+#define YY_USER_ACTION {yylloc.first_line = yylineno; \
+        yylloc.last_line = yylineno;}
 
 unsigned char do_crc(const char *str)
 {
@@ -561,7 +582,7 @@ unsigned char do_crc(const char *str)
 }
 
 
-#line 565 "pasm_lex.c"
+#line 586 "pasm_lex.c"
 
 #define INITIAL 0
 #define C_COMMENT 1
@@ -749,10 +770,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 46 "pasm_lex.l"
+#line 50 "pasm_lex.l"
 
 
-#line 756 "pasm_lex.c"
+#line 777 "pasm_lex.c"
 
 	if ( !(yy_init) )
 		{
@@ -824,6 +845,16 @@ yy_find_action:
 
 		YY_DO_BEFORE_ACTION;
 
+		if ( yy_act != YY_END_OF_BUFFER && yy_rule_can_match_eol[yy_act] )
+			{
+			int yyl;
+			for ( yyl = 0; yyl < yyleng; ++yyl )
+				if ( yytext[yyl] == '\n' )
+					   
+    yylineno++;
+;
+			}
+
 do_action:	/* This label is used only to access EOF actions. */
 
 		switch ( yy_act )
@@ -837,123 +868,123 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 48 "pasm_lex.l"
+#line 52 "pasm_lex.l"
 BEGIN(C_COMMENT);
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 49 "pasm_lex.l"
+#line 53 "pasm_lex.l"
 {BEGIN(INITIAL);}
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 50 "pasm_lex.l"
+#line 54 "pasm_lex.l"
 {}
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 52 "pasm_lex.l"
+#line 56 "pasm_lex.l"
 return BSR;
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 53 "pasm_lex.l"
+#line 57 "pasm_lex.l"
 return BSL;
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 54 "pasm_lex.l"
+#line 58 "pasm_lex.l"
 return GE;
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 55 "pasm_lex.l"
+#line 59 "pasm_lex.l"
 return LE;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 56 "pasm_lex.l"
+#line 60 "pasm_lex.l"
 return EQ;
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 57 "pasm_lex.l"
+#line 61 "pasm_lex.l"
 return NE;
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 58 "pasm_lex.l"
+#line 62 "pasm_lex.l"
 return WHILE;
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 59 "pasm_lex.l"
+#line 63 "pasm_lex.l"
 return BREAK;
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 60 "pasm_lex.l"
+#line 64 "pasm_lex.l"
 return IF;
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 61 "pasm_lex.l"
+#line 65 "pasm_lex.l"
 return ELSE;
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 62 "pasm_lex.l"
+#line 66 "pasm_lex.l"
 return CALL;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 63 "pasm_lex.l"
+#line 67 "pasm_lex.l"
 return RETURN;
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 64 "pasm_lex.l"
+#line 68 "pasm_lex.l"
 return DEFINE;
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 65 "pasm_lex.l"
+#line 69 "pasm_lex.l"
 return EXIT;
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 66 "pasm_lex.l"
+#line 70 "pasm_lex.l"
 return PASM_CR;
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 67 "pasm_lex.l"
+#line 71 "pasm_lex.l"
 return PASM_POP;
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 68 "pasm_lex.l"
+#line 72 "pasm_lex.l"
 return ARGV;
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 69 "pasm_lex.l"
+#line 73 "pasm_lex.l"
 return ARGC;
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 70 "pasm_lex.l"
+#line 74 "pasm_lex.l"
 return FIN;
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 71 "pasm_lex.l"
+#line 75 "pasm_lex.l"
 return FEOF;
 	YY_BREAK
 case 24:
 /* rule 24 can match eol */
 YY_RULE_SETUP
-#line 74 "pasm_lex.l"
+#line 78 "pasm_lex.l"
 {
                               yylval.iValue = yytext[1];
                               return INTEGER;
@@ -962,7 +993,7 @@ YY_RULE_SETUP
 case 25:
 /* rule 25 can match eol */
 YY_RULE_SETUP
-#line 79 "pasm_lex.l"
+#line 83 "pasm_lex.l"
 {
                               size_t text_len = strlen(&yytext[1]);
                               yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
@@ -974,7 +1005,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 88 "pasm_lex.l"
+#line 92 "pasm_lex.l"
 {
            yylval.iValue = (int)yytext[1];
            return INTEGER;
@@ -982,7 +1013,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 93 "pasm_lex.l"
+#line 97 "pasm_lex.l"
 { 
                  sscanf(yytext,"0x%x",&yylval.iValue);
                   return INTEGER;
@@ -990,7 +1021,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 98 "pasm_lex.l"
+#line 102 "pasm_lex.l"
 { 
                  sscanf(yytext,"0%o",&yylval.iValue);
                   return INTEGER;
@@ -998,7 +1029,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 103 "pasm_lex.l"
+#line 107 "pasm_lex.l"
 {
                 size_t text_len = strlen(&yytext[1]);
                 yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
@@ -1010,7 +1041,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 112 "pasm_lex.l"
+#line 116 "pasm_lex.l"
 {
               struct assembly_map *asmb = keyword2assembly(yytext);
               if(asmb == NULL || asmb->opcode == PICLANG_NUM_COMMANDS)
@@ -1026,7 +1057,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 125 "pasm_lex.l"
+#line 129 "pasm_lex.l"
 {
                 yylval.iValue = atoi(yytext);
                 return INTEGER;
@@ -1034,7 +1065,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 130 "pasm_lex.l"
+#line 134 "pasm_lex.l"
 {
                 yylval.iValue = atoi(yytext);
                 return INTEGER;
@@ -1042,7 +1073,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 135 "pasm_lex.l"
+#line 139 "pasm_lex.l"
 {
                 return *yytext;
              }
@@ -1050,20 +1081,20 @@ YY_RULE_SETUP
 case 34:
 /* rule 34 can match eol */
 YY_RULE_SETUP
-#line 139 "pasm_lex.l"
+#line 143 "pasm_lex.l"
 ;       /* ignore whitespace */
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 141 "pasm_lex.l"
+#line 145 "pasm_lex.l"
 yyerror("Unknown character");
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 142 "pasm_lex.l"
+#line 146 "pasm_lex.l"
 ECHO;
 	YY_BREAK
-#line 1067 "pasm_lex.c"
+#line 1098 "pasm_lex.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(C_COMMENT):
 	yyterminate();
@@ -1425,6 +1456,10 @@ static int yy_get_next_buffer (void)
 
 	*--yy_cp = (char) c;
 
+    if ( c == '\n' ){
+        --yylineno;
+    }
+
 	(yytext_ptr) = yy_bp;
 	(yy_hold_char) = *yy_cp;
 	(yy_c_buf_p) = yy_cp;
@@ -1499,6 +1534,11 @@ static int yy_get_next_buffer (void)
 	c = *(unsigned char *) (yy_c_buf_p);	/* cast for 8-bit char's */
 	*(yy_c_buf_p) = '\0';	/* preserve yytext */
 	(yy_hold_char) = *++(yy_c_buf_p);
+
+	if ( c == '\n' )
+		   
+    yylineno++;
+;
 
 	return c;
 }
@@ -1970,6 +2010,9 @@ static int yy_init_globals (void)
      * This function is called from yylex_destroy(), so don't allocate here.
      */
 
+    /* We do not touch yylineno unless the option is enabled. */
+    yylineno =  1;
+    
     (yy_buffer_stack) = 0;
     (yy_buffer_stack_top) = 0;
     (yy_buffer_stack_max) = 0;
@@ -2062,7 +2105,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 142 "pasm_lex.l"
+#line 146 "pasm_lex.l"
 
 
 int yywrap(void) {

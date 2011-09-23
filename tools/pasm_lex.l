@@ -9,6 +9,8 @@ void yyerror(char *);
 #include <string.h>
 #include <limits.h>
 
+#define YY_USER_ACTION {yylloc.first_line = yylineno; \
+        yylloc.last_line = yylineno;}
 
 unsigned char do_crc(const char *str)
 {
@@ -26,6 +28,8 @@ unsigned char do_crc(const char *str)
 }
 
 %}
+
+%option yylineno
 
 %x C_COMMENT
 
