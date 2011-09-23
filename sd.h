@@ -14,13 +14,13 @@ extern void SD_restart(char block_size);
  * Write a null terminated buffer.
  * the size of loc must be four bytes and loc must be big endian
  */
-extern void SD_write(char *buff, char *loc, char n);
+extern void SD_write(void *buff, const char *loc, char n);
 
 /**
  * Read n characters from SD
  * the size of addr must be four bytes and should be big endian
  */
-extern void SD_read(char *addr, char *buffer, char n);
+extern void SD_read(const char *addr, void *buffer, char n);
 
 /**
  * Sets the proper TRIS bits. Initializes master mode with clock idle high and sped = Fosc/4

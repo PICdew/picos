@@ -2426,6 +2426,7 @@ int main(int argc, char **argv)
 	      fprintf(stderr,"Could not read buffers size: %s\n",optarg);
 	      exit(-1);
 	    }
+	  break;
 	case 'a':
 	  assembly_file = fopen(optarg,"w");
 	  if(assembly_file == NULL)
@@ -2458,7 +2459,6 @@ int main(int argc, char **argv)
 	  return -1;
 	}
     }
-  printf("Welcome to the piclang compiler.\n");
 
   if(optind < argc)
     {
@@ -2466,13 +2466,9 @@ int main(int argc, char **argv)
       extern FILE *yyin;
       if(input != NULL)
 	yyin = input;
-      if(assembly_file == NULL)
-	{
-	  printf("Assembly:\n");
-	  assembly_file = stdout;
-	}
     }
-
+  else
+    printf("Welcome to the piclang compiler.\n");
   
   yyparse();
   insert_code(EOP);

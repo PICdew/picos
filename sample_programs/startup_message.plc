@@ -3,6 +3,7 @@
  */
 def <main>
 {
+  clear();
   sprint("PicOS vs");
   putd(1);
   putch('.');

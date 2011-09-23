@@ -9,7 +9,13 @@
 #ifndef ARG_H
 #define ARG_H
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#ifndef ARG_SIZE
 #define ARG_SIZE 17
+#endif
 
 enum {ARG_SHELL,ARG_PICLANG};
 char ARG_next;// index into ARG_buffer 

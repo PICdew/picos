@@ -86,13 +86,13 @@ void cat_file(const char *filename, int fileptr)
 	  {
 	    if(fileptr >= 0)
 	      {
-		SRAM_write(fileptr,picfs_buffer,FS_BUFFER_SIZE);
+		SRAM_write(fileptr,(void*)picfs_buffer,FS_BUFFER_SIZE);
 		fileptr += FS_BUFFER_SIZE;
 	      }
 	    else if(fileptr == -2)
 	      picfs_write(0);
 	    else
-	      IO_puts(picfs_buffer);
+	      IO_puts((char*)picfs_buffer);
 	  }
 	}
       picfs_close(file);
@@ -236,7 +236,7 @@ static char picfs_buffer_block(FS_Unit block_id)
 {
   char addr[SDCARD_ADDR_SIZE];
   picfs_getblock(addr,block_id);
-  SD_read(addr,picfs_buffer,FS_BUFFER_SIZE);
+  SD_read(addr,(void*)picfs_buffer,FS_BUFFER_SIZE);
   return SUCCESS;
 }
 
@@ -265,7 +265,7 @@ signed char picfs_open(const char *name)
   for(;pointer < FS_INode_pointers;pointer++,picfs_offset_addr(inode,1))
     {
       char entrypos = 0;
-      SRAM_write(SRAM_PICFS_OPEN_SWAP_ADDR,picfs_buffer,FS_BUFFER_SIZE);
+      SRAM_write(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
       SD_read(inode,&ch,1);//dir entry listing
       if(ch == 0)
 	break;
@@ -276,14 +276,14 @@ signed char picfs_open(const char *name)
 	  if(ch == 0)
 	    break;
 	  picfs_offset_addr(addr,1);entrypos++;
-	  SD_read(addr,picfs_buffer,ch);// filename
+	  SD_read(addr,(void*)picfs_buffer,ch);// filename
 	  picfs_buffer[ch] = 0;
 	  picfs_offset_addr(addr,ch);entrypos += ch;
-	  if(strcmp(picfs_buffer,name) == 0)
+	  if(strcmp((char*)picfs_buffer,name) == 0)
 	    {
 	      signed char fh;
 	      char eeprom_addr;
-	      SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,picfs_buffer,FS_BUFFER_SIZE);// restore swapped memory
+	      SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// restore swapped memory
 	      SD_read(addr,&ch,1);// first inode in file
 	      fh = picfs_get_free_fh();//file handle
 	      if(fh < 0)
@@ -299,7 +299,7 @@ signed char picfs_open(const char *name)
 	  picfs_offset_addr(addr,1);entrypos++;
 	}
     }
-   SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,picfs_buffer,FS_BUFFER_SIZE);// restore swapped memory
+   SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// restore swapped memory
   return error_return(PICFS_NOENT);
 
 }
@@ -394,8 +394,8 @@ signed char picfs_write(file_t fh)
   char num_free,first_block,second_block;
   char addr[SDCARD_ADDR_SIZE], write_overflow[2];
   // swap out the picfs_buffer
-  SRAM_write(SRAM_PICFS_WRITE_SWAP_ADDR,picfs_buffer,FS_BUFFER_SIZE);
-  SD_read(picfs_pwd,picfs_buffer,FS_BLOCK_SIZE);
+  SRAM_write(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
+  SD_read(picfs_pwd,(void*)picfs_buffer,FS_BLOCK_SIZE);
   num_free = picfs_buffer[FS_SuperBlock_num_free_blocks];
   
   if(num_free < 2)
@@ -407,62 +407,62 @@ signed char picfs_write(file_t fh)
     {
       FS_Unit free_queue = picfs_buffer[FS_SuperBlock_free_queue]; 
       picfs_getblock(addr,picfs_buffer[FS_SuperBlock_raw_file]);
-      SD_read(addr,picfs_buffer,FS_BLOCK_SIZE);
+      SD_read(addr,(void*)picfs_buffer,FS_BLOCK_SIZE);
       while(picfs_buffer[1] != 0)
 	{
 	  picfs_getblock(addr,picfs_buffer[1]);
 	  picfs_last_raw_block = picfs_buffer[1];
-	  SD_read(addr,picfs_buffer,FS_INode_length);
+	  SD_read(addr,(void*)picfs_buffer,FS_INode_length);
 	}
       
       picfs_buffer[FS_INode_pointers] = free_queue;
-      SD_read(picfs_pwd,picfs_buffer,FS_BLOCK_SIZE);
+      SD_read(picfs_pwd,(void*)picfs_buffer,FS_BLOCK_SIZE);
     }
 
   //Get first raw block
   first_block = picfs_buffer[FS_SuperBlock_free_queue];
   picfs_getblock(addr,first_block);
-  SD_read(addr,picfs_buffer,FS_INode_length);
+  SD_read(addr,(void*)picfs_buffer,FS_INode_length);
   second_block = picfs_buffer[FS_INode_pointers];
   
   // Update free queue
   picfs_getblock(addr,second_block);
-  SD_read(addr,picfs_buffer,FS_INode_length);
+  SD_read(addr,(void*)picfs_buffer,FS_INode_length);
   num_free = picfs_buffer[FS_INode_pointers];// borrowing num_free to save memory
-  SD_read(picfs_pwd,picfs_buffer,FS_BLOCK_SIZE);
+  SD_read(picfs_pwd,(void*)picfs_buffer,FS_BLOCK_SIZE);
   picfs_buffer[FS_SuperBlock_num_free_blocks] -= 2;
   picfs_buffer[FS_SuperBlock_free_queue] = num_free;
   if(picfs_last_raw_block == 0)
     picfs_buffer[FS_SuperBlock_raw_file] = first_block;
-  SD_write(picfs_buffer,picfs_pwd,FS_BLOCK_SIZE);
+  SD_write((void*)picfs_buffer,picfs_pwd,FS_BLOCK_SIZE);
   
   // If raw has alread been written to, update the previous block so that it points to the first_block, continuing the linked list
   if(picfs_last_raw_block != 0)
     {
       picfs_getblock(addr,picfs_last_raw_block);
-      SD_read(addr,picfs_buffer,2);
+      SD_read(addr,(void*)picfs_buffer,2);
       picfs_buffer[1] = first_block;
-      SD_write(picfs_buffer,addr,2);
+      SD_write((void*)picfs_buffer,addr,2);
     }
   picfs_last_raw_block = second_block;
   
   //Save some data to the first block
   picfs_getblock(addr,first_block);
-  SRAM_read(SRAM_PICFS_WRITE_SWAP_ADDR,picfs_buffer,FS_BUFFER_SIZE);// restore the swapped-out data
-  memcpy(write_overflow,picfs_buffer+FS_BUFFER_SIZE-2,2);//save the last two.
+  SRAM_read(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// restore the swapped-out data
+  memcpy(write_overflow,(void*)picfs_buffer+FS_BUFFER_SIZE-2,2);//save the last two.
   first_block = FS_BUFFER_SIZE-1;// shift the buffer
   for(;first_block > 1;first_block--)
       picfs_buffer[first_block] = picfs_buffer[first_block-2];
   picfs_buffer[0] = MAGIC_RAW;// add the raw file block header
   picfs_buffer[1] = second_block;
-  SD_write(picfs_buffer,addr,FS_BUFFER_SIZE);// write first block
+  SD_write((void*)picfs_buffer,addr,FS_BUFFER_SIZE);// write first block
 
   // write second raw block
   picfs_getblock(addr,second_block);
-  memset(picfs_buffer,0,FS_BUFFER_SIZE);
+  memset((void*)picfs_buffer,0,FS_BUFFER_SIZE);
   picfs_buffer[0] = MAGIC_RAW;
-  memcpy(picfs_buffer+2,write_overflow,2);// add the last two back to the buffer
-  SD_write(picfs_buffer,addr,FS_BUFFER_SIZE);//write 6 to clean the pointer away
+  memcpy((void*)picfs_buffer+2,write_overflow,2);// add the last two back to the buffer
+  SD_write((void*)picfs_buffer,addr,FS_BUFFER_SIZE);//write 6 to clean the pointer away
   
   return 0;
 }

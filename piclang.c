@@ -332,7 +332,7 @@ void PICLANG_next()
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
 		picfs_write(0);
-		memset(picfs_buffer,0,FS_BUFFER_SIZE);
+		memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
 		PICLANG_file_buffer_index = 0;
 	      }
 	  }
@@ -342,7 +342,7 @@ void PICLANG_next()
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
 		picfs_write(0);
-		memset(picfs_buffer,0,FS_BUFFER_SIZE);
+		memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
 		PICLANG_file_buffer_index = 0;
 	      }
 	  }
@@ -357,7 +357,7 @@ void PICLANG_next()
     case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH  KEEP FFLUSH before FCLEAR
 	picfs_write(0);
     case PICLANG_FCLEAR:// KEEP FFLUSH before FCLEAR
-      memset(picfs_buffer,0,FS_BUFFER_SIZE);
+      memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
       PICLANG_file_buffer_index = 0;
       break;
     case PICLANG_FOPEN:
@@ -370,7 +370,7 @@ void PICLANG_next()
 	else if(a < ARG_SIZE + FS_BUFFER_SIZE)
 	  {
 	    a -= ARG_SIZE;
-	    sch1 = picfs_open(picfs_buffer+a);
+	    sch1 = picfs_open((const char*)picfs_buffer+a);
 	  }
 	else
 	  {
@@ -379,11 +379,11 @@ void PICLANG_next()
 	    a += curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
 	    for(;c< PICFS_FILENAME_MAX;a++,c++)
 	      {
-		SRAM_read(a,&picfs_buffer[c],1);
+		SRAM_read(a,(void*)picfs_buffer+c,1);
 		if(picfs_buffer[c] == 0)
 		  break;
 	      }
-	    sch1 = picfs_open(picfs_buffer);
+	    sch1 = picfs_open((const char*)picfs_buffer);
 	  }
 	PICLANG_pushl(sch1);
 	break;
@@ -445,7 +445,7 @@ void PICLANG_next()
 	else if(a < ARG_SIZE + FS_BUFFER_SIZE)
 	  {
 	    a -= ARG_SIZE;
-	    IO_puts(picfs_buffer + a);
+	    IO_puts((const char*)picfs_buffer + a);
 	    IO_flush();
 	    break;
 	  }
@@ -493,7 +493,7 @@ void PICLANG_next()
       }
     case PICLANG_TIME:
       {
-	TIME_t *thetime = TIME_get();
+	const TIME_t *thetime = TIME_get();
 	ch1 = PICLANG_pop();
 	switch(ch1)
 	  {
@@ -523,33 +523,29 @@ void PICLANG_next()
       }
     case PICLANG_SET_TIME:case PICLANG_SET_DATE:
       {
-	TIME_t *newtime = TIME_get();
-	if(newtime == NULL)
-	  {
-	    PICLANG_error(PICLANG_NULL_POINTER);
-	    break;
-	  }
+	TIME_t newtime = *(TIME_get());
 	if(command == PICLANG_SET_TIME)
 	  {
-	    newtime->minutes = PICLANG_pop();
-	    newtime->hours = PICLANG_pop();
-	    if(newtime->minutes > 59 || newtime->hours > 23)
+	    newtime.minutes = PICLANG_pop();
+	    newtime.hours = PICLANG_pop();
+	    if(newtime.minutes > 59 || newtime.hours > 23)
 	      {
-		newtime->minutes = newtime->hours = 0;
+		newtime.minutes = newtime.hours = 0;
 		PICLANG_error(TIME_INVALID);
 	      }
 	  }
 	else
 	  {
-	    newtime->year = PICLANG_pop();
-	    newtime->day = PICLANG_pop();
-	    newtime->month = PICLANG_pop();
-	    if(newtime->month > 12 || newtime->day > 31)
+	    newtime.year = PICLANG_pop();
+	    newtime.day = PICLANG_pop();
+	    newtime.month = PICLANG_pop();
+	    if(newtime.month > 12 || newtime.day > 31)
 	      {
-		newtime->month = newtime->day = 0;
+		newtime.month = newtime.day = 0;
 		PICLANG_error(TIME_INVALID);
 	      }
 	  }
+	TIME_set(&newtime);
 	break;
       }
     case PICLANG_ARGD:

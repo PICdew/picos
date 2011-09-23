@@ -14,7 +14,7 @@ picos_size_t label_counter = 0;
 int write_assembly(FILE *stream, const char *format, ...)
 {
   va_list va;
-  int retval;
+  int retval = 0;
 
   if(stream != NULL)
     {
