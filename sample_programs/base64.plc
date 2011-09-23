@@ -17,35 +17,40 @@ def <encode>
 
 def <main>
 {
-  keys = "sure.";/* "This is a test!"; */
-  size = argd();
   idx = 0;
   shift = 0;
   next = 0;
   mask = 0;
-  while(idx < size)
-    {
-      curr = keys[idx];
-      
-      /* Extract portion of next character */
-      shift = idx%3;
-      /* mask = 2*(shift+1);
-      mask = 1 << mask;
-      mask = mask - 1;
-      curr = (curr & ~mask) & 0xff;
+  do_encode = 1;
 
-      /* new values * /
-      shift = (shift + 1)*2;
-      if((idx % 2) == 0)
-	{
-	  curr = curr >> shift;
-	  next = keys[idx] & mask;
-	  next = next << 4;
-	}
-      */
+  sprint("Enter e or d");
+  val = getch();
+  if(val == 'e')
+    {
+      do_encode = 1;
+    }
+  else if(val == 'q')
+    {
+      exit(0);
+    }
+  else
+    {
+      clear();
+      sprint("Huh?");
+      exit(-1);
+    }
+
+  clear();
+  val = getch();
+  while(val != 0x4)
+    {
+      curr = val;
+      
+      shift = idx%3;
+
       if(shift == 0)
 	{
-	  next = keys[idx] & 3;
+	  next = val & 3;
 	  next = next << 4;
 	  curr = curr & 0x7c;
 	  curr = curr >> 2;
@@ -59,7 +64,7 @@ def <main>
 	  curr = curr & 0xf0;
 	  curr = curr >> 4;
 	  curr = curr + next;
-	  next = keys[idx] & 0xf;
+	  next = val & 0xf;
 	  next = next << 2;
 	  push(curr);
 	  call <encode>;
@@ -75,7 +80,7 @@ def <main>
 	  call <encode>;
 	  curr = pop();
 	  putch(curr);
-	  curr = keys[idx] & 0x3f;
+	  curr = val & 0x3f;
 	  push(curr);
 	  call <encode>;
 	  curr = pop();
@@ -83,6 +88,7 @@ def <main>
 	}
       
       idx = idx + 1;
+      val = getch();
     }
 
   shift = idx % 3;
