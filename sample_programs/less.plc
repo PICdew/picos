@@ -1,0 +1,36 @@
+def <adv>
+{
+  blah = getch();
+  if(blah == 'q')
+    {
+      clear();
+      sprint("Done");
+      exit(0);
+    }
+}
+
+def <main>
+{
+  filename = argv[1];
+  sprint("Next = n");
+  sprint("Quit = q");
+  call <adv>;
+  clear();
+  sprint("Reading");
+  call <adv>;
+  clear();
+  sprint(filename);
+  call <adv>;
+  clear();
+  fh = fopen(filename);
+  while(fread(fh) != feof)
+    {
+      clear();
+      sprint(fin);
+      call <adv>;
+    }
+  fclose(fh);
+  clear();
+  sprint("Done");
+}
+
