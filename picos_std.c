@@ -40,3 +40,15 @@ signed char picos_chdir(picos_size_t addr)
     }
   return SUCCESS;
 }
+
+unsigned int millisleep(unsigned int ms)
+{
+  unsigned int usec;
+  while(ms > 0)
+    {
+      usec = (unsigned int) ((_XTAL_FREQ >> 2)/1000L);
+      while(usec > 0)
+	usec--;
+    }
+  return ms;// in case I make this interruptable in the future. Trying to follow "sleep(unsigned int)"'s prototype
+}
