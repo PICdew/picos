@@ -1,0 +1,70 @@
+def <printf>
+{
+  format = pop();
+  while(format[0] != 0)
+    {
+      if(format[0] == '%')
+	{
+	  format = format + 1;
+	  if(format[0] == 'd')
+	    {
+	      putd(pop());
+	    }
+	  else if(format[0] == 'c')
+	    {
+	      putch(pop());
+	    }
+	  else
+	    {
+	      putch(format[0]);
+	    }
+	}
+      else
+	putch(format[0]);
+      
+      format = format + 1;
+    }
+}
+
+
+def <main>{
+
+  scale = 1000;
+ 
+  a = 3 * scale;
+  a = a + 140;
+  
+  b = 12 * scale;
+  b = b + 345;
+
+  prod = a+b;
+  op = '+';
+  gformat = "%d.%d %c %d.%d = %d.%d";
+
+  if(op == '*')
+    {
+      push(prod%(scale*scale));
+      push(prod/(scale*scale));
+      push(b%scale);
+      push(b/scale);
+      push(op);
+      push(a%scale);
+      push(a/scale);
+      push(gformat);
+      call <printf>;
+    }
+  else
+    {
+      push(prod % scale);
+      push(prod /scale);
+      push(b%scale);
+      push(b/scale);
+      push(op);
+      push(a%scale);
+      push(a/scale);
+      push(gformat);
+      call <printf>;
+    }
+  blah = getch();
+  
+}
