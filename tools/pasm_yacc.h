@@ -57,15 +57,16 @@
      ARGC = 273,
      FIN = 274,
      FEOF = 275,
-     IFX = 276,
-     ELSE = 277,
-     NE = 278,
-     EQ = 279,
-     LE = 280,
-     GE = 281,
-     BSR = 282,
-     BSL = 283,
-     UMINUS = 284
+     STATEMENT_DELIM = 276,
+     IFX = 277,
+     ELSE = 278,
+     NE = 279,
+     EQ = 280,
+     LE = 281,
+     GE = 282,
+     BSR = 283,
+     BSL = 284,
+     UMINUS = 285
    };
 #endif
 /* Tokens.  */
@@ -87,15 +88,16 @@
 #define ARGC 273
 #define FIN 274
 #define FEOF 275
-#define IFX 276
-#define ELSE 277
-#define NE 278
-#define EQ 279
-#define LE 280
-#define GE 281
-#define BSR 282
-#define BSL 283
-#define UMINUS 284
+#define STATEMENT_DELIM 276
+#define IFX 277
+#define ELSE 278
+#define NE 279
+#define EQ 280
+#define LE 281
+#define GE 282
+#define BSR 283
+#define BSL 284
+#define UMINUS 285
 
 
 
@@ -114,7 +116,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 118 "pasm_yacc.h"
+#line 120 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

@@ -63,7 +63,7 @@ void yyerror(char *s);
 %token <variable> VARIABLE
 %type <nPtr> stmt expr stmt_list STRING SUBROUTINE
 %token WHILE BREAK IF CALL SUBROUTINE STRING RETURN DEFINE EXIT 
-%token PASM_CR PASM_POP ARGV ARGC FIN FEOF
+%token PASM_CR PASM_POP ARGV ARGC FIN FEOF STATEMENT_DELIM
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -87,24 +87,24 @@ function:
         ;
 
 stmt: 
-          ';'                            { $$ = opr(';', 2, NULL, NULL); }
-        | RETURN stmt                     { $$ = opr(RETURN,1,$2);}
+';'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
+        | RETURN stmt                     { $$ = opr(PICLANG_RETURN,1,$2);}
         | CALL SUBROUTINE ';'            { $$ = opr(PICLANG_CALL,1,$2); }
-        | DEFINE SUBROUTINE  stmt       {  $$ = opr(DEFINE,2,$2,$3);}
+        | DEFINE SUBROUTINE  stmt       {  $$ = opr(PASM_DEFINE,2,$2,$3);}
         | PASM_CR '(' ')' ';'                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | expr ';'                       { $$ = $1; }
-        | VARIABLE '=' expr ';'          { $$ = opr('=', 2, id($1), $3); }
-        | WHILE '(' expr ')' stmt        { $$ = opr(WHILE, 2, $3, $5); }
-        | BREAK ';'                      { $$ = opr(BREAK, 0); }
-        | IF '(' expr ')' stmt %prec IFX { $$ = opr(IF, 2, $3, $5); }
-        | IF '(' expr ')' stmt ELSE stmt { $$ = opr(IF, 3, $3, $5, $7); }
+| VARIABLE '=' expr ';'          { $$ = opr(PICLANG_POP, 2, id($1), $3); }
+        | WHILE '(' expr ')' stmt        { $$ = opr(PASM_WHILE, 2, $3, $5); }
+        | BREAK ';'                      { $$ = opr(PASM_BREAK, 0); }
+        | IF '(' expr ')' stmt %prec IFX { $$ = opr(PASM_IF, 2, $3, $5); }
+        | IF '(' expr ')' stmt ELSE stmt { $$ = opr(PASM_IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
         | EXIT {YYACCEPT;}
         ;
 
 stmt_list:
           stmt                  { $$ = $1; }
-        | stmt_list stmt        { $$ = opr(';', 2, $1, $2); }
+        | stmt_list stmt        { $$ = opr(PASM_STATEMENT_DELIM, 2, $1, $2); }
         ;
 
 expr:
@@ -120,24 +120,22 @@ expr:
         | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
         | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
         | FUNCT '(' ')'         { $$ = opr($1,0); }
-        | expr '[' expr ']' { $$ = opr('[',2, $1,$3); }
-        | '-' expr %prec UMINUS { $$ = opr(UMINUS, 1, $2); }
-        | expr '+' expr         { $$ = opr('+', 2, $1, $3); }
-        | expr '-' expr         { $$ = opr('-', 2, $1, $3); }
-        | expr '*' expr         { $$ = opr('*', 2, $1, $3); }
-        | expr '/' expr         { $$ = opr('/', 2, $1, $3); }
-        | expr '<' expr         { $$ = opr('<', 2, $1, $3); }
-        | expr '>' expr         { $$ = opr('>', 2, $1, $3); }
-        | expr '%' expr         { $$ = opr('%', 2, $1, $3); }
-        | expr '&' expr         { $$ = opr('&', 2, $1, $3); }
-        | expr '|' expr         { $$ = opr('|', 2, $1, $3); }
-        | '~' expr              { $$ = opr('~', 1, $2); }
-        | expr BSL expr          { $$ = opr(BSL, 2, $1, $3); }
-        | expr BSR expr          { $$ = opr(BSR, 2, $1, $3); }
-        | expr GE expr          { $$ = opr(GE, 2, $1, $3); }
-        | expr LE expr          { $$ = opr(LE, 2, $1, $3); }
-        | expr NE expr          { $$ = opr(NE, 2, $1, $3); }
-        | expr EQ expr          { $$ = opr(EQ, 2, $1, $3); }
+        | expr '[' expr ']' { $$ = opr(PICLANG_DEREF,2, $1,$3); }
+        | '-' expr %prec UMINUS { $$ = opr(PICLANG_UMINUS, 1, $2); }
+        | expr '+' expr         { $$ = opr(PICLANG_ADD, 2, $1, $3); }
+        | expr '-' expr         { $$ = opr(PICLANG_SUB, 2, $1, $3); }
+        | expr '*' expr         { $$ = opr(PICLANG_MULT, 2, $1, $3); }
+        | expr '/' expr         { $$ = opr(PICLANG_DIV, 2, $1, $3); }
+        | expr '<' expr         { $$ = opr(PICLANG_COMPLT, 2, $1, $3); }
+        | expr '>' expr         { $$ = opr(PICLANG_COMPGT, 2, $1, $3); }
+        | expr '%' expr         { $$ = opr(PICLANG_MOD, 2, $1, $3); }
+        | expr '&' expr         { $$ = opr(PICLANG_AND, 2, $1, $3); }
+        | expr '|' expr         { $$ = opr(PICLANG_OR, 2, $1, $3); }
+        | '~' expr              { $$ = opr(PICLANG_NOT, 1, $2); }
+        | expr BSL expr          { $$ = opr(PICLANG_BSL, 2, $1, $3); }
+        | expr BSR expr          { $$ = opr(PICLANG_BSR, 2, $1, $3); }
+        | expr NE expr          { $$ = opr(PICLANG_COMPNE, 2, $1, $3); }
+        | expr EQ expr          { $$ = opr(PICLANG_COMPEQ, 2, $1, $3); }
         | '(' expr ')'          { $$ = $2; }
         ;
 
@@ -414,7 +412,9 @@ int main(int argc, char **argv)
     printf("Welcome to the piclang compiler.\n");
   
   yyparse();
-  insert_code(EOP);
+  insert_code(PICLANG_PUSHL);
+  insert_code(PICLANG_SUCCESS);
+  insert_code(PICLANG_EXIT);
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
@@ -517,7 +517,7 @@ int ex(nodeType *p) {
     break;
   case typeOpr:
     switch(p->opr.oper) {
-    case EOP:
+    case PICLANG_EXIT:
       if(p->opr.nops == 0)
 	{
 	  write_assembly(assembly_file,"\tpushl\t0\n",0); 
@@ -528,7 +528,6 @@ int ex(nodeType *p) {
 	ex(p->opr.op[0]);
       write_assembly(assembly_file,"\texit\n",0); 
       insert_code(PICLANG_EXIT);
-      insert_code(EOP);
       break;
     case PICLANG_PUSH:
       ex(p->opr.op[0]);
@@ -541,7 +540,7 @@ int ex(nodeType *p) {
 	insert_code(subroutine->label);
 	break;
       }
-    case DEFINE:// KEEP RETURN AFTER DEFINE
+    case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
       {
 	const char *subroutine = p->opr.op[0]->str.string;
 	write_assembly(assembly_file,"L%03d:\t;<%s>\n", (lbl1 = label_counter),subroutine);
@@ -555,12 +554,12 @@ int ex(nodeType *p) {
 	    break;
 	  }
       }
-    case RETURN:// KEEP RETURN AFTER DEFINE
+    case PICLANG_RETURN:// KEEP RETURN AFTER DEFINE
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\treturn\n");
       insert_code(PICLANG_RETURN);
       break;
-    case BREAK:
+    case PASM_BREAK:
       if(break_to_label < 0)
 	{
 	  yyerror("Not within a block from which to break");
@@ -570,7 +569,7 @@ int ex(nodeType *p) {
       insert_code(PICLANG_JMP);
       insert_code(break_to_label);
       break;
-    case WHILE:
+    case PASM_WHILE:
       write_assembly(assembly_file,"L%03d:\n", (lbl1 = label_counter));
       insert_label(PICLANG_LABEL,lbl1);
       label_counter++;
@@ -588,7 +587,7 @@ int ex(nodeType *p) {
       insert_label(PICLANG_LABEL,lbl2);
       break_to_label = previous_break_to_label;
       break;
-    case IF:
+    case PASM_IF:
       ex(p->opr.op[0]);
       if (p->opr.nops > 2) {
 	/* if else */
@@ -655,16 +654,18 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
     case PICLANG_POP:
-      break;// do nothing.
-    case '=':
-      ex(p->opr.op[1]);
+      if(p->opr.nops == 0)
+	break;
+      if(p->opr.nops > 1)
+	ex(p->opr.op[1]);
       write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
       insert_code( PICLANG_POP);
       insert_code(resolve_variable(p->opr.op[0]->id.name));
       break;
-    case UMINUS:    
+    case PICLANG_UMINUS:
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tneg\n");
+      insert_code(PICLANG_UMINUS);
       break;
     case PICLANG_SYSTEM:
       {
@@ -729,78 +730,80 @@ int ex(nodeType *p) {
     case PICLANG_GETCH:
       write_assembly(assembly_file,"\tgetch\n");insert_code(PICLANG_GETCH);
       break;
-    case '~':
+    case PICLANG_NOT:
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tnot\n");
       insert_code(PICLANG_NOT);
       break;
-    default:
-      ex(p->opr.op[0]);
-      ex(p->opr.op[1]);
-      switch(p->opr.oper) {
-      case '[':// array access
-	write_assembly(assembly_file,"\tderef\n");
-	insert_code(PICLANG_DEREF);
-	break;
-      case BSR:
-	write_assembly(assembly_file,"\tbsr \n");
-	insert_code(PICLANG_BSR);
-	break;
-      case BSL:
-	write_assembly(assembly_file,"\tbsl \n");
-	insert_code(PICLANG_BSL);
-	break;
-      case '&':
-	write_assembly(assembly_file,"\tand\n");
-	insert_code(PICLANG_AND);
-	break;
-      case '|':
-	write_assembly(assembly_file,"\tor\n");
-	insert_code(PICLANG_OR);
-	break;
-      case '%':
-	write_assembly(assembly_file,"\tmod \n"); 
-	insert_code(PICLANG_MOD);
-	break;
-      case '+':   
-	write_assembly(assembly_file,"\tadd \n"); 
-	insert_code(PICLANG_ADD);
-	break;
-      case '-':   
-	write_assembly(assembly_file,"\tsub\n");
-	insert_code(PICLANG_SUB); 
-	break; 
-      case '*':   
-	write_assembly(assembly_file,"\tmul\n");
-	insert_code(PICLANG_MULT); 
-	break;
-      case '/':   
-	write_assembly(assembly_file,"\tdiv\n"); 
-	insert_code(PICLANG_DIV);
-	break;
-      case '<':   
-	write_assembly(assembly_file,"\tcompLT\n"); 
-	insert_code(PICLANG_COMPLT);
-	break;
-      case '>':   
-	write_assembly(assembly_file,"\tcompGT\n"); 
-	insert_code(PICLANG_COMPGT);
-	break;
-      case GE:    
-	write_assembly(assembly_file,"\tcompGE\n"); 
-	break;
-      case LE:   
-	write_assembly(assembly_file,"\tcompLE\n"); 
-	break;
-      case NE:    
-	write_assembly(assembly_file,"\tcompNE\n"); 
-	insert_code(PICLANG_COMPNE);
-	break;
-      case EQ:    
-	write_assembly(assembly_file,"\tcompEQ\n"); 
-	insert_code(PICLANG_COMPEQ);
-	break;
-      }
+    default:// all piclang functions
+      {
+	ex(p->opr.op[0]);
+	ex(p->opr.op[1]);
+	switch(p->opr.oper) {
+	case PICLANG_DEREF:// array access
+	  write_assembly(assembly_file,"\tderef\n");
+	  insert_code(PICLANG_DEREF);
+	  break;
+	case PICLANG_BSR:
+	  write_assembly(assembly_file,"\tbsr \n");
+	  insert_code(PICLANG_BSR);
+	  break;
+	case PICLANG_BSL:
+	  write_assembly(assembly_file,"\tbsl \n");
+	  insert_code(PICLANG_BSL);
+	  break;
+	case PICLANG_AND:
+	  write_assembly(assembly_file,"\tand\n");
+	  insert_code(PICLANG_AND);
+	  break;
+	case PICLANG_OR:
+	  write_assembly(assembly_file,"\tor\n");
+	  insert_code(PICLANG_OR);
+	  break;
+	case PICLANG_MOD:
+	  write_assembly(assembly_file,"\tmod \n"); 
+	  insert_code(PICLANG_MOD);
+	  break;
+	case PICLANG_ADD:   
+	  write_assembly(assembly_file,"\tadd \n"); 
+	  insert_code(PICLANG_ADD);
+	  break;
+	case PICLANG_SUB:   
+	  write_assembly(assembly_file,"\tsub\n");
+	  insert_code(PICLANG_SUB); 
+	  break; 
+	case PICLANG_MULT:   
+	  write_assembly(assembly_file,"\tmul\n");
+	  insert_code(PICLANG_MULT); 
+	  break;
+	case PICLANG_DIV:   
+	  write_assembly(assembly_file,"\tdiv\n"); 
+	  insert_code(PICLANG_DIV);
+	  break;
+	case PICLANG_COMPLT:   
+	  write_assembly(assembly_file,"\tcompLT\n"); 
+	  insert_code(PICLANG_COMPLT);
+	  break;
+	case PICLANG_COMPGT:   
+	  write_assembly(assembly_file,"\tcompGT\n"); 
+	  insert_code(PICLANG_COMPGT);
+	  break;
+	case PICLANG_COMPNE:    
+	  write_assembly(assembly_file,"\tcompNE\n"); 
+	  insert_code(PICLANG_COMPNE);
+	  break;
+	case PICLANG_COMPEQ:    
+	  write_assembly(assembly_file,"\tcompEQ\n"); 
+	  insert_code(PICLANG_COMPEQ);
+	  break;
+	case PASM_STATEMENT_DELIM:
+	  break;
+	default:
+	  fprintf(stderr,"Unknown op code: %d\n",p->opr.oper);
+	  exit(-1);
+	  break;
+	}//switch
+      }//default
     }
   }
   return 0;
@@ -976,6 +979,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
       // In this case, there are no strings. So a single null-terminated character will indiate that.
       the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       the_code->next->val = 0;
+      the_code = the_code->next;
       the_code->next = NULL;
     }
   

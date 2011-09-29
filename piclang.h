@@ -16,8 +16,6 @@
 #include "config.h"
 #endif
 
-#define EOP 0xff // end of program
-
 #ifndef DEFAULT_PICLANG_QUANTUM
 #define DEFAULT_PICLANG_QUANTUM 25
 #endif
@@ -85,8 +83,16 @@ enum PICLANG_COMMANDS
     PICLANG_ADD=0, 
     PICLANG_SUB, 
     PICLANG_MULT,
-    PICLANG_PUSHL,
-    PICLANG_PUSH,
+    PICLANG_DIV/* INTEGER quotient */,
+    PICLANG_MOD/* Modulus operator */,
+    PICLANG_BSL/* Bit shift left */,
+    PICLANG_BSR/* Bit shift right */,
+    PICLANG_AND/* Bitwise and */,
+    PICLANG_OR/* Bitwise or */,
+    PICLANG_NOT/* Bitwise complement */,
+    PICLANG_UMINUS/* Unary minus, additive inverse */,
+    PICLANG_PUSHL/* Push value as a literal number */,
+    PICLANG_PUSH/* interpret as a decimal and push */,
     PICLANG_POP,
     PICLANG_PRINT,
     PICLANG_PRINTL,
@@ -120,13 +126,6 @@ enum PICLANG_COMMANDS
     PICLANG_CALL/* Call a subroutine (using the lables) */,
     PICLANG_RETURN/* Return from a subroutine */,
     PICLANG_EXIT/* Exit a program */,
-    PICLANG_MOD/* Modulus operator */,
-    PICLANG_DIV/* INTEGER quotient */,
-    PICLANG_BSL/* Bit shift left */,
-    PICLANG_BSR/* Bit shift right */,
-    PICLANG_AND/* Bitwise and */,
-    PICLANG_OR/* Bitwise or */,
-    PICLANG_NOT/* Bitwise complement */,
     PICLANG_DEREF/* dereference operation */,
     PICLANG_NUM_COMMANDS
   };

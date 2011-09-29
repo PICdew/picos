@@ -5,6 +5,26 @@
 #include <stdio.h>
 #include <limits.h>
 
+enum LANGUAGE_TOKENS{
+  PASM_WHILE = PICLANG_NUM_COMMANDS,
+  PASM_BREAK,
+  PASM_IF,
+  PASM_CALL,
+  PASM_SUBROUTINE,
+  PASM_STRING,
+  PASM_DEFINE,
+  PASM_EXIT,
+  PASM_PASM_CR,
+  PASM_PASM_POP,
+  PASM_ARGV,
+  PASM_ARGC,
+  PASM_FIN,
+  PASM_FEOF,
+  PASM_STATEMENT_DELIM
+ };
+  
+
+
 typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubroutine, typePCB } nodeEnum;
 // typeLabel is for label for jumps
 // typeCode is for compiled code

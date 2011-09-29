@@ -248,7 +248,7 @@ struct assembly_map opcodes[] = {
   {"compgt", PICLANG_COMPGT, 0},
   {"compeq", PICLANG_COMPEQ, 0},
   {"compne", PICLANG_COMPNE, 0},
-  {"exit", EOP, 0},
+  {"exit", PICLANG_EXIT, 0},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 

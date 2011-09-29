@@ -195,9 +195,12 @@ void PICLANG_next()
   
   switch(command)
     {
-    case EOP:
-      PICLANG_save(SUCCESS);
-      break;
+    case PICLANG_UMINUS:
+      {
+	picos_signed_t inv = (picos_signed_t)PICLANG_pop();
+	PICLANG_pushl(-inv);
+	break;
+      }
     case PICLANG_ADD:
       PICLANG_pushl(PICLANG_pop() + PICLANG_pop());
       PICLANG_update_arith_status();
@@ -591,7 +594,7 @@ void PICLANG_next()
       curr_process.pc = PICLANG_call_pop();
       break;
     case PICLANG_EXIT:
-      curr_process.status = PICLANG_pop();
+      PICLANG_save(PICLANG_pop());
       break;
     case PICLANG_LABEL:
       break;
