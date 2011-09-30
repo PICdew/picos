@@ -2692,6 +2692,14 @@ int ex(nodeType *p) {
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
+    case PICLANG_DROP:
+      write_assembly(assembly_file,"\tfdrop\n");
+      insert_code(PICLANG_DROP);
+      break;
+    case PICLANG_SWAP:
+      write_assembly(assembly_file,"\tfswap\n");
+      insert_code(PICLANG_SWAP);
+      break;
     case PICLANG_POP:
       if(p->opr.nops == 0)
 	break;
@@ -3013,14 +3021,16 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
     the_code = the_code->next;
   if(the_strings != NULL)
     the_code->next = the_strings;
-  else
+  /*  else
     {
       // In this case, there are no strings. So a single null-terminated character will indiate that.
       the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-      the_code->next->val = 0;
       the_code = the_code->next;
       the_code->next = NULL;
-    }
+      the_code->val = 0;
+      the_code->type = typeStr;
+
+      }*/
   
   size->val =  CountCode(size);
   

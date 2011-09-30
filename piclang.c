@@ -252,6 +252,15 @@ void PICLANG_next()
 	  PICLANG_pushl(b);
 	break;
       }
+    case PICLANG_DROP:
+      PICLANG_pop();
+      break;
+    case PICLANG_SWAP:
+      a = PICLANG_pop();
+      b = PICLANG_pop();
+      PICLANG_pushl(a);
+      PICLANG_pushl(b);
+      break;
     case PICLANG_POP:
       {
 	a = PICLANG_get_next_word();
