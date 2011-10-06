@@ -11,6 +11,7 @@
 #define PICLANG_H 1
 
 #include "utils.h"
+#include "scheduler.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -53,9 +54,6 @@ extern const picos_size_t PICLANG_magic_numbers[PCB_MAGIC_NUMBER_OFFSET];
 
 extern bit PICLANG_debug;
 extern PCB curr_process;
-unsigned int curr_process_addr;// Address of first byte of program (including PCB) in memory that is currently running.
-volatile char PICLANG_quantum;
-extern int PICLANG_next_process[];
 volatile picos_size_t PICLANG_system;// CRC hex value for system calls within piclan
 
 extern void PICLANG_init();
@@ -64,7 +62,7 @@ extern void PICLANG_init();
  * Loads program from SRAM.
  * Returns status of load
  */
-extern char PICLANG_load(unsigned int sram_addr);
+extern char PICLANG_load(process_addr_t sram_addr);
 
 /**
  * Saves the program to SRAM

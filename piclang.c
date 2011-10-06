@@ -25,10 +25,11 @@ char PICLANG_file_buffer_index;
 bit PICLANG_debug = FALSE;
 PCB curr_process;
 
-char PICLANG_load(unsigned int sram_addr)
+char PICLANG_load(process_addr_t sram_addr)
 {
   char size = 0,pos = 0,counter = 0;
   char magic_numbers[PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)];
+  thread_id_t new_thread;
   if(sram_addr == 0xffff)
     return PICLANG_NO_SUCH_PROGRAM;
 
@@ -41,10 +42,16 @@ char PICLANG_load(unsigned int sram_addr)
     }
   sram_addr += PCB_MAGIC_NUMBER_OFFSET * sizeof(picos_size_t);
 
+  // Check to see if there is an available thread space
+  new_thread = thread_allocate();
+  if(new_thread < 0)
+    return error_code;
+
+  picos_processes[new_thread].expires = PICLANG_DEFAULT_QUANTUM;
+  picos_processes[new_thread].addr = sram_addr;
+  
   // Load PCB into memory
   SRAM_read(sram_addr,&curr_process,PCB_SIZE);
-
-  PICLANG_quantum = DEFAULT_PICLANG_QUANTUM;
 
   if(curr_process.status != PICLANG_SUSPENDED)
     {
@@ -53,8 +60,9 @@ char PICLANG_load(unsigned int sram_addr)
       if(retval != 0)
 	return error_code;
     }
+  picos_processes[new_thread].expires = PICLANG_DEFAULT_QUANTUM;
+  picos_processes[new_thread].addr = sram_addr;
 
-  curr_process_addr = sram_addr;
   return PICLANG_SUCCESS;
 
 }
@@ -65,16 +73,16 @@ char PICLANG_save(char saved_status)
     return PICLANG_NO_SUCH_PROGRAM;
 
   curr_process.status = saved_status;
+  SRAM_write(picos_processes[picos_curr_process].addr,&curr_process,PCB_SIZE);
+  
   if(saved_status == PICLANG_SUSPENDED)
-    PICLANG_next_process[0] = curr_process_addr - PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
+    thread_suspend();
   else
     {
       PAGE_free(0);
       PICLANG_next_process[0] = 0xffff;
+      thread_free();
     }
-
-
-  SRAM_write(curr_process_addr,&curr_process,PCB_SIZE);
 
   PICLANG_init();
 
@@ -91,8 +99,6 @@ void PICLANG_init()
   curr_process.start_address = 0;
   curr_process.string_address = 0;
   curr_process.stack_head = 0;
-  PICLANG_quantum = 0;
-  curr_process_addr = 0xffff;
 }
 
 /**
@@ -106,9 +112,9 @@ void PICLANG_init()
  */
 picos_size_t PICLANG_get_next_word()
 {
-  picos_size_t next = curr_process_addr + curr_process.pc*sizeof(picos_size_t);
+  picos_size_t next = picos_processes[picos_curr_process].addr + curr_process.pc*sizeof(picos_size_t);
   picos_size_t val;
-  if(curr_process.pc > curr_process.string_address - curr_process.start_address || next < curr_process_addr)
+  if(curr_process.pc > curr_process.string_address - curr_process.start_address || next < picos_processes[picos_curr_process].addr)
     {
       PICLANG_error(PICLANG_PC_OVERFLOW);
       return 0xff;
@@ -179,8 +185,8 @@ void PICLANG_next()
 
   if(curr_process.size == 0)
     return;
-
-  if(PICLANG_quantum == 0)
+  
+  if(picos_curr_process.expires == 0)
     {
       PICLANG_save(PICLANG_SUSPENDED);
       return;
@@ -310,7 +316,7 @@ void PICLANG_next()
 	
 	// string section
 	b -= ARG_SIZE + FS_BUFFER_SIZE;
-	a += b + curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
+	a += b + picos_processes[picos_curr_process].addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
 	SRAM_read(a,&ch1,1);
 	c = ch1;
 	PICLANG_pushl(c);
@@ -388,7 +394,7 @@ void PICLANG_next()
 	  {
 	    c = 0;
 	    a -= ARG_SIZE + FS_BUFFER_SIZE;
-	    a += curr_process_addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
+	    a += picos_processes[picos_curr_process].addr + curr_process.string_address*sizeof(picos_size_t);// offset for beginning of string location
 	    for(;c< PICFS_FILENAME_MAX;a++,c++)
 	      {
 		SRAM_read(a,(void*)picfs_buffer+c,1);
@@ -461,7 +467,7 @@ void PICLANG_next()
 	    IO_flush();
 	    break;
 	  }
-	/*addr*/b = curr_process_addr + curr_process.string_address*sizeof(picos_size_t);
+	/*addr*/b = picos_processes[picos_curr_process].addr + curr_process.string_address*sizeof(picos_size_t);
 	b += a - ARG_SIZE - FS_BUFFER_SIZE;
 	SRAM_read(b++,&ch1,1);
 	if(ch1 == 0)
