@@ -20,16 +20,34 @@
 #include <string.h>
 
 #define PICLANG_error(code)  curr_process.status = code
-int PICLANG_next_process[] = {0xffff};
 char PICLANG_file_buffer_index;
 bit PICLANG_debug = FALSE;
 PCB curr_process;
 
 char PICLANG_load(process_addr_t sram_addr)
 {
-  char size = 0,pos = 0,counter = 0;
-  char magic_numbers[PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)];
   thread_id_t new_thread;
+  // Check to see if there is an available thread space
+  new_thread = thread_allocate();
+  picos_processes[new_thread].addr = sram_addr;
+  PICLANG_resume(new_thread);
+}
+
+char PICLANG_resume(thread_id_t new_thread)
+{
+  char size = 0,pos = 0,counter = 0;
+  process_addr_t sram_addr;
+  char magic_numbers[PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)];
+
+  if(new_thread < 0)
+    return error_code;
+  if(new_thread >= PICOS_MAX_PROCESSES)
+    {
+      PICLANG_error(THREAD_TOO_MANY_THREADS);
+      return THREAD_TOO_MANY_THREADS;
+    }
+  sram_addr = picos_processes[new_thread].addr;
+  
   if(sram_addr == 0xffff)
     return PICLANG_NO_SUCH_PROGRAM;
 
@@ -42,12 +60,7 @@ char PICLANG_load(process_addr_t sram_addr)
     }
   sram_addr += PCB_MAGIC_NUMBER_OFFSET * sizeof(picos_size_t);
 
-  // Check to see if there is an available thread space
-  new_thread = thread_allocate();
-  if(new_thread < 0)
-    return error_code;
-
-  picos_processes[new_thread].expires = PICLANG_DEFAULT_QUANTUM;
+  picos_processes[new_thread].expires = DEFAULT_PICLANG_QUANTUM;
   picos_processes[new_thread].addr = sram_addr;
   
   // Load PCB into memory
@@ -60,8 +73,10 @@ char PICLANG_load(process_addr_t sram_addr)
       if(retval != 0)
 	return error_code;
     }
-  picos_processes[new_thread].expires = PICLANG_DEFAULT_QUANTUM;
-  picos_processes[new_thread].addr = sram_addr;
+  
+  thread_resume(new_thread);
+    
+  picos_processes[new_thread].expires = DEFAULT_PICLANG_QUANTUM;
 
   return PICLANG_SUCCESS;
 
@@ -76,12 +91,11 @@ char PICLANG_save(char saved_status)
   SRAM_write(picos_processes[picos_curr_process].addr,&curr_process,PCB_SIZE);
   
   if(saved_status == PICLANG_SUSPENDED)
-    thread_suspend();
+    thread_suspend(picos_curr_process);
   else
     {
       PAGE_free(0);
-      PICLANG_next_process[0] = 0xffff;
-      thread_free();
+      thread_free(picos_curr_process);
     }
 
   PICLANG_init();
@@ -186,7 +200,7 @@ void PICLANG_next()
   if(curr_process.size == 0)
     return;
   
-  if(picos_curr_process.expires == 0)
+  if(picos_processes[picos_curr_process].expires == 0)
     {
       PICLANG_save(PICLANG_SUSPENDED);
       return;
@@ -485,7 +499,7 @@ void PICLANG_next()
       }
     case PICLANG_SYSTEM:
       PICLANG_system = PICLANG_pop();
-      PICLANG_quantum = 0;// will suspend for system call
+      picos_processes[picos_curr_process].expires = 0;// will suspend for system call
       break;
     case PICLANG_MORSE:
       {

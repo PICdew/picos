@@ -6,14 +6,14 @@
  *
  * This file provides time of day and date functions, with precision within seconds.
  */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "io.h"
 #include "utils.h"
 #include "picfs_error.h"
 #include "picos_time.h"
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <stddef.h>
 #include <stdio.h>

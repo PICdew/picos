@@ -6,10 +6,13 @@
  *
  * This file prototypes time functions.
  */
+#ifndef PICOS_TIME_H
+#define PICOS_TIME_H 1
 
 #define TIME_PERIOD 25
 
-volatile char TIME_tickCounter;
+typedef char quantum_t;
+volatile quantum_t TIME_tickCounter;
 
 typedef struct {
   char hours;
@@ -59,3 +62,7 @@ extern void TIME_stdout();
  * hh:mm
  */
 extern void strtime(char *str, const TIME_t *t);
+
+
+#endif
+

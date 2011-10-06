@@ -64,6 +64,8 @@ extern void PICLANG_init();
  */
 extern char PICLANG_load(process_addr_t sram_addr);
 
+extern char PICLANG_resume(thread_id_t new_thread);
+
 /**
  * Saves the program to SRAM
  * Returns status of program at save.
