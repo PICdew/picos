@@ -16,12 +16,18 @@ def <two_digit>
  */
 def <main>
 {
-  putd(time('m'));
-  putch('/');
-  putd(time('d'));
-  cr();
-  putd(time('H'));
-  putch(':');
-  time('M');
-  call <two_digit>;
+  should_quit = 'n';
+  while(should_quit != 0x4)/* Ctrl-D */
+    {
+      clear();
+      putd(time('m'));
+      putch('/');
+      putd(time('d'));
+      cr();
+      putd(time('H'));
+      putch(':');
+      time('M');
+      call <two_digit>;
+      should_quit = getch();
+    }
 }

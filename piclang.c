@@ -624,7 +624,6 @@ void PICLANG_next()
       break;
     case PICLANG_EXIT:
       PICLANG_save(PICLANG_pop());
-      thread_free(picos_curr_process);
       break;
     case PICLANG_LABEL:
       break;
