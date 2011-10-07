@@ -30,7 +30,7 @@ char PICLANG_load(process_addr_t sram_addr)
   // Check to see if there is an available thread space
   new_thread = thread_allocate();
   picos_processes[new_thread].addr = sram_addr;
-  PICLANG_resume(new_thread);
+  return PICLANG_resume(new_thread);
 }
 
 char PICLANG_resume(thread_id_t new_thread)
@@ -48,7 +48,7 @@ char PICLANG_resume(thread_id_t new_thread)
     }
   sram_addr = picos_processes[new_thread].addr;
   
-  if(sram_addr == 0xffff)
+  if(sram_addr == PICOS_END_OF_THREADS)
     return PICLANG_NO_SUCH_PROGRAM;
 
   // Verify this is an executable with the magic number
@@ -59,10 +59,10 @@ char PICLANG_resume(thread_id_t new_thread)
       return error_code;
     }
   sram_addr += PCB_MAGIC_NUMBER_OFFSET * sizeof(picos_size_t);
-
+  
   picos_processes[new_thread].expires = DEFAULT_PICLANG_QUANTUM;
   picos_processes[new_thread].addr = sram_addr;
-  
+
   // Load PCB into memory
   SRAM_read(sram_addr,&curr_process,PCB_SIZE);
 
@@ -109,7 +109,7 @@ void PICLANG_init()
 {
   curr_process.size = 0;
   curr_process.pc = 0;
-  curr_process.status = PICLANG_SUSPENDED;
+  curr_process.status = 0;
   curr_process.start_address = 0;
   curr_process.string_address = 0;
   curr_process.stack_head = 0;
@@ -624,6 +624,7 @@ void PICLANG_next()
       break;
     case PICLANG_EXIT:
       PICLANG_save(PICLANG_pop());
+      thread_free(picos_curr_process);
       break;
     case PICLANG_LABEL:
       break;
