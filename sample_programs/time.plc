@@ -4,10 +4,21 @@ def <display_time>
   putd(time('m'));
   putch('/');
   putd(time('d'));
-  cr();
+  putch('/');
+  if(time('Y') < 10)
+    putd(0);
+  putd(time('Y'));
+  if(time('m') < 10)
+    cr();
   putd(time('H'));
   putch(':');
+  if(time('M') < 10)
+    putd(0);
   putd(time('M'));
+  putch(':');
+  if(time('S') < 10)
+    putd(0);
+  putd(time('S'));
 }
 
 def <sig_action>
@@ -25,14 +36,14 @@ def <sig_action>
 def <main>
 {
   signal(SIGINT,<sig_action>);
-  minutes = time('M'); 
+  seconds = time('S'); 
   breakit = 1;
   call <display_time>;
   while(breakit == 1)/* Ctrl-D */
     {
-      if(time('M') == minutes)
+      if(time('S') == seconds)
 	continue;
       call <display_time>;
-      minutes = time('M');
+      seconds = time('S');
     }
 }
