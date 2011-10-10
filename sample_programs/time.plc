@@ -13,7 +13,7 @@ def <display_time>
 def <sig_action>
 {
   clear();
-  sprint("SIG!!");
+  sprint("DONE!");
   exit(0);
 }
 

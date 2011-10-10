@@ -75,7 +75,7 @@ char PICLANG_resume(thread_id_t new_thread)
     }
   
   thread_resume(new_thread);
-    
+  curr_process.status = PICLANG_SUCCESS;
   picos_processes[new_thread].expires = DEFAULT_PICLANG_QUANTUM;
 
   return PICLANG_SUCCESS;
