@@ -153,6 +153,20 @@ void resolve_labels(struct compiled_code* code)
 	      continue;
 	    }
 	  break;
+	case PICLANG_SIGNAL:
+	  if(code->next != NULL && code->next->next != NULL)
+	    {
+	      int label_addr = lookup_label(code_head, code->next->next->val);
+	      if(label_addr < 0)
+		{
+		  fprintf(stderr,"Could not resolve label %d\n",code->next->next->val);
+		  return;
+		}
+	      code->next->next->val = (picos_size_t)label_addr;
+	      code = code->next->next;
+	      continue;
+	    }
+	  break;
 	default:
 	  break;
 	}
@@ -236,6 +250,7 @@ struct assembly_map opcodes[] = {
   {"fclose", PICLANG_FCLOSE, 0},
   {"fread", PICLANG_FREAD, 0},
   {"system", PICLANG_SYSTEM, 0},
+  {"signal", PICLANG_SIGNAL, 2},
   {"morse", PICLANG_MORSE, 0},
   {"time", PICLANG_TIME, 0},
   {"argd", PICLANG_ARGD, 0},

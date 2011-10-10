@@ -60,6 +60,7 @@ imagdecimal {decimal}[iI]
 "=="            return EQ;
 "!="            return NE;
 "while"         return WHILE;
+"continue"      return CONTINUE;
 "break"         return BREAK;
 "if"            return IF;
 "else"          return ELSE;
@@ -74,6 +75,7 @@ imagdecimal {decimal}[iI]
 "fin"           return FIN;
 "feof"          return FEOF;
 
+"SIGINT"       { yylval.iValue = PICOS_SIGINT; return INTEGER;}
 
 \'[^\']\' {
                               yylval.iValue = yytext[1];

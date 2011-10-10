@@ -29,7 +29,7 @@ char PICLANG_load(process_addr_t sram_addr)
   thread_id_t new_thread;
   // Check to see if there is an available thread space
   new_thread = thread_allocate();
-  picos_processes[new_thread].addr = sram_addr;
+  picos_processes[new_thread].addr = sram_addr + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
   return PICLANG_resume(new_thread);
 }
 
@@ -46,7 +46,7 @@ char PICLANG_resume(thread_id_t new_thread)
       PICLANG_error(THREAD_TOO_MANY_THREADS);
       return THREAD_TOO_MANY_THREADS;
     }
-  sram_addr = picos_processes[new_thread].addr;
+  sram_addr = picos_processes[new_thread].addr - PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
   
   if(sram_addr == PICOS_END_OF_THREADS)
     return PICLANG_NO_SUCH_PROGRAM;
@@ -171,7 +171,7 @@ void PICLANG_call_push(picos_size_t val)
 
 picos_size_t PICLANG_call_pop()
 {
-  if(curr_process.call_stack_head > PICLANG_CALL_STACK_SIZE)
+  if(curr_process.call_stack_head >= PICLANG_CALL_STACK_SIZE)
     {
       PICLANG_error(PICLANG_STACK_OVERFLOW);
       return 0;
@@ -206,6 +206,18 @@ void PICLANG_next()
       return;
     }
   
+  if(picos_processes[picos_curr_process].signal_sent != PICOS_NUM_SIGNALS)
+    {
+      if(signal_valid_id(picos_processes[picos_curr_process].signal_sent) == FALSE)
+	{
+	  PICLANG_error(THREAD_INVALID_SIGNAL);
+	  return;
+	}
+      curr_process.pc = signals[picos_processes[picos_curr_process].signal_sent].sig_action_addr;
+      signal_free(picos_processes[picos_curr_process].signal_sent);
+      picos_processes[picos_curr_process].signal_sent = PICOS_NUM_SIGNALS;
+    }
+
   command = PICLANG_get_next_word();
   if(curr_process.status != PICLANG_SUCCESS)
     return;
@@ -500,6 +512,18 @@ void PICLANG_next()
     case PICLANG_SYSTEM:
       PICLANG_system = PICLANG_pop();
       picos_processes[picos_curr_process].expires = 0;// will suspend for system call
+      break;
+    case PICLANG_SIGNAL:
+      a = PICLANG_get_next_word();// signal id
+      b = PICLANG_get_next_word();// signal action
+      if(a == PICOS_NUM_SIGNALS)
+	{
+	  signal_free(b);
+	  break;
+	}
+      sch1 = signal_assign(a,picos_curr_process,b);
+      if(sch1 != 0)
+	PICLANG_error(error_code);
       break;
     case PICLANG_MORSE:
       {

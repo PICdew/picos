@@ -33,7 +33,7 @@ picos_size_t FS_BUFFER_SIZE;
 
 idNodeType *variable_list = NULL;// Variable table
 extern picos_size_t label_counter;
- int break_to_label;
+ int break_to_label, continue_to_label;
 
 /* prototypes */
 nodeType *opr(int oper, int nops, ...);
@@ -62,8 +62,11 @@ void yyerror(char *s);
 %token <iValue> INTEGER FUNCT
 %token <variable> VARIABLE
 %type <nPtr> stmt expr stmt_list STRING SUBROUTINE
-%token WHILE BREAK IF CALL SUBROUTINE STRING RETURN DEFINE EXIT 
+
+%token WHILE BREAK CONTINUE IF CALL SUBROUTINE
+%token STRING RETURN DEFINE EXIT 
 %token PASM_CR PASM_POP ARGV ARGC FIN FEOF STATEMENT_DELIM
+
 %nonassoc IFX
 %nonassoc ELSE
 
@@ -93,9 +96,10 @@ stmt:
         | DEFINE SUBROUTINE  stmt       {  $$ = opr(PASM_DEFINE,2,$2,$3);}
         | PASM_CR '(' ')' ';'                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | expr ';'                       { $$ = $1; }
-| VARIABLE '=' expr ';'          { $$ = opr(PICLANG_POP, 2, id($1), $3); }
+        | VARIABLE '=' expr ';'          { $$ = opr(PICLANG_POP, 2, id($1), $3); }
         | WHILE '(' expr ')' stmt        { $$ = opr(PASM_WHILE, 2, $3, $5); }
         | BREAK ';'                      { $$ = opr(PASM_BREAK, 0); }
+        | CONTINUE ';'                   { $$ = opr(PASM_CONTINUE, 0); }
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(PASM_IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(PASM_IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
@@ -110,13 +114,14 @@ stmt_list:
 expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
-        | STRING                         { $$ = con(handle_string($1->str.string)); }
+        | STRING                { $$ = con(handle_string($1->str.string)); }
         | ARGC                  { $$ = opr(PICLANG_ARGC,0); }
         | FIN                   { $$ = con(ARG_SIZE); }
         | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
         | PASM_POP '(' ')'      { $$ = opr(PICLANG_POP,0); }
         | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
+        | FUNCT '(' INTEGER ',' SUBROUTINE ')' { $$ = opr($1,2,con($3),$5); }
         | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
         | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
         | FUNCT '(' ')'         { $$ = opr($1,0); }
@@ -346,6 +351,7 @@ int main(int argc, char **argv)
   variable_list = NULL;
   subroutines = NULL;
   break_to_label = -1;
+  continue_to_label = -1;
   FS_BUFFER_SIZE = 128;
   
   while(TRUE)
@@ -475,6 +481,16 @@ int main(int argc, char **argv)
 	      curr_code = curr_code->next;
 	      code_counter++;
 	      fprintf(lst_file," %d",curr_code->val);
+	      if(curr->has_arg > 1)
+		{
+		  int arg_counter = 1;
+		  for(;arg_counter < curr->has_arg;arg_counter++)
+		    {
+		      code_counter++;
+		      curr_code = curr_code->next;
+		      fprintf(lst_file,", %d",curr_code->val);
+		    }
+		}
 	    }
 	  fprintf(lst_file,"\n");
 	}
@@ -503,6 +519,7 @@ int main(int argc, char **argv)
 int ex(nodeType *p) {
   int lbl1, lbl2;
   int previous_break_to_label = break_to_label;
+  int previous_continue_to_label = continue_to_label;
   if (!p) return 0;
   switch(p->type) {
   case typeCon:
@@ -559,6 +576,16 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\treturn\n");
       insert_code(PICLANG_RETURN);
       break;
+    case PASM_CONTINUE:
+      if(continue_to_label < 0)
+	{
+	  yyerror("Not within a block in which to continue");
+	  exit(-1);
+	}
+      write_assembly(assembly_file,"\tjmp\tL%03d\n", continue_to_label);
+      insert_code(PICLANG_JMP);
+      insert_code(continue_to_label);
+      break;
     case PASM_BREAK:
       if(break_to_label < 0)
 	{
@@ -571,6 +598,7 @@ int ex(nodeType *p) {
       break;
     case PASM_WHILE:
       write_assembly(assembly_file,"L%03d:\n", (lbl1 = label_counter));
+      continue_to_label = lbl1;
       insert_label(PICLANG_LABEL,lbl1);
       label_counter++;
       ex(p->opr.op[0]);
@@ -586,6 +614,7 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"L%03d:\n", lbl2);
       insert_label(PICLANG_LABEL,lbl2);
       break_to_label = previous_break_to_label;
+      continue_to_label = previous_continue_to_label;
       break;
     case PASM_IF:
       ex(p->opr.op[0]);
@@ -681,6 +710,26 @@ int ex(nodeType *p) {
 	for(;op_counter >= 0 ;op_counter--)
 	  ex(p->opr.op[op_counter]);
 	write_assembly(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
+	break;
+      }
+    case PICLANG_SIGNAL:
+      {
+	struct subroutine_map *subroutine = NULL;
+	if(p->opr.nops != 2)
+	  {
+	    fprintf(stderr,"Invalid number of arguments to signal()\nNeeded 2, got %d\n",p->opr.nops);
+	    yyerror("Syntax error");
+	  }
+	subroutine = get_subroutine(p->opr.op[1]->str.string);
+	if(subroutine == NULL)
+	  {
+	    fprintf(stderr,"Invalid subroutine: %s\n",p->opr.op[1]->str.string);
+	    yyerror("Syntax error");
+	  }
+	write_assembly(assembly_file,"\tsignal %d, L%03d\n", p->opr.op[0]->con.value, subroutine->label);
+	insert_code(PICLANG_SIGNAL);
+	insert_code(p->opr.op[0]->con.value);
+	insert_code(subroutine->label);
 	break;
       }
     case PICLANG_SPRINT:

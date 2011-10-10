@@ -44,29 +44,30 @@
      VARIABLE = 260,
      WHILE = 261,
      BREAK = 262,
-     IF = 263,
-     CALL = 264,
-     SUBROUTINE = 265,
-     STRING = 266,
-     RETURN = 267,
-     DEFINE = 268,
-     EXIT = 269,
-     PASM_CR = 270,
-     PASM_POP = 271,
-     ARGV = 272,
-     ARGC = 273,
-     FIN = 274,
-     FEOF = 275,
-     STATEMENT_DELIM = 276,
-     IFX = 277,
-     ELSE = 278,
-     NE = 279,
-     EQ = 280,
-     LE = 281,
-     GE = 282,
-     BSR = 283,
-     BSL = 284,
-     UMINUS = 285
+     CONTINUE = 263,
+     IF = 264,
+     CALL = 265,
+     SUBROUTINE = 266,
+     STRING = 267,
+     RETURN = 268,
+     DEFINE = 269,
+     EXIT = 270,
+     PASM_CR = 271,
+     PASM_POP = 272,
+     ARGV = 273,
+     ARGC = 274,
+     FIN = 275,
+     FEOF = 276,
+     STATEMENT_DELIM = 277,
+     IFX = 278,
+     ELSE = 279,
+     NE = 280,
+     EQ = 281,
+     LE = 282,
+     GE = 283,
+     BSR = 284,
+     BSL = 285,
+     UMINUS = 286
    };
 #endif
 /* Tokens.  */
@@ -75,29 +76,30 @@
 #define VARIABLE 260
 #define WHILE 261
 #define BREAK 262
-#define IF 263
-#define CALL 264
-#define SUBROUTINE 265
-#define STRING 266
-#define RETURN 267
-#define DEFINE 268
-#define EXIT 269
-#define PASM_CR 270
-#define PASM_POP 271
-#define ARGV 272
-#define ARGC 273
-#define FIN 274
-#define FEOF 275
-#define STATEMENT_DELIM 276
-#define IFX 277
-#define ELSE 278
-#define NE 279
-#define EQ 280
-#define LE 281
-#define GE 282
-#define BSR 283
-#define BSL 284
-#define UMINUS 285
+#define CONTINUE 263
+#define IF 264
+#define CALL 265
+#define SUBROUTINE 266
+#define STRING 267
+#define RETURN 268
+#define DEFINE 269
+#define EXIT 270
+#define PASM_CR 271
+#define PASM_POP 272
+#define ARGV 273
+#define ARGC 274
+#define FIN 275
+#define FEOF 276
+#define STATEMENT_DELIM 277
+#define IFX 278
+#define ELSE 279
+#define NE 280
+#define EQ 281
+#define LE 282
+#define GE 283
+#define BSR 284
+#define BSL 285
+#define UMINUS 286
 
 
 
@@ -116,7 +118,7 @@ typedef union YYSTYPE
 
 
 /* Line 1676 of yacc.c  */
-#line 120 "pasm_yacc.h"
+#line 122 "pasm_yacc.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

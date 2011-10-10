@@ -108,6 +108,7 @@ enum PICLANG_COMMANDS
     PICLANG_FCLOSE,
     PICLANG_FREAD,
     PICLANG_SYSTEM,
+    PICLANG_SIGNAL/* set a signal */,
     PICLANG_MORSE,
     PICLANG_TIME,
     PICLANG_ARGD/* reads a digit from the command line */,

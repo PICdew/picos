@@ -1,33 +1,38 @@
-/**
- * Forces 2 digits to be used.
- */
-def <two_digit>
+def <display_time>
 {
-  two_digit = pop();
-  if(two_digit < 10)
-    {
-      putd(0);
-    }
-  putd(two_digit);
+  clear();
+  putd(time('m'));
+  putch('/');
+  putd(time('d'));
+  cr();
+  putd(time('H'));
+  putch(':');
+  putd(time('M'));
 }
+
+def <sig_action>
+{
+  clear();
+  sprint("SIG!!");
+  exit(0);
+}
+
+
 
 /**
  * This is a program that will display the date
  */
 def <main>
 {
-  should_quit = 'n';
-  while(should_quit != 0x4)/* Ctrl-D */
+  signal(SIGINT,<sig_action>);
+  minutes = time('M'); 
+  breakit = 1;
+  call <display_time>;
+  while(breakit == 1)/* Ctrl-D */
     {
-      clear();
-      putd(time('m'));
-      putch('/');
-      putd(time('d'));
-      cr();
-      putd(time('H'));
-      putch(':');
-      time('M');
-      call <two_digit>;
-      should_quit = getch();
+      if(time('M') == minutes)
+	continue;
+      call <display_time>;
+      minutes = time('M');
     }
 }
