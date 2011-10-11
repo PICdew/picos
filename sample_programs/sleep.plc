@@ -1,0 +1,27 @@
+def <get_jiffies>
+{
+  str = argv[1];
+  ch = 0;
+  retval = 0;
+  while(str[ch] != 0)
+    {
+      retval = retval * 10;
+      retval = retval + str[ch] - 0x30;
+      ch = ch + 1;
+    }
+  push(retval);
+}
+
+def <main>
+{
+  clear();
+  if(argc != 2)
+    {
+      sprint("Need the number of seconds to sleep");
+      exit(-1);
+    }
+  call <get_jiffies>;
+  sleep(pop());
+  clear();
+  sprint("AWAKE!");
+}
