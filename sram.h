@@ -13,6 +13,6 @@ extern void SRAM_read(unsigned int addr, void *buffer, char n);
 #define SRAM_MTAB_ADDR 0
 #define SRAM_PICFS_WRITE_SWAP_ADDR FS_BUFFER_SIZE
 #define SRAM_PICFS_OPEN_SWAP_ADDR (2*FS_BUFFER_SIZE)
-#define SRAM_PICFS_ARG_SWAP_ADDR (3*FS_BUFFER_SIZE)
+#define SRAM_PICFS_ARG_SWAP_ADDR (2*FS_BUFFER_SIZE + 1024)
 #endif // SRAM_H
 
