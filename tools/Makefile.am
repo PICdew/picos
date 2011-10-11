@@ -2,7 +2,7 @@ bin_PROGRAMS = pasm fs
 
 AM_YFLAGS = -d
 pasm_CFLAGS = -DNOT_FOR_PIC -I../
-pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c
+pasm_SOURCES = pasm_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
 pasm_LDADD = -lm
 
 fs_SOURCES = fs.c pasm_src.c ../utils.c

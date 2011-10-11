@@ -13,3 +13,4 @@ all:
 	pasm -b $(BLOCK_SIZE) -o fs/base64 base64.plc
 	pasm -b $(BLOCK_SIZE) -o fs/echo echo.plc
 	pasm -b $(BLOCK_SIZE) -o fs/less less.plc
+	pasm -b $(BLOCK_SIZE) -o fs/sleep sleep.plc

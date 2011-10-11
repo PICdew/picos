@@ -13,6 +13,8 @@
 #include "config.h"
 #endif
 
+#include "utils.h"
+
 #ifndef ARG_SIZE
 #define ARG_SIZE 17
 #endif
@@ -36,7 +38,7 @@ void ARG_clear();
  * If the next argument is not a non-negative integer, -1 is returned
  * and error_code is set.
  */
-signed char ARG_getd();
+signed char ARG_getd(picos_size_t *val);
 
 void ARG_putch(char ch);
 signed char ARG_getch();

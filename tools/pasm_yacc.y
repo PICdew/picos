@@ -732,6 +732,11 @@ int ex(nodeType *p) {
 	insert_code(subroutine->label);
 	break;
       }
+    case PICLANG_SLEEP:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tsleep\n");
+      insert_code(PICLANG_SLEEP);
+      break;
     case PICLANG_SPRINT:
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tsprint\n");
@@ -772,14 +777,6 @@ int ex(nodeType *p) {
       ex(p->opr.op[2]);
       write_assembly(assembly_file,"\tsetdate\n");
       insert_code(PICLANG_SET_DATE);
-      break;
-    case PICLANG_ARGCH:
-      write_assembly(assembly_file,"\targch\n");
-      insert_code(PICLANG_ARGCH);
-      break;
-    case PICLANG_ARGD:
-      write_assembly(assembly_file,"\targd\n");
-      insert_code(PICLANG_ARGD);
       break;
     case PICLANG_GETD:
       write_assembly(assembly_file,"\tgetd\n");insert_code(PICLANG_GETD);

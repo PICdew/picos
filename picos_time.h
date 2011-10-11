@@ -11,7 +11,7 @@
 
 #define TIME_PERIOD 25
 
-typedef char quantum_t;
+typedef unsigned char quantum_t;
 volatile quantum_t TIME_tickCounter;
 
 typedef struct {

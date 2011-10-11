@@ -27,9 +27,17 @@ PCB curr_process;
 char PICLANG_load(process_addr_t sram_addr)
 {
   thread_id_t new_thread;
+  extern char ARG_buffer[ARG_SIZE];
   // Check to see if there is an available thread space
   new_thread = thread_allocate();
   picos_processes[new_thread].addr = sram_addr + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
+
+  // setup arguments
+  ARG_next = 0;
+  picos_processes[new_thread].nargs = ARG_count();
+  ARG_next = 0;
+  SRAM_write(SRAM_PICFS_ARG_SWAP_ADDR + ARG_SIZE*new_thread,ARG_buffer,ARG_SIZE);
+  
   return PICLANG_resume(new_thread);
 }
 
@@ -38,6 +46,7 @@ char PICLANG_resume(thread_id_t new_thread)
   char size = 0,pos = 0,counter = 0;
   process_addr_t sram_addr;
   char magic_numbers[PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)];
+  extern char ARG_buffer[ARG_SIZE];
 
   if(new_thread < 0)
     return error_code;
@@ -68,7 +77,7 @@ char PICLANG_resume(thread_id_t new_thread)
 
   if(curr_process.status != PICLANG_SUSPENDED)
     {
-      char retval = PAGE_request(curr_process.num_pages,0 /* replace with UID or pid */);
+      char retval = PAGE_request(curr_process.num_pages,new_thread);
       PICLANG_file_buffer_index = 0;
       if(retval != 0)
 	return error_code;
@@ -77,6 +86,10 @@ char PICLANG_resume(thread_id_t new_thread)
   thread_resume(new_thread);
   curr_process.status = PICLANG_SUCCESS;
   picos_processes[new_thread].expires = DEFAULT_PICLANG_QUANTUM;
+
+  // reinstate arguments
+  SRAM_read(SRAM_PICFS_ARG_SWAP_ADDR + ARG_SIZE*new_thread,ARG_buffer,ARG_SIZE);
+  ARG_next = 0;
 
   return PICLANG_SUCCESS;
 
@@ -94,7 +107,7 @@ char PICLANG_save(char saved_status)
     thread_suspend(picos_curr_process);
   else
     {
-      PAGE_free(0);
+      PAGE_free(picos_curr_process);
       thread_free(picos_curr_process);
     }
 
@@ -191,6 +204,7 @@ void PICLANG_next()
 {
   picos_size_t command;
   picos_size_t a,b,c;// parameters, can be shared
+  picos_signed_t siga;// a, but signed.
   signed char sch1;// signed char parameters
   char ch1;// char parameter
   static bit flag1;
@@ -277,7 +291,7 @@ void PICLANG_next()
     case PICLANG_PUSH:
       {
 	a = PICLANG_get_next_word();
-	b = PAGE_get(a,0/* replace with UID */);
+	b = PAGE_get(a,picos_curr_process);
 	if(error_code != SUCCESS)
 	  PICLANG_error(error_code);
 	else
@@ -297,12 +311,11 @@ void PICLANG_next()
       {
 	a = PICLANG_get_next_word();
 	b = PICLANG_pop();
-	PAGE_set(a,b,0/* replace with UID */);
+	PAGE_set(a,b,picos_curr_process);
 	break;
       }
     case PICLANG_ARGC:
-      a = ARG_count();
-      PICLANG_pushl(a);
+      PICLANG_pushl(picos_processes[picos_curr_process].nargs);
       break;
     case PICLANG_ARGV:
       {
@@ -525,6 +538,12 @@ void PICLANG_next()
       if(sch1 != 0)
 	PICLANG_error(error_code);
       break;
+    case PICLANG_SLEEP:
+      a = PICLANG_pop();
+      ch1 = picos_curr_process;
+      PICLANG_save(PICLANG_SUSPENDED);
+      picos_processes[ch1].expires = (quantum_t)a;
+      break;
     case PICLANG_MORSE:
       {
 	char two[2];
@@ -602,29 +621,6 @@ void PICLANG_next()
 	      }
 	  }
 	TIME_set(&newtime);
-	break;
-      }
-    case PICLANG_ARGD:
-      {
-	sch1 = ARG_getd();
-	if(sch1 < 0)
-	  {
-	    PICLANG_error(error_code);
-	    break;
-	  }
-	PICLANG_pushl((char)sch1);
-	PICLANG_update_arith_status();
-	break;
-      }
-    case PICLANG_ARGCH:
-      {
-	sch1 = ARG_getch();
-	if(sch1 < 0)
-	  {
-	    PICLANG_error(error_code);
-	    break;
-	  }
-	PICLANG_pushl((char)sch1);
 	break;
       }
     case PICLANG_JZ:case PICLANG_JMP:case PICLANG_CALL:

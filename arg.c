@@ -40,30 +40,28 @@ void ARG_putch(char ch)
   ARG_buffer[ARG_end++] = ch;
 }
 
-signed char ARG_getd()
+signed char ARG_getd(picos_size_t *retval)
 {
-  signed char retval;
+  if(retval == NULL)
+    return error_return(PICFS_EINVAL);
+  
   if(ARG_next >= ARG_SIZE)
-    {
-      error_code = ARG_BUFFER_OVERFLOW;
-      return retval;
-    }
-  retval = 0;
+    return error_return(ARG_BUFFER_OVERFLOW);
+
+  *retval = 0;
   while(ARG_buffer[ARG_next] != 0 && ARG_buffer[ARG_next] != ' ')
     {
-      retval *= 10;
+      *retval *= 10;
       if(ARG_buffer[ARG_next] > 0x39 || ARG_buffer[ARG_next] < 0x30)
-	{
-	  error_code = ARG_INVALID;
-	  return -1;
-	}
-      retval += ARG_buffer[ARG_next] - 0x30;
+	return error_return(ARG_INVALID);
+
+      *retval += ARG_buffer[ARG_next] - 0x30;
       ARG_next++;
       if(ARG_next == ARG_SIZE)
 	break;
     }
   ARG_next++;
-  return retval;
+  return *retval;
 }
 
 signed char ARG_getch()
