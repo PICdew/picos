@@ -58,15 +58,21 @@ extern void IO_flush();
 #define IN_USART 1
 #define IN_BTNS 2
 
+// Commands
 enum{
-  IO_CMD_LCD=1,
+  IO_CMD_IDLE= 0,
+  IO_CMD_LCD,
   IO_CMD_LCD_CLEAR,
+  IO_CMD_USART_PUTCH,
   IO_CMD_FOPEN,
   IO_CMD_FREAD,
   IO_CMD_LCD_TIME,
   IO_CMD_RSA_E,
-  IO_CMD_RSA_D
+  IO_CMD_RSA_D,
 };
+
+// Parameters arguments
+#define IO_NO_ARGS -1
 
 
 #endif // PICOS_IO
