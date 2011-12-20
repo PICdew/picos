@@ -743,7 +743,6 @@ int ex(nodeType *p) {
       insert_code(PICLANG_SPRINT);
       break;
     case PICLANG_MORSE:
-      ex(p->opr.op[1]);
       ex(p->opr.op[0]);
       write_assembly(assembly_file,"\tmorse\n");
       insert_code(PICLANG_MORSE);
