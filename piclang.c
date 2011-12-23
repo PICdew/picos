@@ -62,7 +62,7 @@ char PICLANG_resume(thread_id_t new_thread)
 
   // Verify this is an executable with the magic number
   SRAM_read(sram_addr,magic_numbers,PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t));
-  if(strncmp(magic_numbers,PICLANG_magic_numbers,PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)) != 0)
+  if(strncmp(magic_numbers,(char*)PICLANG_magic_numbers,PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t)) != 0)
     {
       error_code = PICLANG_INVALID_EXECUTABLE;
       return error_code;

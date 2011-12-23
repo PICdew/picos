@@ -15,6 +15,32 @@
 #include "config.h"
 #endif
 
+#include "arg.h"
+#include "scheduler.h"
+
+// In order from least to most significant byte, the 
+// data in SRAM for the file handle is:
+// file's root inode, most significant byte of 
+// next get offset (inode not byte address), and least significant byte
+// of next get offset
+#define FILE_HANDLE_SIZE 3
+
+// Maximum number of open files.
+// This determines the size of the file table in memory (FTAB)
+#ifndef MAX_OPEN_FILES
+#define MAX_OPEN_FILES 8
+#endif
+
+// SRAM block assignments
+// These are the addresses (unsigned int) for temporary storage.
+#define SRAM_MTAB_ADDR 0 // First byte is number of devices mounted, After that is the mount table
+#define SRAM_PICFS_WRITE_SWAP_ADDR FS_BUFFER_SIZE // needs one FS_BUFFER_SIZE
+#define SRAM_PICFS_OPEN_SWAP_ADDR (2*FS_BUFFER_SIZE)// needs one FS_BUFFER_SIZE
+#define SRAM_PICFS_ARG_SWAP_ADDR (3*FS_BUFFER_SIZE) // needs PICOS_MAX_PROCESSES * ARG_SIZE
+#define SRAM_PICFS_FTAB_ADDR (SRAM_PICFS_ARG_SWAP_ADDR + PICOS_MAX_PROCESSES * ARG_SIZE)
+#define SRAM_PICFS_FILE_ADDR (SRAM_PICFS_FTAB_ADDR + (MAX_OPEN_FILES*FILE_HANDLE_SIZE))// Beginning of location of files that are "cat"-ed to SRAM
+
+
 #define PICFS_FILENAME_MAX (FS_BUFFER_SIZE-2)
 
 typedef char file_t;// file handle type
