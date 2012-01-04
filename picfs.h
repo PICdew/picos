@@ -35,7 +35,7 @@ typedef unsigned int offset_t;
 typedef char dev_t;// id of physical device
 
 typedef struct{
-  unsigned int root_address;// address of first byte of mounted file system
+  picfs_addr_t root_address;// address of first byte of mounted file system
   dev_t device_id;
 } mount_t;
 
@@ -45,30 +45,36 @@ typedef struct{
 // next get offset (inode not byte address), and least significant byte
 // of next get offset
 //#define FILE_HANDLE_SIZE 4
-typedev struct  {
+typedef struct  {
   char first_inode, mount_point;
-  unsigned int inode_position;
+  picfs_size_t inode_position;// index of inode in the file to be read next
 }file_t;
 
 enum {PICFS_SET, PICFS_CURR, PICFS_END,PICFS_REVERSE};
 enum {DEV_SRAM, DEV_RAW_FILE, DEV_SDCARD, DEV_EEPROM, DEV_STDOUT};
 #define ST_SIZE 0 // size is 2 bytes, big endian
 
-#define SDCARD_ADDR_SIZE 4// Number of bytes in a SD card address (big endian)
-char picfs_pwd;// index of current working mount point
 volatile FS_Unit picfs_buffer[FS_BUFFER_SIZE];
 
 signed char picfs_mount(const char *addr,dev_t dev);
 signed char picfs_chdir(char mount_point);
 signed char picfs_open(const char *name,dev_t dev);
-signed char picfs_close(file_t fh);
-signed char picfs_write(file_t fh);// file handle currently ignore and the raw file of the fs is used.
-signed char picfs_read(file_t fh);
-signed char picfs_seek(file_t fh, offset_t offset, char whence);
-signed char picfs_stat(file_t fh);
-offset_t picfs_tell(file_t fh);
-void picfs_rewind(file_t fh);
-char picfs_is_open(file_t fh); 
+signed char picfs_close(file_handle_t fh);
+
+/**
+ * Dumps the buffer to the file
+ *
+ * NB: file handle currently ignore and the raw file of the fs is used.
+ */
+signed char picfs_dump(file_handle_t fh);
+
+signed char picfs_load(file_handle_t fh);// Load a block of data from a file.
+
+signed char picfs_seek(file_handle_t fh, offset_t offset, char whence);
+signed char picfs_stat(file_handle_t fh);
+offset_t picfs_tell(file_handle_t fh);
+void picfs_rewind(file_handle_t fh);
+char picfs_is_open(file_handle_t fh); 
 /**
  * Reads a file specified by "filename" and, depending on the
  * value of fileptr, writes it to:

@@ -9,8 +9,9 @@
 #ifndef PICOS_UTILS
 #define PICOS_UTILS
 
-typedef unsigned short picos_size_t;// On the picc, this is little endian!!!
-typedef signed short picos_signed_t;// On the picc, this is little endian!!!
+typedef unsigned short picos_size_t;// On the pic, this is little endian!!!
+typedef signed short picos_signed_t;// On the pic, this is little endian!!!
+typedef unsigned int picos_addr_t;// Address type to unify devices connected to the pic.
 #define PICOS_SIZE_T_DECIMAL_DIGITS 5
 
 extern void dec_to_word(char *three_chars, picos_size_t hex);
