@@ -217,7 +217,7 @@ static signed char picfs_get_mtab(mount_t *mtab_entry, char mount)
   if((mount_mask  & picfs_mtab_bitmap) != 0)
     return error_return(PICFS_EBADF);
   
-  SRAM_read(mount*sizeof(mount_t)+SRAM_MTAB_ADDR,&mtab_entry,sizeof(mtab_entry));
+  SRAM_read(mount*sizeof(mount_t)+SRAM_MTAB_ADDR,mtab_entry,sizeof(mtab_entry));
   return SUCCESS;
 }
 
@@ -544,7 +544,7 @@ signed char picfs_load(file_handle_t fh)
     }
   
   picfs_getblock(&addr,file.mount_point,inode);
-  ptr = (char)nextnode + FS_INode_pointers;
+  addr += nextnode + FS_INode_pointers;
   device_read(addr,&ptr,1,mount.device_id);
   if(ptr == 0)
     return error_return(PICFS_EOF);
