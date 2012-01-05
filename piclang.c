@@ -388,7 +388,7 @@ void PICLANG_next()
 	      }
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
-		picfs_write(0);
+		picfs_dump(0);
 		memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
 		PICLANG_file_buffer_index = 0;
 	      }
@@ -398,7 +398,7 @@ void PICLANG_next()
 	    picfs_buffer[PICLANG_file_buffer_index++] = '0';
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
-		picfs_write(0);
+		picfs_dump(0);
 		memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
 		PICLANG_file_buffer_index = 0;
 	      }
@@ -412,7 +412,7 @@ void PICLANG_next()
 	  break;
       }
     case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH  KEEP FFLUSH before FCLEAR
-	picfs_write(0);
+      picfs_dump(0);
     case PICLANG_FCLEAR:// KEEP FFLUSH before FCLEAR
       memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
       PICLANG_file_buffer_index = 0;
@@ -422,12 +422,12 @@ void PICLANG_next()
 	a = PICLANG_pop();
 	if(a < ARG_SIZE)
 	  {
-	    sch1 = picfs_open(ARG_buffer+a);
+	    sch1 = picfs_open(ARG_buffer+a,DEV_SDCARD);
 	  }
 	else if(a < ARG_SIZE + FS_BUFFER_SIZE)
 	  {
 	    a -= ARG_SIZE;
-	    sch1 = picfs_open((const char*)picfs_buffer+a);
+	    sch1 = picfs_open((const char*)picfs_buffer+a,DEV_SDCARD);
 	  }
 	else
 	  {
@@ -440,7 +440,7 @@ void PICLANG_next()
 		if(picfs_buffer[c] == 0)
 		  break;
 	      }
-	    sch1 = picfs_open((const char*)picfs_buffer);
+	    sch1 = picfs_open((const char*)picfs_buffer,DEV_SDCARD);
 	  }
 	PICLANG_pushl(sch1);
 	break;
@@ -451,7 +451,7 @@ void PICLANG_next()
       break;
     case PICLANG_FREAD:
       a = PICLANG_pop();
-      sch1 = picfs_read(a);
+      sch1 = picfs_load(a);
       b = sch1;
       if(sch1 < 0)
 	{
