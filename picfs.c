@@ -25,7 +25,6 @@ FS_Unit picfs_last_raw_block = 0;
 char picfs_fh_bitmap = 0xff;// max 8 files open. defined with MAX_OPEN_FILES
 
 #define ISOPEN(fh) ((fh & ~picfs_fh_bitmap) == 0)
-#define FS_BLOCK_SIZE FS_BUFFER_SIZE
 
 // First four bytes are address within the devices of the beginning of the
 // files system.
@@ -104,8 +103,8 @@ void cat_file(const char *filename, offset_t fileptr, char mount_point, picos_de
 	  switch(output_device)
 	    {
 	    case DEV_SRAM:
-	      SRAM_write(fileptr,(void*)picfs_buffer,FS_BUFFER_SIZE);
-	      fileptr += FS_BUFFER_SIZE;
+	      SRAM_write(fileptr,(void*)picfs_buffer,mount.block_size);
+	      fileptr += mount.block_size;
 	      break;
 	    case DEV_RAW_FILE:
 	      picfs_dump(0);
@@ -166,8 +165,8 @@ signed char picfs_verify_fs(unsigned int sd_addr, picos_dev_t dev)
     {
       return error_return(PICFS_INVALID_FILESYSTEM);
     }
-  if(magic_numbers[FS_SuperBlock_block_size] != FS_BLOCK_SIZE)
-    return error_return( PICFS_INVALID_FILESYSTEM/*FS_BLOCK_SIZE */);
+  if(magic_numbers[FS_SuperBlock_block_size] > FS_BUFFER_SIZE)
+    return error_return( PICFS_INVALID_FILESYSTEM);
 
   return SUCCESS;
 }
@@ -203,7 +202,9 @@ signed char picfs_mount(unsigned int fs_addr, picos_dev_t dev)
 
   mount.root_address = fs_addr;
   mount.device_id = dev;
-   
+
+  device_read(fs_addr + FS_SuperBlock_block_size,&mount.block_size,1,dev);
+  
   SRAM_write(addr,&mount,sizeof(mount_t));
    
   return mtab_entry;
@@ -238,7 +239,7 @@ static signed char picfs_getblock(picos_addr_t *addr, char mount, FS_Unit block_
   if(retval != SUCCESS)
     return retval;
     
-  *addr = mtab_entry.root_address + block_id * FS_BLOCK_SIZE;
+  *addr = mtab_entry.root_address + block_id * mtab_entry.block_size;
   
   return retval;
 }
@@ -253,9 +254,9 @@ static signed char picfs_buffer_block(char mount, FS_Unit block_id)
   retval = picfs_get_mtab(&mtab_entry,mount);
   if(retval != SUCCESS)
     return retval;
-  address  = mtab_entry.root_address + block_id * FS_BLOCK_SIZE;
+  address  = mtab_entry.root_address + block_id * mtab_entry.block_size;
   
-  device_read(address,(void*)picfs_buffer,FS_BUFFER_SIZE,mtab_entry.device_id);
+  device_read(address,(void*)picfs_buffer,mtab_entry.block_size,mtab_entry.device_id);
   
   return retval;
 }
@@ -300,7 +301,7 @@ signed char picfs_open(const char *name, char mount_point)
   for(;pointer < FS_INode_pointers;pointer++,inode++)
     {
       char entrypos = 0;
-      SRAM_write(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
+      SRAM_write(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);
       device_read(inode,&ch,1,dev);//dir entry listing
       if(ch == 0)
 	break;
@@ -308,7 +309,7 @@ signed char picfs_open(const char *name, char mount_point)
       if(retval != SUCCESS)
 	return retval;
       
-      while(entrypos < FS_BUFFER_SIZE)
+      while(entrypos < mount.block_size)
 	{
 	  device_read(addr,&ch,1,dev);
 	  if(ch == 0)
@@ -324,7 +325,7 @@ signed char picfs_open(const char *name, char mount_point)
 	      signed char fh;
 	      unsigned int ftab_addr;
 	      file_t ftab_entry;
-	      SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// restore swapped memory
+	      SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);// restore swapped memory
 	      device_read(addr,&ch,1,dev);// first inode in file
 	      fh = picfs_get_free_fh();//file handle
 	      if(fh < 0)
@@ -342,7 +343,7 @@ signed char picfs_open(const char *name, char mount_point)
 	  entrypos++;
 	}
     }
-  SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// restore swapped memory
+  SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);// restore swapped memory
   return error_return(PICFS_NOENT);
 
 }
@@ -357,6 +358,7 @@ signed char picfs_stat(file_handle_t fh)
   picos_dev_t dev;
   char inode;
   signed char retval = SUCCESS;
+  char number_of_pointers;
   
   if(!ISOPEN(fh))
     return error_return(PICFS_EBADF);
@@ -365,7 +367,8 @@ signed char picfs_stat(file_handle_t fh)
   ftab_read(fh*sizeof(file_t)+SRAM_PICFS_FTAB_ADDR,&file,sizeof(file_t));// mtab entry
   SRAM_read(file.mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));
   dev = mount.device_id;
-  
+  number_of_pointers = mount.block_size - FS_INode_pointers;
+
   // Get address of first inode
   inode = file.first_inode;
   retval = picfs_getblock(&addr,file.mount_point,file.first_inode);
@@ -386,22 +389,22 @@ signed char picfs_stat(file_handle_t fh)
 	  addr = addr - FS_INode_size;
 	  size += val;
 	  addr += FS_INode_pointers + 1;
-	  for(;pointer_counter < FS_INODE_NUM_POINTERS;pointer_counter++)
+	  for(;pointer_counter < number_of_pointers;pointer_counter++)
 	    {
 	      device_read(addr,&val,1,dev);
 	      if(val == 0)
 		break;
 	      else
-		size += FS_BLOCK_SIZE;
+		size += mount.block_size;
 	      addr++;
 	    }
 	  break;
 	}
-      size += FS_INODE_NUM_POINTERS*FS_BLOCK_SIZE;
+      size += number_of_pointers*mount.block_size;
       inode = val;
     }
   inode = 0;
-  for(;inode < FS_BUFFER_SIZE;inode++)
+  for(;inode < mount.block_size;inode++)
     picfs_buffer[inode] = 0;
 
   picfs_buffer[ST_SIZE] = (char)((size >>8) & 0xff);
@@ -427,10 +430,10 @@ signed char picfs_dump(file_handle_t fh)
   dev = mount.device_id;
   
   // swap out the picfs_buffer
-  SRAM_write(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
+  SRAM_write(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);
 
   // Load Super Block. It is needed for the inode of the raw file.
-  device_read(mount.root_address,(void*)picfs_buffer,FS_BLOCK_SIZE,mount.device_id);
+  device_read(mount.root_address,(void*)picfs_buffer,mount.block_size,mount.device_id);
   num_free = picfs_buffer[FS_SuperBlock_num_free_blocks];
 
   if(num_free < 2)
@@ -444,7 +447,7 @@ signed char picfs_dump(file_handle_t fh)
       mount_t mount;
       SRAM_read(file.mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));
       picfs_getblock(&addr,file.mount_point,picfs_buffer[FS_SuperBlock_raw_file]);
-      device_read(addr,(void*)picfs_buffer,FS_BLOCK_SIZE,mount.device_id);
+      device_read(addr,(void*)picfs_buffer,mount.block_size,mount.device_id);
       while(picfs_buffer[1] != 0)
 	{
 	  picfs_getblock(&addr,file.mount_point,picfs_buffer[1]);
@@ -453,7 +456,7 @@ signed char picfs_dump(file_handle_t fh)
 	}
 
       picfs_buffer[FS_INode_pointers] = free_queue;
-      device_read(mount.root_address,(void*)picfs_buffer,FS_BLOCK_SIZE,mount.device_id);
+      device_read(mount.root_address,(void*)picfs_buffer,mount.block_size,mount.device_id);
     }
 
   //Get first raw block
@@ -466,12 +469,12 @@ signed char picfs_dump(file_handle_t fh)
   picfs_getblock(&addr,file.mount_point,second_block);
   device_read(addr,(void*)picfs_buffer,FS_INode_length,dev);
   num_free = picfs_buffer[FS_INode_pointers];// borrowing num_free to save memory
-  device_read(mount.root_address,(void*)picfs_buffer,FS_BLOCK_SIZE,dev);
+  device_read(mount.root_address,(void*)picfs_buffer,mount.block_size,dev);
   picfs_buffer[FS_SuperBlock_num_free_blocks] -= 2;
   picfs_buffer[FS_SuperBlock_free_queue] = num_free;
   if(picfs_last_raw_block == 0)
     picfs_buffer[FS_SuperBlock_raw_file] = first_block;
-  device_write((void*)picfs_buffer,mount.root_address,FS_BLOCK_SIZE,dev);
+  device_write((void*)picfs_buffer,mount.root_address,mount.block_size,dev);
 
   // If raw has alread been written to, update the previous block so that it points to the first_block, continuing the linked list
   if(picfs_last_raw_block != 0)
@@ -485,21 +488,21 @@ signed char picfs_dump(file_handle_t fh)
 
   //Save some data to the first block
   picfs_getblock(&addr,file.mount_point,first_block);
-  SRAM_read(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// restore the swapped-out data
-  memcpy(write_overflow,(void*)picfs_buffer+FS_BUFFER_SIZE-2,2);//save the last two.
-  first_block = FS_BUFFER_SIZE-1;// shift the buffer
+  SRAM_read(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);// restore the swapped-out data
+  memcpy(write_overflow,(void*)picfs_buffer+mount.block_size-2,2);//save the last two.
+  first_block = mount.block_size-1;// shift the buffer
   for(;first_block > 1;first_block--)
     picfs_buffer[first_block] = picfs_buffer[first_block-2];
   picfs_buffer[0] = MAGIC_RAW;// add the raw file block header
   picfs_buffer[1] = second_block;
-  device_write((void*)picfs_buffer,addr,FS_BUFFER_SIZE,dev);// write first block
+  device_write((void*)picfs_buffer,addr,mount.block_size,dev);// write first block
 
   // write second raw block
   picfs_getblock(&addr,file.mount_point,second_block);
-  memset((void*)picfs_buffer,0,FS_BUFFER_SIZE);
+  memset((void*)picfs_buffer,0,mount.block_size);
   picfs_buffer[0] = MAGIC_RAW;
   memcpy((void*)picfs_buffer+2,write_overflow,2);// add the last two back to the buffer
-  device_write((void*)picfs_buffer,addr,FS_BUFFER_SIZE,dev);//write 6 to clean the pointer away
+  device_write((void*)picfs_buffer,addr,mount.block_size,dev);//write 6 to clean the pointer away
 
   return SUCCESS;
 }
@@ -512,6 +515,7 @@ signed char picfs_load(file_handle_t fh)
   picos_addr_t addr;
   file_t file;
   mount_t mount;
+  char number_of_pointers;
    
   //Is this file open?
   if(!ISOPEN(fh))
@@ -527,12 +531,13 @@ signed char picfs_load(file_handle_t fh)
   // get device info
   SRAM_read(file.mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount));
   nextnode = file.inode_position;
-  
+  number_of_pointers = mount.block_size - FS_INode_pointers;
+
   // update file info
   file.inode_position++;
   ftab_write(ftab_addr,&file,sizeof(file));
   
-  while(nextnode >= FS_INODE_NUM_POINTERS)
+  while(nextnode >= number_of_pointers)
     {
       picfs_getblock(&addr,file.mount_point,inode);
       addr += FS_INode_indirect;
@@ -540,7 +545,7 @@ signed char picfs_load(file_handle_t fh)
       if(ptr == 0)
 	return error_return(PICFS_EOF);
       inode = ptr;
-      nextnode -= FS_INODE_NUM_POINTERS;
+      nextnode -= number_of_pointers;
     }
   
   picfs_getblock(&addr,file.mount_point,inode);

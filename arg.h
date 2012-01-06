@@ -32,11 +32,11 @@ char ARG_source;// source of arguments, i.e. shell or piclang
 void ARG_clear();
 
 /**
- * Returns the value of the next argument, where the argument is a 
- * decimal non-negative integer.
+ * Places the next integer of the argument buffer into the memory 
+ * with the address supplied as a parameter.
  *
- * If the next argument is not a non-negative integer, -1 is returned
- * and error_code is set.
+ * For an invalid argument, -1 is returned and error_code is set.
+ * Upon successful conversion, SUCCESS is returned (see picfs_error.h)
  */
 signed char ARG_getd(picos_size_t *val);
 

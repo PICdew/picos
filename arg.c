@@ -61,7 +61,7 @@ signed char ARG_getd(picos_size_t *retval)
 	break;
     }
   ARG_next++;
-  return *retval;
+  return SUCCESS;
 }
 
 signed char ARG_getch()

@@ -38,6 +38,7 @@ typedef char picos_dev_t;// id of physical device
 typedef struct {
   picos_addr_t root_address;// address of first byte of mounted file system
   picos_dev_t device_id;
+  char block_size;// number of bytes per block of FS on device
 } mount_t;
 
 // In order from least to most significant byte, the 
