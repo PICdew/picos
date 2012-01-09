@@ -9,6 +9,8 @@
 #ifndef PICOS_UTILS
 #define PICOS_UTILS
 
+enum {DEV_SRAM, DEV_RAW_FILE, DEV_SDCARD, DEV_EEPROM, DEV_STDOUT, DEV_SLAVE};// Device enumeration
+
 typedef unsigned short picos_size_t;// On the pic, this is little endian!!!
 typedef signed short picos_signed_t;// On the pic, this is little endian!!!
 typedef unsigned int picos_addr_t;// Address type to unify devices connected to the pic.

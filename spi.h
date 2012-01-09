@@ -1,10 +1,6 @@
 #ifndef SPI_H
 #define SPI_H
 
-enum {
-  DEV_SLAVE=0,
-  DEV_SRAM
-};
 
 // Status bits
 #define SPI_CMD_ACK 1

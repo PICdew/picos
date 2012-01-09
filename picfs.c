@@ -19,8 +19,6 @@
 #include <string.h>
 
 
-extern void ftab_write(unsigned int address, void *buffer, char size);
-extern char ftab_read(unsigned int address, void *buffer, char size);
 FS_Unit picfs_last_raw_block = 0;
 char picfs_fh_bitmap = 0xff;// max 8 files open. defined with MAX_OPEN_FILES
 

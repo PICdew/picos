@@ -53,7 +53,6 @@ typedef struct  {
 #define FILE_HANDLE_SIZE sizeof(file_t)
 
 enum {PICFS_SET, PICFS_CURR, PICFS_END,PICFS_REVERSE};
-enum {DEV_SRAM, DEV_RAW_FILE, DEV_SDCARD, DEV_EEPROM, DEV_STDOUT};
 #define ST_SIZE 0 // size is 2 bytes, big endian
 
 volatile FS_Unit picfs_buffer[FS_BUFFER_SIZE];
