@@ -31,7 +31,6 @@
 
 #define PICLANG_STRING_OFFSET (ARG_SIZE + FS_BUFFER_SIZE)
 
-
 // bitmap masks
 #define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
 

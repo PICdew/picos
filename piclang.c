@@ -428,15 +428,17 @@ void PICLANG_next()
       break;
     case PICLANG_FOPEN:
       {
+	mount_t mount;
+	SRAM_read(curr_dir*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));
 	a = PICLANG_pop();
 	if(a < ARG_SIZE)
 	  {
-	    sch1 = picfs_open(ARG_buffer+a,DEV_SDCARD);
+	    sch1 = picfs_open(ARG_buffer+a,mount.device_id);
 	  }
 	else if(a < ARG_SIZE + FS_BUFFER_SIZE)
 	  {
 	    a -= ARG_SIZE;
-	    sch1 = picfs_open((const char*)picfs_buffer+a,DEV_SDCARD);
+	    sch1 = picfs_open((const char*)picfs_buffer+a,mount.device_id);
 	  }
 	else
 	  {
@@ -449,7 +451,7 @@ void PICLANG_next()
 		if(picfs_buffer[c] == 0)
 		  break;
 	      }
-	    sch1 = picfs_open((const char*)picfs_buffer,DEV_SDCARD);
+	    sch1 = picfs_open((const char*)picfs_buffer,mount.device_id);
 	  }
 	PICLANG_pushl(sch1);
 	break;
