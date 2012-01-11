@@ -411,6 +411,15 @@ void PICLANG_next()
 	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
 	  break;
       }
+    case PICLANG_PWDIR:
+      PICLANG_pushl(curr_dir);
+      break;
+    case PICLANG_CHDIR:
+      {
+	a = PICLANG_pop();
+	picfs_chdir(a);
+	break;
+      }
     case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH  KEEP FFLUSH before FCLEAR
       picfs_dump(0);
     case PICLANG_FCLEAR:// KEEP FFLUSH before FCLEAR

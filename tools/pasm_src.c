@@ -265,6 +265,8 @@ struct assembly_map opcodes[] = {
   {"compeq", PICLANG_COMPEQ, 0},
   {"compne", PICLANG_COMPNE, 0},
   {"exit", PICLANG_EXIT, 0},
+  {"chdir", PICLANG_CHDIR, 0},
+  {"getdir", PICLANG_PWDIR, 0},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 

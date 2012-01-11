@@ -129,6 +129,8 @@ enum PICLANG_COMMANDS
     PICLANG_RETURN/* Return from a subroutine */,
     PICLANG_EXIT/* Exit a program */,
     PICLANG_DEREF/* dereference operation */,
+    PICLANG_CHDIR/* Change working directory */,
+    PICLANG_PWDIR/* Puts working directory on stack*/,
     PICLANG_NUM_COMMANDS
   };
 

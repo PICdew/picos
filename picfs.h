@@ -56,6 +56,7 @@ enum {PICFS_SET, PICFS_CURR, PICFS_END,PICFS_REVERSE};
 #define ST_SIZE 0 // size is 2 bytes, big endian
 
 volatile FS_Unit picfs_buffer[FS_BUFFER_SIZE];
+volatile char curr_dir;
 
 signed char picfs_mount(unsigned int fs_addr, picos_dev_t dev);
 signed char picfs_open(const char *name,char mount_point);
@@ -71,6 +72,9 @@ signed char picfs_dump(file_handle_t fh);
 signed char picfs_load(file_handle_t fh);// Load a block of data from a file.
 
 signed char picfs_stat(file_handle_t fh);
+
+signed char picfs_chdir(char mount_point);
+
 char picfs_is_open(file_handle_t fh); 
 /**
  * Reads a file specified by "filename" and, depending on the

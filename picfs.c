@@ -579,3 +579,9 @@ char picfs_is_open(file_handle_t fh)
     return TRUE;
   return FALSE;
 }
+
+signed char picfs_chdir(char mount_point)
+{
+  curr_dir = mount_point;
+  return SUCCESS;
+}

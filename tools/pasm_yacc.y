@@ -788,6 +788,15 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tnot\n");
       insert_code(PICLANG_NOT);
       break;
+    case PICLANG_CHDIR:
+      ex(p->opr.op[0]);
+      write_assembly(assembly_file,"\tchdir\n");
+      insert_code(PICLANG_CHDIR);
+      break;
+    case PICLANG_PWDIR:
+      write_assembly(assembly_file,"\tpwdir\n");
+      insert_code(PICLANG_PWDIR);
+      break;
     default:// all piclang functions
       {
 	ex(p->opr.op[0]);
