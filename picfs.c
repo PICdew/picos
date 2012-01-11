@@ -95,7 +95,7 @@ void cat_file(const char *filename, offset_t fileptr, char mount_point, picos_de
   file = (file_handle_t)retval;
   if(picfs_is_open(file))
     {
-      SRAM_read(mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_point));
+      SRAM_read(mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount));
       while(picfs_load(file) == 0)
 	{
 	  switch(output_device)
@@ -356,7 +356,7 @@ signed char picfs_stat(file_handle_t fh)
   picos_dev_t dev;
   char inode;
   signed char retval = SUCCESS;
-  char number_of_pointers;
+  picos_size_t number_of_pointers;
   
   if(!ISOPEN(fh))
     return error_return(PICFS_EBADF);
@@ -513,7 +513,7 @@ signed char picfs_load(file_handle_t fh)
   picos_addr_t addr;
   file_t file;
   mount_t mount;
-  char number_of_pointers;
+  picos_size_t number_of_pointers;
    
   //Is this file open?
   if(!ISOPEN(fh))

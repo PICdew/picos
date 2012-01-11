@@ -2324,7 +2324,7 @@ void write_val_for_pic(FILE *binary_file,picos_size_t val)
 {
   picos_size_t endiantest = 1;
   int size;
-  char is_littleendian, *end; 
+  unsigned char is_littleendian, *end; 
   if(binary_file == NULL)
     return;
 

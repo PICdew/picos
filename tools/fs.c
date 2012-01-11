@@ -214,17 +214,26 @@ static int FS_file_size(FS_Block *the_dir)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   size_t datacount = 0, filesize = 0;
-   
+  size_t number_of_pointers;
+
   if(the_dir == NULL)
     return 0;
 
   log_msg("FS_file_size (0x%x)\n",the_dir);
 
+  if(sb == NULL)
+    {
+      error_log("FS_file_size: Super block is a null pointer\n");
+      return -1;
+    }
+  
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
+
   while(1)
     {
       if(the_dir[FS_INode_indirect] == 0)
 	{
-	  for(;datacount < FS_INODE_NUM_POINTERS;datacount++)
+	  for(;datacount < number_of_pointers;datacount++)
 	    if(the_dir[FS_INode_pointers + datacount] == 0)
 	      break;
   
@@ -234,7 +243,7 @@ static int FS_file_size(FS_Block *the_dir)
 	}
       else
 	{
-	  filesize += FS_BLOCK_SIZE*FS_INODE_NUM_POINTERS;
+	  filesize += FS_BLOCK_SIZE*number_of_pointers;
 	}
       the_dir = FS_getblock(sb,the_dir[FS_INode_indirect]);
     }
@@ -446,6 +455,7 @@ static int FS_truncate(const char *path, off_t new_size)
   FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]), *main_inode;
   off_t old_size;
   int needed_blocks;
+  size_t number_of_pointers;
 
   if(path == NULL)
     {
@@ -454,6 +464,14 @@ static int FS_truncate(const char *path, off_t new_size)
     }
   log_msg("FS_truncate (%s",path);
 
+  if(sb == NULL)
+    {
+      error_log("FS_file_size: Super block is a null pointer\n");
+      return -1;
+    }
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
+    
+  
   file_head = FS_resolve(file_head,path,sb);
   if(file_head == NULL)
     return -ENOENT;
@@ -482,7 +500,7 @@ static int FS_truncate(const char *path, off_t new_size)
 	  error_log("Not enough blocks. Need: %d Have: %d",needed_blocks,sb[FS_SuperBlock_num_free_blocks]);
 	  return -ENOSPC;
 	}
-      while(pointer < FS_INODE_NUM_POINTERS)
+      while(pointer < number_of_pointers)
 	if(file_head[FS_INode_pointers + pointer] == 0)
 	  break;
 	else
@@ -494,7 +512,7 @@ static int FS_truncate(const char *path, off_t new_size)
       main_inode = file_head;
       while(needed_blocks > 0)
 	{
-	  if(pointer == FS_INODE_NUM_POINTERS)
+	  if(pointer == number_of_pointers)
 	    {
 	      file_head[FS_INode_size] = pointer*FS_BLOCK_SIZE;
 	      file_head[FS_INode_indirect] = FS_malloc(sb);
@@ -522,19 +540,6 @@ static int FS_truncate(const char *path, off_t new_size)
   log_msg("Shrinking file\n");
   error_log("FINISH shrinking in truncate!!!\n");
   return -ENOSPC;
-#if 0
-  needed_blocks = (int)ceil(new_size/FS_BLOCK_SIZE);
-  for(;needed_blocks < FS_INODE_NUM_POINTERS;needed_blocks++)
-    {
-      if(file_head[FS_INode_pointers + needed_blocks] == 0)
-	continue;
-      FS_free_block(sb, file_head[FS_INode_pointers + needed_blocks]);
-      file_head[FS_INode_pointers + needed_blocks] = 0;
-      }
-  
-  file_head[FS_INode_size] = new_size;
-  return 0;
-#endif  
 }
 
 int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
@@ -546,9 +551,12 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   FS_Block *the_dir = FS_getblock(the_state->super_block,the_state->super_block[FS_SuperBlock_root_block]);
   size_t dir_counter = 0,pointer_counter = FS_INode_pointers,dirent_len = 0;
   unsigned char *d_name = NULL, *dirent;
+  size_t number_of_pointers;
   
   (void)offset;
   (void)fi;
+
+  number_of_pointers = the_state->super_block[FS_SuperBlock_block_size] - FS_INode_pointers;
   
   if(strcmp(path,FS_proc_filename) == 0)
     {
@@ -578,7 +586,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
       error_log("Dir entry %d\n",dir_counter);
       if(dirent_len >= FS_BLOCK_SIZE)
 	{
-	  if(pointer_counter >=  FS_INODE_NUM_POINTERS || the_dir[pointer_counter] == 0)
+	  if(pointer_counter >=  number_of_pointers || the_dir[pointer_counter] == 0)
 	    break;
 	  dirent = FS_getblock(the_state->super_block,the_dir[pointer_counter++]);
 	  dirent_len = 0;
@@ -630,6 +638,7 @@ static int FS_mkfile(const char *path, mode_t mode)
   FS_Unit pointer = 0;
   const char *delim = NULL;
   char filename[FS_BLOCK_SIZE-2];
+  size_t number_of_pointers;
   log_msg("FS_mkfile (%s) mode 0%d\n",path,mode & 0777);
 
   file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
@@ -647,6 +656,8 @@ static int FS_mkfile(const char *path, mode_t mode)
       error_log("No more free blocks\n",path);
       return -ENOSPC;
     }
+
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
   
   // does sub directory exist?
   delim = strrchr(path,'/');
@@ -681,7 +692,7 @@ static int FS_mkfile(const char *path, mode_t mode)
       FS_Block *dir_list;
       if(sb[FS_SuperBlock_num_free_blocks] < 2)
 	{
-	  error_log("Could not get a free inode for this directory\n");
+	  error_log("[%s:%d] Could not get a free inode for this directory\n",__FILE__,__LINE__);
 	  return -ENOSPC;
 	}
       file[FS_INode_pointers] = sb[FS_SuperBlock_free_queue];
@@ -691,7 +702,7 @@ static int FS_mkfile(const char *path, mode_t mode)
       memset(dir_list,0,FS_BLOCK_SIZE*sizeof(FS_Unit));
     }
   
-  for(;pointer < FS_INODE_NUM_POINTERS;pointer++)
+  for(;pointer < number_of_pointers;pointer++)
     {
       FS_Unit *dir_list;
       FS_Unit size = FS_BLOCK_SIZE, count = 0;
@@ -732,7 +743,7 @@ static int FS_mkfile(const char *path, mode_t mode)
 	}
     }
 
-  error_log("Could not get a free inode for this directory\n");
+  error_log("[%s:%d] Could not get a free inode for this directory. Number of pointers: %d\n",__FILE__,__LINE__,number_of_pointers);
   return -ENOSPC;
   
 }
@@ -765,8 +776,11 @@ static int FS_removefile(const char *path, FS_Block *sb)
   FS_Block *top_dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
   FS_Block *inode = NULL;
   FS_Block *curr_block = NULL;
-  
+  size_t number_of_pointers;
+
   log_msg("FS_removefile (%s)\n",path);
+
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
   
   inode = FS_resolve(top_dir,path,sb);
 
@@ -840,7 +854,7 @@ static int FS_removefile(const char *path, FS_Block *sb)
 			  size_t shift_idx = dir_ent + 1;
 			  FS_free_block(sb,inode[FS_INode_pointers + dir_ent]);
 			  inode[FS_INode_pointers + dir_ent] = 0;
-			  for(;shift_idx < FS_INODE_NUM_POINTERS;shift_idx++)
+			  for(;shift_idx < number_of_pointers;shift_idx++)
 			    inode[FS_INode_pointers + shift_idx - 1] = inode[FS_INode_pointers + shift_idx];
 			}
 		      break;
@@ -882,11 +896,14 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
   FS_Unit data_ptr = 0;
   FS_Block *data_block = NULL;
   size_t amount_written = 0;
-  
+  size_t number_of_pointers;
+
   log_msg("FS_write (file = %s, text = %s, size = %d, offset = %d)\n",path,buf,size,offset);
   
   file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
   file_head = FS_resolve(file_head,path,sb);
+
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
   
   if(file_head == NULL)
     {
@@ -909,7 +926,7 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
   if(offset >= 0)
     {
       data_ptr = (FS_Unit)floor(offset/FS_BLOCK_SIZE);
-      if(data_ptr > FS_INODE_NUM_POINTERS)
+      if(data_ptr > number_of_pointers)
 	{
 	  error_log("Offset exceeds inode space.\n");
 	  return -EFAULT;
@@ -918,7 +935,7 @@ static int FS_write(const char *path, char *buf, size_t size, off_t offset,
   
   while(amount_written != size)
     {
-      if(data_ptr >= FS_INODE_NUM_POINTERS)
+      if(data_ptr >= number_of_pointers)
 	{
 	  if(file_head[FS_INode_indirect] == 0)
 	    break;
@@ -989,13 +1006,17 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 {
   int len;
   int retval = 0;
-  (void) fi;
 
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = sb;
   FS_Block *file = NULL;
   FS_Unit data_ptr = 0;
+  size_t number_of_pointers;
+
   log_msg("FS_read (%s)\n",path);
+
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
+
   if(strcmp(path,FS_dump_filename) == 0 )
     {
       len = (2+sb[FS_SuperBlock_num_blocks])*sb[FS_SuperBlock_block_size];
@@ -1055,7 +1076,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 	memcpy(buf,file_head, write_amount);
 	buf += write_amount;
 	data_ptr++;
-	if(data_ptr >= FS_INODE_NUM_POINTERS)
+	if(data_ptr >= number_of_pointers)
 	  {
 	    file = FS_getblock(sb,file[FS_INode_indirect]);
 	    data_ptr = 0;
