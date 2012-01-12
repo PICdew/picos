@@ -296,6 +296,7 @@ static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
       break;
     }
     
+  stbuf->st_atime = stbuf->st_mtime = stbuf->st_ctime = 394178400; 
   stbuf->st_nlink = 1;
 }
 

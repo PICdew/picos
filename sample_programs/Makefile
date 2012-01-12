@@ -1,16 +1,18 @@
 BLOCK_SIZE=255
+COMP=../tools/pasm
+
 
 all:
-	pasm -b $(BLOCK_SIZE) -o fs/time time.plc
-	pasm -b $(BLOCK_SIZE) -o fs/start startup_message.plc
-	pasm -b $(BLOCK_SIZE) -o fs/setdate setdate.plc
-	pasm -b $(BLOCK_SIZE) -o fs/settime settime.plc
-	pasm -b $(BLOCK_SIZE) -o fs/test test.plc	
-	pasm -b $(BLOCK_SIZE) -o fs/morse morse.plc
-	pasm -b $(BLOCK_SIZE) -o fs/ed ed.plc
-	pasm -b $(BLOCK_SIZE) -o fs/timestamp timestamp.plc
-	pasm -b $(BLOCK_SIZE) -o fs/calc calc.plc
-	pasm -b $(BLOCK_SIZE) -o fs/base64 base64.plc
-	pasm -b $(BLOCK_SIZE) -o fs/echo echo.plc
-	pasm -b $(BLOCK_SIZE) -o fs/less less.plc
-	pasm -b $(BLOCK_SIZE) -o fs/sleep sleep.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/time time.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/start startup_message.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/setdate setdate.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/settime settime.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/test test.plc	
+	$(COMP) -b $(BLOCK_SIZE) -o fs/morse morse.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/ed ed.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/timestamp timestamp.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/calc calc.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/base64 base64.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/echo echo.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/less less.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/sleep sleep.plc
