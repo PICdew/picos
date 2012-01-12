@@ -33,7 +33,11 @@ char PICLANG_load(process_addr_t sram_addr)
   picos_processes[new_thread].addr = sram_addr + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
 
   // setup arguments
-  ARG_next = 0;
+  if(ARG_next > 1)
+    {
+      if(ARG_buffer[ARG_next-1] == 0)
+	ARG_buffer[ARG_next-1] = ' ';
+    }
   picos_processes[new_thread].nargs = ARG_count();
   ARG_next = 0;
   SRAM_write(SRAM_PICFS_ARG_SWAP_ADDR + ARG_SIZE*new_thread,ARG_buffer,ARG_SIZE);
