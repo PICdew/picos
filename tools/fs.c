@@ -109,7 +109,7 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
     {
       fseek(eeprom_file,0,SEEK_END);
       len = ftell(eeprom_file);
-      rewind(eeprom_file);
+      //rewind(eeprom_file);
     }
   else
     len = 0;
@@ -124,9 +124,13 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
 static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
 {
   int len;
-  fputs(":020000040000FA\n",eeprom_file);
+  fprintf(eeprom_file,":020000040000FA\n");
+  fflush(eeprom_file);
   FS_compile(sb,eeprom_file, PRINT_HEX);
-  fputs(":00000001FF\n",eeprom_file);
+  fflush(eeprom_file);
+  fprintf(eeprom_file,":00000001FF\n");
+  fflush(eeprom_file);
+  
   if(eeprom_file != FS_PRIVATE_DATA->logfile)
     {
       fseek(eeprom_file,0,SEEK_END);
