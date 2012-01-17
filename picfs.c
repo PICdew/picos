@@ -91,6 +91,7 @@ void cat_file(const char *filename, offset_t fileptr, char mount_point, picos_de
       IO_puts(filename);
       IO_putd(error_code);
       error_code = 0;
+      return;
     }
   file = (file_handle_t)retval;
   if(picfs_is_open(file))
