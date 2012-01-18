@@ -96,7 +96,7 @@ void cat_file(const char *filename, offset_t fileptr, char mount_point, picos_de
   file = (file_handle_t)retval;
   if(picfs_is_open(file))
     {
-      SRAM_read(mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount));
+      SRAM_read(mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));
       while(picfs_load(file) == 0)
 	{
 	  switch(output_device)
@@ -182,7 +182,7 @@ signed char picfs_mount(unsigned int fs_addr, picos_dev_t dev)
   signed char mtab_entry;
   unsigned int addr;
   mount_t mount;
-
+  
   if(picfs_mtab_bitmap == 0)
     return error_return(PICFS_ENFILE);
 
@@ -205,7 +205,7 @@ signed char picfs_mount(unsigned int fs_addr, picos_dev_t dev)
   device_read(fs_addr + FS_SuperBlock_block_size,&mount.block_size,1,dev);
   
   SRAM_write(addr,&mount,sizeof(mount_t));
-   
+
   return mtab_entry;
 }
 
@@ -217,7 +217,7 @@ static signed char picfs_get_mtab(mount_t *mtab_entry, char mount)
   if((mount_mask  & picfs_mtab_bitmap) != 0)
     return error_return(PICFS_EBADF);
   
-  SRAM_read(mount*sizeof(mount_t)+SRAM_MTAB_ADDR,mtab_entry,sizeof(mtab_entry));
+  SRAM_read(mount*sizeof(mount_t)+SRAM_MTAB_ADDR,mtab_entry,sizeof(mount_t));
   return SUCCESS;
 }
 
@@ -239,7 +239,7 @@ static signed char picfs_getblock(picos_addr_t *addr, char mount, FS_Unit block_
     return retval;
     
   *addr = mtab_entry.root_address + block_id * mtab_entry.block_size;
-  
+    
   return retval;
 }
 
@@ -294,7 +294,7 @@ signed char picfs_open(const char *name, char mount_point)
   retval = picfs_getblock(&inode,mount_point,ch); // now contains inode's address
   if(retval != SUCCESS)
     return retval;
-
+  
   inode += FS_INode_pointers;// now contains the first pointer
   pointer = 0;
   for(;pointer < FS_INode_pointers;pointer++,inode++)
@@ -343,6 +343,7 @@ signed char picfs_open(const char *name, char mount_point)
 	}
     }
   SRAM_read(SRAM_PICFS_OPEN_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);// restore swapped memory
+  
   return error_return(PICFS_NOENT);
 
 }
@@ -359,7 +360,7 @@ signed char picfs_stat(file_handle_t fh)
   signed char retval = SUCCESS;
   picos_size_t number_of_pointers;
   
-  if(!ISOPEN(fh))
+  if(!ISOPEN(fh) || fh == 0xff)
     return error_return(PICFS_EBADF);
 
   // Get File info
@@ -421,7 +422,7 @@ signed char picfs_dump(file_handle_t fh)
   picos_dev_t dev;
   mount_t mount;
    
-  if(!ISOPEN(fh))
+  if(!ISOPEN(fh) || fh == 0xff)
     return error_return(PICFS_EBADF);
    
   ftab_read(fh*FILE_HANDLE_SIZE + SRAM_PICFS_FTAB_ADDR,&file,sizeof(file_t));
@@ -517,24 +518,24 @@ signed char picfs_load(file_handle_t fh)
   picos_size_t number_of_pointers;
    
   //Is this file open?
-  if(!ISOPEN(fh))
+  if(!ISOPEN(fh) || fh == 0xff)
     return error_return(PICFS_EBADF);
 
   // Get the head inode. Is it legit?
-  ftab_read(ftab_addr,&file,sizeof(file));
+  ftab_read(ftab_addr,&file,sizeof(file_t));
   inode = file.first_inode;
   if(inode == 0)
     return error_return(PICFS_EBADF);
   picfs_stat(fh);
 
   // get device info
-  SRAM_read(file.mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount));
+  SRAM_read(file.mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));
   nextnode = file.inode_position;
   number_of_pointers = mount.block_size - FS_INode_pointers;
 
   // update file info
   file.inode_position++;
-  ftab_write(ftab_addr,&file,sizeof(file));
+  ftab_write(ftab_addr,&file,sizeof(file_t));
   
   while(nextnode >= number_of_pointers)
     {
@@ -567,7 +568,7 @@ signed char picfs_close(file_handle_t fh)
 {
   unsigned int ftab_addr = fh*FILE_HANDLE_SIZE + SRAM_PICFS_FTAB_ADDR;
   char idx = 0;
-  if(!ISOPEN(fh))
+  if(!ISOPEN(fh) || fh == 0xff)
     return error_return(PICFS_EBADF);
 
   picfs_free_handle(&picfs_fh_bitmap,fh);

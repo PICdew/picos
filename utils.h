@@ -22,6 +22,7 @@ extern void calculate_crc(char *crc, char newval);
 extern char TEMPERATURE_read();
 extern void picos_delay(unsigned long cycles);
 
+#define PICOS_CR 0xa
 
 // CRC command hashes
 #define CRC_echo 0x1
