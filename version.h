@@ -13,15 +13,15 @@
 #ifndef PICOS_VERSION_H
 #define PICOS_VERSION_H
 
-#define KERNEL_MAJOR_VERSION 1
-#define KERNEL_MINOR_VERSION 0
+#define KERNEL_MAJOR_VERSION 0
+#define KERNEL_MINOR_VERSION 6
 #define KERNEL_REVISION 0
 #define KERNEL_ID_TAG 0
 
 #endif
 
 /**
- * 1.0.0 - Switched from assembly to C. The OS grew to such a size as
+ * 0.6.0 - Switched from assembly to C. The OS grew to such a size as
  *         to make assembly (i.e. paging) unbearable. As of this version,
  *         IO using buttons, USART, LCD and sound word. Commands are 
  *         parsed into CRC unsigned char's.

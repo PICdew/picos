@@ -23,6 +23,10 @@ typedef struct {
   process_addr_t addr;// starting address in memory
   quantum_t expires;// system clock ticks left in the threads state
   char nargs;// number of args
+  file_handle_t program_file;
+  char block_size;// block size of FS in which the file is stored
+  picos_size_t data_start;// First word of data in memory
+  picos_size_t data_end;// Last word of data in memory
   picos_signal_t signal_sent;// value of the last sent signal
   thread_id_t next;// next thread in queue
   thread_id_t previous;// previous thread in queue

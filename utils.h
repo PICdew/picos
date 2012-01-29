@@ -11,6 +11,9 @@
 
 enum {DEV_SRAM, DEV_RAW_FILE, DEV_SDCARD, DEV_EEPROM, DEV_STDOUT, DEV_SLAVE};// Device enumeration
 
+typedef char file_handle_t;// file handle type
+typedef unsigned int offset_t;
+typedef char picos_dev_t;// id of physical device
 typedef unsigned short picos_size_t;// On the pic, this is little endian!!!
 typedef signed short picos_signed_t;// On the pic, this is little endian!!!
 typedef unsigned int picos_addr_t;// Address type to unify devices connected to the pic.
@@ -22,6 +25,7 @@ extern void calculate_crc(char *crc, char newval);
 extern char TEMPERATURE_read();
 extern void picos_delay(unsigned long cycles);
 
+// picos carriage return
 #define PICOS_CR 0xa
 
 // CRC command hashes

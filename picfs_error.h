@@ -46,7 +46,7 @@ enum ERROR_CODES{
   THREAD_INVALID_SIGNAL
 };
 
-char error_code;
+volatile char error_code;
 
 /**
  * Sets 'error_code' to the provided value and returns -1.

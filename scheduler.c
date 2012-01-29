@@ -46,6 +46,8 @@ thread_id_t thread_allocate()
   picos_free_queue = picos_processes[retval].next;
   picos_processes[picos_free_queue].previous = -1;
   
+  picos_processes[retval].block_size = 0;
+  picos_processes[retval].program_file = 0xff;
   picos_processes[retval].addr = PICOS_END_OF_THREADS;
   picos_processes[retval].expires = 0;
   picos_processes[retval].signal_sent = PICOS_NUM_SIGNALS;
@@ -123,6 +125,9 @@ void thread_free(thread_id_t tid)
     picos_processes[picos_processes[tid].next].previous = picos_processes[tid].previous;
   if(picos_processes[tid].previous > -1)
     picos_processes[picos_processes[tid].previous].next = picos_processes[tid].next;
+
+  if(picfs_close(picos_processes[tid].program_file))
+    error_code = SUCCESS;
   
   picos_processes[tid].addr = PICOS_END_OF_THREADS;
   picos_processes[tid].expires = 0;

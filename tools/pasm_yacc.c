@@ -2397,7 +2397,7 @@ int main(int argc, char **argv)
   FILE *hex_file = NULL, *eeprom_file = NULL, *binary_file = NULL;
   char opt;
   int opt_index;
-  unsigned char piclang_bitmap = 0;
+  picos_size_t piclang_bitmap = 0;
   struct compiled_code *curr_code = NULL;
 
   assembly_file = NULL;
@@ -2607,7 +2607,7 @@ int ex(nodeType *p) {
       break;
     case PICLANG_CALL:
       {
-	struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
+	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
 	write_assembly(assembly_file,"\tcall\tL%03d\n",subroutine->label);
 	insert_code(PICLANG_CALL);
 	insert_code(subroutine->label);
@@ -2770,7 +2770,7 @@ int ex(nodeType *p) {
       }
     case PICLANG_SIGNAL:
       {
-	struct subroutine_map *subroutine = NULL;
+	const struct subroutine_map *subroutine = NULL;
 	if(p->opr.nops != 2)
 	  {
 	    fprintf(stderr,"Invalid number of arguments to signal()\nNeeded 2, got %d\n",p->opr.nops);
@@ -2852,6 +2852,12 @@ int ex(nodeType *p) {
     case PICLANG_PWDIR:
       write_assembly(assembly_file,"\tpwdir\n");
       insert_code(PICLANG_PWDIR);
+      break;
+    case PICLANG_MOUNT:
+      ex(p->opr.op[0]);
+      ex(p->opr.op[1]);
+      write_assembly(assembly_file,"\tmount\n");
+      insert_code(PICLANG_MOUNT);
       break;
     default:// all piclang functions
       {
@@ -3038,7 +3044,7 @@ void set_pcb_type(struct compiled_code *the_pcb)
   set_pcb_type(the_pcb->next);
 }
 
-struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, unsigned char piclang_bitmap)
+struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, picos_size_t piclang_bitmap)
 {
   int i;
   struct compiled_code *magic_number = NULL;
@@ -3120,13 +3126,13 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   return size;
 }
 
-void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, unsigned char *piclang_bitmap, int num_variables)
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables)
 {
   char hex_buffer[45];
   void resolve_labels(struct compiled_code* code);
 
   resolve_labels(*the_code);
-  *the_code = MakePCB(*the_code,the_strings,num_variables,piclang_bitmap);
+  *the_code = MakePCB(*the_code,the_strings,num_variables,*piclang_bitmap);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
   if(hex_file != NULL)
     {

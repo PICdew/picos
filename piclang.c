@@ -24,15 +24,19 @@ char PICLANG_file_buffer_index;
 bit PICLANG_debug = FALSE;
 PCB curr_process;
 
-char PICLANG_load(process_addr_t sram_addr)
+char PICLANG_load(file_handle_t fh)
 {
   thread_id_t new_thread;
+  file_t file;
+  mount_t mount;
+  picos_size_t block_idx;
   extern char ARG_buffer[ARG_SIZE];
   // Check to see if there is an available thread space
   new_thread = thread_allocate();
-  picos_processes[new_thread].addr = sram_addr + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
+  picos_processes[new_thread].addr = SRAM_PICFS_FILE_ADDR + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
 
   // setup arguments
+  
   if(ARG_next > 1)
     {
       if(ARG_buffer[ARG_next-1] == 0)
@@ -41,7 +45,30 @@ char PICLANG_load(process_addr_t sram_addr)
   picos_processes[new_thread].nargs = ARG_count();
   ARG_next = 0;
   SRAM_write(SRAM_PICFS_ARG_SWAP_ADDR + ARG_SIZE*new_thread,ARG_buffer,ARG_SIZE);
-  
+
+  // setup file and cat the first block to SRAM
+  picos_processes[new_thread].program_file = fh;
+  ftab_read(fh*sizeof(file_t)+SRAM_PICFS_FTAB_ADDR,&file,sizeof(file_t));
+  SRAM_read(file.mount_point*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));
+
+  // Load PCB
+  picos_processes[new_thread].block_size = mount.block_size;
+  block_idx = 0;
+  for(;block_idx < PCB_SIZE;block_idx += mount.block_size)
+    {
+      picfs_load(fh);
+      SRAM_write(SRAM_PICFS_FILE_ADDR + block_idx,(void*)picfs_buffer,FS_BUFFER_SIZE);
+    }
+
+  picos_processes[new_thread].data_end = block_idx - PCB_SIZE - PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
+  picos_processes[new_thread].data_end /= sizeof(picos_size_t);
+  if(picos_processes[new_thread].data_end)
+    picos_processes[new_thread].data_end--;
+  block_idx = PCB_SIZE;
+  picos_processes[new_thread].data_start = 0;
+
+  // Make sure the first 
+
   return PICLANG_resume(new_thread);
 }
 
@@ -143,15 +170,33 @@ void PICLANG_init()
  */
 picos_size_t PICLANG_get_next_word()
 {
-  picos_size_t next = picos_processes[picos_curr_process].addr + curr_process.pc*sizeof(picos_size_t);
+  picos_size_t next;
   picos_size_t val;
-  if(curr_process.pc > curr_process.string_address - curr_process.start_address || next < picos_processes[picos_curr_process].addr)
+    
+  while(curr_process.pc >= picos_processes[picos_curr_process].data_end)
     {
-      PICLANG_error(PICLANG_PC_OVERFLOW);
-      return 0xff;
+      if(curr_process.pc > curr_process.string_address - curr_process.start_address)
+	{
+	  PICLANG_error(PICLANG_PC_OVERFLOW);
+	  return -1;
+	}
+      
+      if(picfs_load(picos_processes[picos_curr_process].program_file) != SUCCESS)
+	return -1;
+      picos_processes[picos_curr_process].data_start = picos_processes[picos_curr_process].data_end;
+      picos_processes[picos_curr_process].data_end += picos_processes[picos_curr_process].block_size/sizeof(picos_size_t);
+      picos_processes[picos_curr_process].data_end--;
+      
+      SRAM_write(PCB_SIZE + picos_processes[picos_curr_process].addr,(void*)picfs_buffer,picos_processes[picos_curr_process].block_size);
+      
     }
+  
+  next = PCB_SIZE + picos_processes[picos_curr_process].addr + (curr_process.pc - picos_processes[picos_curr_process].data_start)*sizeof(picos_size_t);
+  
+  if(picos_processes[picos_curr_process].data_start == 0 && picos_processes[picos_curr_process].block_size > PCB_SIZE)
+    next += PCB_SIZE;
+  
   curr_process.pc++;
-  next += curr_process.start_address*sizeof(picos_size_t);
   SRAM_read(next,&val,1*sizeof(picos_size_t));
   return val;
 }
@@ -417,6 +462,12 @@ void PICLANG_next()
       }
     case PICLANG_PWDIR:
       PICLANG_pushl(curr_dir);
+      break;
+    case PICLANG_MOUNT:
+      a = PICLANG_pop();// device
+      b = PICLANG_pop();// address of first byte
+      if(picfs_mount((picos_addr_t)b,(picos_dev_t)a) != SUCCESS)
+	curr_process.status = error_code;
       break;
     case PICLANG_CHDIR:
       {

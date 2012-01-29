@@ -31,10 +31,6 @@
 
 #define PICFS_FILENAME_MAX (FS_BUFFER_SIZE-2)
 
-typedef char file_handle_t;// file handle type
-typedef unsigned int offset_t;
-typedef char picos_dev_t;// id of physical device
-
 typedef struct {
   picos_addr_t root_address;// address of first byte of mounted file system
   picos_dev_t device_id;

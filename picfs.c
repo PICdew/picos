@@ -577,7 +577,7 @@ signed char picfs_close(file_handle_t fh)
 
 char picfs_is_open(file_handle_t fh)
 {
-  if(ISOPEN(fh))
+  if(ISOPEN(fh) && fh != 0xff)
     return TRUE;
   return FALSE;
 }

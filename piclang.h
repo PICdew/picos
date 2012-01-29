@@ -61,7 +61,7 @@ extern void PICLANG_init();
  * Loads program from SRAM.
  * Returns status of load
  */
-extern char PICLANG_load(process_addr_t sram_addr);
+extern char PICLANG_load(file_handle_t file);
 
 extern char PICLANG_resume(thread_id_t new_thread);
 
@@ -130,6 +130,7 @@ enum PICLANG_COMMANDS
     PICLANG_DEREF/* dereference operation */,
     PICLANG_CHDIR/* Change working directory */,
     PICLANG_PWDIR/* Puts working directory on stack*/,
+    PICLANG_MOUNT/* Mount a directory */,
     PICLANG_NUM_COMMANDS
   };
 
