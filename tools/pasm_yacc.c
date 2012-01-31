@@ -3057,7 +3057,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   status->val = PICLANG_SUCCESS;
   struct compiled_code *start_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  start_address->val = PCB_SIZE;
+  start_address->val = FS_BUFFER_SIZE;
   struct compiled_code *string_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *stack, *end_of_stack;
   struct compiled_code *call_stack, *end_of_call_stack;
@@ -3079,6 +3079,16 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   string_address->next = stack;
   end_of_stack->next = call_stack;
   end_of_call_stack->next = NULL;// temporary to count PCB's size and set PCB code types
+
+  // Pad block with zeros
+  i = CountCode(size);
+  for(;i<FS_BUFFER_SIZE/sizeof(picos_size_t)-sizeof(picos_size_t);i++)
+    {
+      end_of_call_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+      end_of_call_stack = end_of_call_stack->next;
+      end_of_call_stack->next = NULL;
+      end_of_call_stack->val = 0xdead;
+    }
   set_pcb_type(size);
   start_address->val = CountCode(size);
 
@@ -3098,16 +3108,6 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
     the_code = the_code->next;
   if(the_strings != NULL)
     the_code->next = the_strings;
-  /*  else
-    {
-      // In this case, there are no strings. So a single null-terminated character will indiate that.
-      the_code->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-      the_code = the_code->next;
-      the_code->next = NULL;
-      the_code->val = 0;
-      the_code->type = typeStr;
-
-      }*/
   
   size->val =  CountCode(size);
   
