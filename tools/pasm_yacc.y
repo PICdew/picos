@@ -991,6 +991,8 @@ void set_pcb_type(struct compiled_code *the_pcb)
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, picos_size_t piclang_bitmap)
 {
   int i;
+  int page_size = FS_BUFFER_SIZE;
+  
   struct compiled_code *magic_number = NULL;
   struct compiled_code *size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -1035,6 +1037,37 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
     }
   set_pcb_type(size);
   start_address->val = CountCode(size);
+
+  // Pad pages to fit into blocks
+  if(page_size % sizeof(picos_size_t) != 0)
+    {
+      struct compiled_code *code_index = the_code;
+      struct compiled_code *next_page;
+      page_size -= (page_size % sizeof(picos_size_t));
+      
+      while(code_index != NULL)
+	{
+	  i = 0;
+	  for(;i<page_size;i += sizeof(picos_size_t))
+	    if(code_index == NULL)
+	      break;
+	    else
+	      code_index = code_index->next;
+	  
+	  if(code_index == NULL)
+	    break;
+
+	  next_page = code_index->next;
+	  for(;i<FS_BUFFER_SIZE;i+=sizeof(picos_size_t))
+	    {
+	      code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+	      code_index = code_index->next;
+	      code_index->val = 0;
+	    }
+	  code_index->next = next_page;
+	  code_index = next_page;
+	}
+    }
 
   end_of_call_stack->next = the_code;
   string_address->val = CountCode(size);
