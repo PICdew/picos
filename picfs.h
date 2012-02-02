@@ -58,6 +58,8 @@ signed char picfs_mount(unsigned int fs_addr, picos_dev_t dev);
 signed char picfs_open(const char *name,char mount_point);
 signed char picfs_close(file_handle_t fh);
 
+signed char picfs_select_block(file_handle_t fh, picos_size_t block_id);
+
 /**
  * Dumps the buffer to the file
  *
@@ -88,6 +90,7 @@ void cat_file(const char *filename, offset_t fileptr,char mount_point, picos_dev
 #define SRAM_PICFS_OPEN_SWAP_ADDR (SRAM_PICFS_WRITE_SWAP_ADDR + FS_BUFFER_SIZE)// needs one FS_BUFFER_SIZE
 #define SRAM_PICFS_ARG_SWAP_ADDR (SRAM_PICFS_OPEN_SWAP_ADDR + FS_BUFFER_SIZE) // needs PICOS_MAX_PROCESSES * ARG_SIZE
 #define SRAM_PICFS_FTAB_ADDR (SRAM_PICFS_ARG_SWAP_ADDR + PICOS_MAX_PROCESSES * ARG_SIZE)
-#define SRAM_PICFS_FILE_ADDR (SRAM_PICFS_FTAB_ADDR + (MAX_OPEN_FILES*sizeof(file_t)))// Beginning of location of files that are "cat"-ed to SRAM
+#define SRAM_PICLANG_NEXT_SWAP_ADDR (SRAM_PICFS_FTAB_ADDR + (MAX_OPEN_FILES*sizeof(file_t))) 
+#define SRAM_PICFS_FILE_ADDR (SRAM_PICLANG_NEXT_SWAP_ADDR + FS_BUFFER_SIZE) // Beginning of location of files that are "cat"-ed to SRAM
 
 #endif

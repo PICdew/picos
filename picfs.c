@@ -557,6 +557,22 @@ signed char picfs_load(file_handle_t fh)
   return picfs_buffer_block(file.mount_point,ptr);
 }
 
+signed char picfs_select_block(file_handle_t fh, picos_size_t block_id)
+{
+  file_t file;
+  unsigned int ftab_addr = fh*FILE_HANDLE_SIZE + SRAM_PICFS_FTAB_ADDR;
+
+  //Is this file open?
+  if(!ISOPEN(fh) || fh == 0xff)
+    return error_return(PICFS_EBADF);
+
+  ftab_read(ftab_addr,&file,sizeof(file_t));
+  file.inode_position = block_id;
+  ftab_write(ftab_addr,&file,sizeof(file_t));
+  
+  return 0;
+}
+
 void picfs_free_handle(char *bitmap, file_handle_t fh)
 {
   char mask = 1 << fh;

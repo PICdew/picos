@@ -3054,7 +3054,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   bitmap->val = piclang_bitmap;
   struct compiled_code *num_pages = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-  num_pages->val = (unsigned char)ceil(1.0*total_memory/PAGE_SIZE);
+  num_pages->val = (picos_size_t)ceil(1.0*total_memory/PAGE_SIZE);
   struct compiled_code *pc = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *status = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   status->val = PICLANG_SUCCESS;
