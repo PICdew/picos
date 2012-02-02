@@ -219,7 +219,10 @@ size_t CountCode(struct compiled_code *the_code)
 {
   if(the_code == NULL)
     return 0;
-  return 1 + CountCode(the_code->next);
+  if(the_code->type == typeStr)
+    return sizeof(char) + CountCode(the_code->next);
+  else
+    return sizeof(picos_size_t) + CountCode(the_code->next);
 }
 
 struct assembly_map opcodes[] = {

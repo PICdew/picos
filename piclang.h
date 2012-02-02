@@ -35,13 +35,13 @@
 #define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
 
 typedef struct{
-  picos_size_t size;// size of program
+  picos_size_t page_size;// Size of data pages
   picos_size_t bitmap;// See bitmap mask defines above
-  picos_size_t num_pages;
+  picos_size_t num_pages;// Number of RAM pages
   picos_size_t pc;// program counter
   picos_size_t status;// Error status
-  picos_size_t start_address;// Offset of SRAM used for program (after PCB)
-  picos_size_t string_address;// Offset of string data (null terminated)
+  picos_size_t start_address;// Index of first page of data (zero-index)
+  picos_size_t string_address;// Index of ifrst page of string text (zero-index)
   picos_size_t stack[PICLANG_STACK_SIZE];
   picos_size_t stack_head;
   picos_size_t call_stack[PICLANG_CALL_STACK_SIZE];
