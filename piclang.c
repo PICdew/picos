@@ -60,15 +60,9 @@ char PICLANG_load(file_handle_t fh)
       SRAM_write(SRAM_PICFS_FILE_ADDR + block_idx,(void*)picfs_buffer,FS_BUFFER_SIZE);
     }
 
-  picos_processes[new_thread].data_end = block_idx - PCB_SIZE - PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
-  picos_processes[new_thread].data_end /= sizeof(picos_size_t);
-  if(picos_processes[new_thread].data_end)
-    picos_processes[new_thread].data_end--;
-  block_idx = PCB_SIZE;
-  picos_processes[new_thread].data_start = 0;
-
-  // Make sure the first 
-
+  // Reset current page index 
+  picos_processes[new_thread].current_page = -1;
+  
   return PICLANG_resume(new_thread);
 }
 
@@ -117,7 +111,8 @@ char PICLANG_resume(thread_id_t new_thread)
   thread_resume(new_thread);
   curr_process.status = PICLANG_SUCCESS;
   picos_processes[new_thread].expires = DEFAULT_PICLANG_QUANTUM;
-
+  picos_processes[new_thread].current_page = -1;// ensures get_next_word will reload the page to SRAM
+    
   // reinstate arguments
   SRAM_read(SRAM_PICFS_ARG_SWAP_ADDR + ARG_SIZE*new_thread,ARG_buffer,ARG_SIZE);
   ARG_next = 0;
@@ -173,28 +168,24 @@ picos_size_t PICLANG_get_next_word()
   picos_size_t next;
   picos_size_t val;
     
-  while(curr_process.pc >= picos_processes[picos_curr_process].data_end)
+  if(curr_process.pc >= curr_process.string_address*curr_process.page_size/sizeof(picos_size_t))
     {
-      if(curr_process.pc >= curr_process.string_address*curr_process.page_size/sizeof(picos_size_t))
-	{
-	  PICLANG_error(PICLANG_PC_OVERFLOW);
-	  return -1;
-	}
-      
-      if(picfs_load(picos_processes[picos_curr_process].program_file) != SUCCESS)
-	return -1;
-      picos_processes[picos_curr_process].data_start = picos_processes[picos_curr_process].data_end;
-      picos_processes[picos_curr_process].data_end += picos_processes[picos_curr_process].block_size/sizeof(picos_size_t);
-      picos_processes[picos_curr_process].data_end--;
-      
-      SRAM_write(PCB_SIZE + picos_processes[picos_curr_process].addr,(void*)picfs_buffer,picos_processes[picos_curr_process].block_size);
-      
+      PICLANG_error(PICLANG_PC_OVERFLOW);
+      return -1;
+    }
+
+  next = PCB_SIZE + picos_processes[picos_curr_process].addr;
+
+  if(picos_processes[picos_curr_process].current_page != curr_process.pc/curr_process.page_size)
+    {
+      picfs_select_block(picos_processes[picos_curr_process].program_file, curr_process.pc/curr_process.page_size);
+      SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this out
+      picfs_load(picos_processes[picos_curr_process].program_file);
+      SRAM_write(next,(void*)picfs_buffer,FS_BUFFER_SIZE);
+      SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this in
     }
   
-  next = PCB_SIZE + picos_processes[picos_curr_process].addr + (curr_process.pc - picos_processes[picos_curr_process].data_start)*sizeof(picos_size_t);
-  
-  if(picos_processes[picos_curr_process].data_start == 0 && picos_processes[picos_curr_process].block_size > PCB_SIZE)
-    next += PCB_SIZE;
+  next += curr_process.pc % curr_process.page_size;
   
   curr_process.pc++;
   SRAM_read(next,&val,1*sizeof(picos_size_t));
