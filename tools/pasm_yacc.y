@@ -442,6 +442,7 @@ int main(int argc, char **argv)
   if(lst_file != NULL)
     {
       struct assembly_map* curr;
+      struct compiled_code *first_string = NULL;
       int code_counter = 0;
       curr_code = the_code;
       for(;curr_code != NULL;curr_code = curr_code->next)
@@ -449,7 +450,11 @@ int main(int argc, char **argv)
 	  if(curr_code->type == typePCB)
 	    continue;
 	  if(curr_code->type == typeStr)
-	    break;
+	    {
+	      if(first_string == NULL)
+		first_string = curr_code;
+	      continue;
+	    }
 	  curr = opcode2assembly(curr_code->val);
 	  fprintf(lst_file,"(%d)\t",code_counter++);
 	  switch(curr->opcode)
@@ -468,12 +473,14 @@ int main(int argc, char **argv)
 	      else if(curr_code->val == PICLANG_CALL)
 		{
 		  curr_code = curr_code->next;
+		  while(curr_code->next != NULL && curr_code->type == typeStr)
+		    curr_code = curr_code->next;
 		  fprintf(lst_file,"call %hu",curr_code->val);
 		  code_counter++;
 		  break;
 		}
 	    default:
-	      fprintf(lst_file,"%s",curr->keyword);
+	      fprintf(lst_file,"%s (0x%x) ",curr->keyword,curr_code->val);
 	      break;
 	    }
 	  if(curr->has_arg)
@@ -495,20 +502,20 @@ int main(int argc, char **argv)
 	  fprintf(lst_file,"\n");
 	}
       // print strings
-      if(curr_code != NULL)
+      if(first_string != NULL)
 	fprintf(lst_file,"Strings:\n\"");
-      for(;curr_code != NULL;curr_code = curr_code->next)
+      for(;first_string != NULL;first_string = first_string->next)
 	{
-	  if(curr_code->val == 0)
+	  if(first_string->val == 0)
 	    {
 	      fprintf(lst_file,"\"\n");
-	      if(curr_code->next != NULL)
+	      if(first_string->next != NULL)
 		fprintf(lst_file,"\"");
 	    }
-	  else if(curr_code->val == '"')
-	    fprintf(lst_file,"\"%c",curr_code->val);
+	  else if(first_string->val == '"')
+	    fprintf(lst_file,"\"%c",first_string->val);
 	  else
-	    fprintf(lst_file,"%c",curr_code->val);
+	    fprintf(lst_file,"%c",first_string->val);
 	}
     }
   
@@ -1037,7 +1044,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 
   // Pad block with zeros
   set_pcb_type(first_byte);
-  i = CountCode(first_byte) + PCB_MAGIC_NUMBER_OFFSET+1;
+  i = CountCode(first_byte) + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
   for(;i<FS_BUFFER_SIZE;i++)
     {
       end_of_call_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -1049,11 +1056,11 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   start_address->val = 1;
 
   // Pad pages to fit into blocks
-  page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t));
+  page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t))-sizeof(picos_size_t);
   code_index = the_code;// verified to not be null above
   i = 0;
   do{
-      if(i == page_size->val)
+    if(i == page_size->val)
 	{
 	  // End of page, pad buffer.
 	  struct compiled_code *next_op = code_index->next;
@@ -1075,7 +1082,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   }while(code_index->next != NULL);
   
   // Pad last block
-  for(;i<FS_BUFFER_SIZE;i++)
+  for(;i<FS_BUFFER_SIZE-2;i++)
     {
       code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       code_index = code_index->next;
@@ -1086,7 +1093,8 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 
   // Attach strings
   end_of_call_stack->next = the_code;
-  string_address->val = CountCode(first_byte)/FS_BUFFER_SIZE;// should be a multiple of the buffer size do to padding.
+  string_address->val = CountCode(first_byte) + PCB_SIZE;
+  string_address->val /= FS_BUFFER_SIZE;// should be a multiple of the buffer size do to padding.
 
   
   // Find the location of the main function
