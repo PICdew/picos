@@ -26,6 +26,9 @@ const char FS_eeprom_filename[] = "/proc/eeprom";
 const char FS_picc_filename[] = "/proc/picc";
 const char FS_readme_filename[] = "/proc/README";
 const char FS_rawfile_name[] = "/proc/raw";
+const char FS_inodedump_filename[] = "/proc/inodes";
+
+static int fs_inodedump_filler(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);
 
 static void log_msg(const char *format, ...)
 {
@@ -113,10 +116,6 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
     }
   else
     len = 0;
-  //  eeprom = (FS_Block*)malloc(num_bytes);
-  //  eeprom = fgets(eeprom,num_bytes,eeprom_file);
-  
-  //  fclose(eeprom_file);
 
   return len;
 }
@@ -319,7 +318,7 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
   rw_path = (char*)malloc((strlen(path)+1)*sizeof(char));
   strcpy(rw_path,path);
   token = strtok(rw_path,"/");
-  log_msg("%s/\n",token);
+  log_msg("FS_resolve (%s)\n",token);
   while(token != NULL)
     {
       moved_up = FALSE;
@@ -374,6 +373,7 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
 static int fs_getattr(const char *path, struct stat *stbuf)
 {
     int res = 0;
+    signed char is_inode_directory = FALSE;
     FS_Block *sb = FS_PRIVATE_DATA->super_block;
     FS_Block *dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
 
@@ -387,6 +387,18 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 	stbuf->st_uid = 0;
 	stbuf->st_size = 0;
 	return 0;
+      }
+    else if(strstr(path,FS_inodedump_filename) != NULL)
+      {
+	if(strcmp(path,FS_inodedump_filename) == 0)
+	  {
+	    stbuf->st_mode = 0555 | S_IFDIR;
+	    stbuf->st_uid = 0;
+	    stbuf->st_size = 0;
+	    return 0;
+	  }
+	is_inode_directory = TRUE;
+	path += (size_t)strlen(FS_inodedump_filename);
       }
     else if(strcmp(path,FS_dump_filename) == 0)
       {
@@ -419,11 +431,28 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 	stbuf->st_size = len;
 	return 0;
       }
+
     dir = FS_resolve(dir,path,sb);
     if(dir == NULL)
       return -ENOENT;
     
     FS_inode2stat(stbuf,dir);
+    
+    // If this is the virtual inode directory, adapt stbuf accordingly
+    if(is_inode_directory)
+      {
+	if(strrchr(path,'/') != path)
+	  {
+	    stbuf->st_size = sb[FS_SuperBlock_block_size];
+	    stbuf->st_mode = 0444 | S_IFREG;
+	  }
+	else
+	  {
+	    stbuf->st_mode = 0555 | S_IFDIR;
+	    stbuf->st_uid = 0;
+	    stbuf->st_size = 0;
+	  }
+      }
     
     return res;
 }
@@ -550,7 +579,7 @@ static int FS_truncate(const char *path, off_t new_size)
 int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,
 	       struct fuse_file_info *fi)
 {
-
+  
   const struct fs_fuse_state *the_state = FS_PRIVATE_DATA;
   log_msg("FS_readdir (%s)\n",path);
   FS_Block *the_dir = FS_getblock(the_state->super_block,the_state->super_block[FS_SuperBlock_root_block]);
@@ -560,7 +589,7 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
   
   (void)offset;
   (void)fi;
-
+  
   number_of_pointers = the_state->super_block[FS_SuperBlock_block_size] - FS_INode_pointers;
   
   if(strcmp(path,FS_proc_filename) == 0)
@@ -569,7 +598,16 @@ int fs_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset
       filler(buf,"eeprom",NULL,0);
       filler(buf,"picc",NULL,0);
       filler(buf,"raw",NULL,0);
+      filler(buf,"inodes",NULL,0);
       return 0;
+    }
+  else if(strstr(path,FS_inodedump_filename) != NULL)
+    {
+      log_msg("Have inodedump for path %s\n",path);
+      if(strcmp(path,FS_inodedump_filename) == 0)// Look up root directory file.
+	the_dir = FS_resolve(the_dir,"/",the_state->super_block);
+      else
+	return fs_inodedump_filler(path+sizeof(FS_inodedump_filename),buf,filler,offset,fi);
     }
   else if(strcmp(path,"/") == 0)
     filler(buf,&FS_proc_filename[1],NULL,0);
@@ -1006,6 +1044,128 @@ static int FS_read_rawfile(char *buf, size_t size)
   return total_written;
 }
 
+static int fs_inodedump_filler(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
+{
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  FS_Block *file_head = sb;
+  FS_Block *file = NULL;
+  size_t data_ptr = 0, inode_index;
+  char inodename[FS_BLOCK_SIZE-2];
+  size_t number_of_pointers;
+
+  log_msg("fs_inodedump_filler (%s)\n",path);
+  
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
+
+  file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
+  if(file == NULL)
+    return -ENOENT;
+
+  inode_index = file[FS_INode_pointers + data_ptr];
+  file_head = FS_getblock(sb, inode_index);
+  while(file_head != NULL)
+    {
+      sprintf(inodename,"%u",inode_index);
+      filler(buf,inodename,NULL,0);
+      data_ptr++;
+      if(data_ptr >= number_of_pointers)
+	{
+	  file = FS_getblock(sb,file[FS_INode_indirect]);
+	  data_ptr = 0;
+	  if(file == NULL)
+	    break;
+	}
+      inode_index = file[FS_INode_pointers + data_ptr];
+      if(inode_index == 0)
+	break;
+      file_head = FS_getblock(sb, inode_index);
+    }
+  
+  return 0;
+}
+
+static int FS_read_inodedump_file(const char *path, char *buf, size_t size)
+{
+  FS_Block *sb = FS_PRIVATE_DATA->super_block;
+  FS_Block *file_head = sb;
+  FS_Block *file = NULL;
+  size_t data_ptr = 0, inode_index, target_inode;
+  char *token = NULL, *token_saver = NULL;
+  int have_inode = FALSE;
+  size_t number_of_pointers;
+
+  if(path == NULL)
+    return -1;
+
+  log_msg("fs_read_inodedump_file (%s)\n",path);
+  number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
+  
+  token = strtok_r(path,"/",&token_saver);
+  file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
+  if(file == NULL)
+    {
+      log_msg("inodedump did not find file (%s)\n",token);
+      return -ENOENT;
+    }
+
+  token = strtok_r(NULL,"/",&token_saver);
+  if(token == NULL)
+    {
+      log_msg("fs_read_inodedump_file was not given an inode index in path (%s)\n",path);
+      return -ENOENT;
+    }
+
+  if(sscanf(token,"%lu",&target_inode) != 1)
+    {
+      log_msg("fs_read_inodedump_file was given an invalid inode index (%s)\n",token);
+      return -EBADF;
+    }
+  
+  log_msg("fs_read_inodedump_file searching for inode %u\n",target_inode);
+
+  inode_index = file[FS_INode_pointers + data_ptr];
+  file_head = FS_getblock(sb, inode_index);
+  have_inode = (inode_index == target_inode) ? TRUE : FALSE;
+  while(have_inode == FALSE && file != NULL && inode_index != 0)
+    {
+      data_ptr++;
+      if(data_ptr >= number_of_pointers)
+	{
+	  file = FS_getblock(sb,file[FS_INode_indirect]);
+	  data_ptr = 0;
+	  if(file == NULL)
+	    break;
+	}
+      inode_index = file[FS_INode_pointers + data_ptr];
+      if(inode_index == 0)
+	break;
+
+      have_inode = (inode_index == target_inode) ? 1 : 0;
+      file_head = FS_getblock(sb, inode_index);
+      if(have_inode)
+	break;
+    }
+  
+  if(have_inode)
+    {
+      size_t amount_to_write = size;
+      log_msg("fs_read_inodedump_file found inode %d\n",target_inode);
+      
+      if(file_head == NULL)
+	return 0;
+
+      if(amount_to_write > sb[FS_SuperBlock_block_size])
+	amount_to_write = sb[FS_SuperBlock_block_size];
+      
+      memcpy(buf,file_head,amount_to_write);
+      log_msg("fs_read_inodedump_file wrote %d bytes of inode %u\n",amount_to_write,target_inode);
+      return amount_to_write;
+    }
+
+
+    return 0;
+}
+
 static int FS_read(const char *path, char *buf, size_t size, off_t offset,
 		   struct fuse_file_info *fi)
 {
@@ -1058,6 +1218,10 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
     {
       return FS_read_rawfile(buf,size);
     }
+  else if(strstr(path,FS_inodedump_filename) != NULL)
+    {
+      return FS_read_inodedump_file(path + strlen(FS_inodedump_filename),buf,size);
+    }
   else
     {
       file = FS_resolve(FS_getblock(sb,sb[FS_SuperBlock_root_block]),path,sb);
@@ -1070,6 +1234,7 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
     if (offset + size > len)
       size = len - offset;
     data_ptr = 0;
+
     while(size > 0)
       {
 	int write_amount = (size > FS_BLOCK_SIZE) ? FS_BLOCK_SIZE : size;
