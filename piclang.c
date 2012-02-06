@@ -147,6 +147,7 @@ void PICLANG_init()
   curr_process.start_address = 0;
   curr_process.string_address = 0;
   curr_process.stack_head = 0;
+  curr_process.bitmap = 0;
 }
 
 /**
@@ -236,6 +237,16 @@ void PICLANG_update_arith_status()
     curr_process.bitmap &= ~PICLANG_ZERO;
 }
 
+void PICLANG_block()
+{
+  curr_process.bitmap |= PICLANG_BLOCKING_CALL;
+}
+
+void PICLANG_unblock()
+{
+  curr_process.bitmap &= ~PICLANG_BLOCKING_CALL; 
+}
+
 void PICLANG_next()
 {
   picos_size_t command;
@@ -252,8 +263,11 @@ void PICLANG_next()
   
   if(picos_processes[picos_curr_process].expires == 0)
     {
-      PICLANG_save(PICLANG_SUSPENDED);
-      return;
+      if((curr_process.bitmap & PICLANG_BLOCKING_CALL) == 0)// Check for blocking call
+	{
+	  PICLANG_save(PICLANG_SUSPENDED);
+	  return;
+	}
     }
   
   if(picos_processes[picos_curr_process].signal_sent != PICOS_NUM_SIGNALS)
@@ -427,33 +441,34 @@ void PICLANG_next()
 	  {
 	    if(flag1 == TRUE || hex_val[ch1] != 0x30)
 	      {
-		picfs_buffer[PICLANG_file_buffer_index++] = hex_val[ch1];
+		SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER+PICLANG_file_buffer_index++,&hex_val[ch1],sizeof(char));
 		flag1 = TRUE;
 	      }
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
-		picfs_dump(0);
+		picfs_dump(picos_processes[picos_curr_process].program_file);
+		SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
 		memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
+		SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER,(void*)picfs_buffer,FS_BUFFER_SIZE);
+		SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
 		PICLANG_file_buffer_index = 0;
 	      }
 	  }
 	if(flag1 == FALSE)
 	  {
-	    picfs_buffer[PICLANG_file_buffer_index++] = '0';
+	    ch1 = '0';
+	    SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER+PICLANG_file_buffer_index++,&ch1,sizeof(char));
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
-		picfs_dump(0);
+		picfs_dump(picos_processes[picos_curr_process].program_file);
+		SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
 		memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
+		SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER,(void*)picfs_buffer,FS_BUFFER_SIZE);
+		SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
 		PICLANG_file_buffer_index = 0;
 	      }
 	  }
 	break;
-      }
-    case PICLANG_FPUTCH:// KEEP FPUTCH before FFLUSH
-      {
-	picfs_buffer[PICLANG_file_buffer_index++] = PICLANG_pop();
-	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
-	  break;
       }
     case PICLANG_PWDIR:
       PICLANG_pushl(curr_dir);
@@ -470,10 +485,20 @@ void PICLANG_next()
 	picfs_chdir(a);
 	break;
       }
+    case PICLANG_FPUTCH:// KEEP FPUTCH before FFLUSH
+      {
+	ch1 = (char)PICLANG_pop();
+	SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER+PICLANG_file_buffer_index++,&ch1,sizeof(char));
+	if(PICLANG_file_buffer_index < FS_BUFFER_SIZE)
+	  break;
+      }
     case PICLANG_FFLUSH:// KEEP FPUTCH before FFLUSH  KEEP FFLUSH before FCLEAR
-      picfs_dump(0);
+      picfs_dump(picos_processes[picos_curr_process].program_file);
     case PICLANG_FCLEAR:// KEEP FFLUSH before FCLEAR
+      SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
       memset((char*)picfs_buffer,0,FS_BUFFER_SIZE);
+      SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER,(void*)picfs_buffer,FS_BUFFER_SIZE);
+      SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
       PICLANG_file_buffer_index = 0;
       break;
     case PICLANG_FOPEN:
@@ -532,7 +557,9 @@ void PICLANG_next()
       break;
     case PICLANG_GETCH:
       {
+	PICLANG_block();
 	PICLANG_pushl(getch());
+	PICLANG_unblock();
 	break;
       }
     case PICLANG_GETD:

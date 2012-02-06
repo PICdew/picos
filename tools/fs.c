@@ -1061,6 +1061,9 @@ static int fs_inodedump_filler(const char *path, void *buf, fuse_fill_dir_t fill
   if(file == NULL)
     return -ENOENT;
 
+  // Head inode
+  filler(buf,"head",NULL,0);
+
   inode_index = file[FS_INode_pointers + data_ptr];
   file_head = FS_getblock(sb, inode_index);
   while(file_head != NULL)
@@ -1113,6 +1116,23 @@ static int FS_read_inodedump_file(const char *path, char *buf, size_t size)
     {
       log_msg("fs_read_inodedump_file was not given an inode index in path (%s)\n",path);
       return -ENOENT;
+    }
+
+  if(strcmp(token,"head") == 0)
+    {
+      // Write head inode
+      size_t amount_to_write = size;
+      log_msg("fs_read_inodedump_file write head inode\n");
+      
+      if(file == NULL)
+	return 0;
+
+      if(amount_to_write > sb[FS_SuperBlock_block_size])
+	amount_to_write = sb[FS_SuperBlock_block_size];
+      
+      memcpy(buf,file,amount_to_write);
+      log_msg("fs_read_inodedump_file wrote %d bytes of head inode\n",amount_to_write);
+      return amount_to_write;
     }
 
   if(sscanf(token,"%lu",&target_inode) != 1)

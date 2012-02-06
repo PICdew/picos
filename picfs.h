@@ -61,9 +61,9 @@ signed char picfs_close(file_handle_t fh);
 signed char picfs_select_block(file_handle_t fh, picos_size_t block_id);
 
 /**
- * Dumps the buffer to the file
+ * Dumps the buffer to the raw file of the file system correspoding to the
+ * file represent by the file handle fh.
  *
- * NB: file handle currently ignore and the raw file of the fs is used.
  */
 signed char picfs_dump(file_handle_t fh);
 
@@ -91,6 +91,7 @@ void cat_file(const char *filename, offset_t fileptr,char mount_point, picos_dev
 #define SRAM_PICFS_ARG_SWAP_ADDR (SRAM_PICFS_OPEN_SWAP_ADDR + FS_BUFFER_SIZE) // needs PICOS_MAX_PROCESSES * ARG_SIZE
 #define SRAM_PICFS_FTAB_ADDR (SRAM_PICFS_ARG_SWAP_ADDR + PICOS_MAX_PROCESSES * ARG_SIZE)
 #define SRAM_PICLANG_NEXT_SWAP_ADDR (SRAM_PICFS_FTAB_ADDR + (MAX_OPEN_FILES*sizeof(file_t))) 
-#define SRAM_PICFS_FILE_ADDR (SRAM_PICLANG_NEXT_SWAP_ADDR + FS_BUFFER_SIZE) // Beginning of location of files that are "cat"-ed to SRAM
+#define SRAM_PICLANG_RAW_FILE_BUFFER (SRAM_PICLANG_NEXT_SWAP_ADDR + FS_BUFFER_SIZE) // Buffer in which to store data to be written in the FS raw file.
+#define SRAM_PICFS_FILE_ADDR (SRAM_PICLANG_RAW_FILE_BUFFER + FS_BUFFER_SIZE) // Beginning of location of files that are "cat"-ed to SRAM
 
 #endif

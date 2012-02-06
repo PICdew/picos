@@ -3112,10 +3112,10 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   start_address->val = 1;
 
   // Pad pages to fit into blocks
-  page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t))-sizeof(picos_size_t);
+  page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t));
   code_index = the_code;// verified to not be null above
-  i = 0;
-  do{
+  i = sizeof(picos_size_t);
+  while(code_index->next != NULL){
     if(i == page_size->val)
 	{
 	  // End of page, pad buffer.
@@ -3132,13 +3132,14 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 	  i = 0;
 	  continue;
 	}
-      
-      code_index = code_index->next;
-      i += sizeof(picos_size_t);
-  }while(code_index->next != NULL);
+    code_index = code_index->next;
+    i += sizeof(picos_size_t);
+    if(code_index == NULL)
+      break;
+  }
   
   // Pad last block
-  for(;i<FS_BUFFER_SIZE-2;i++)
+  for(;i<FS_BUFFER_SIZE;i++)
     {
       code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       code_index = code_index->next;

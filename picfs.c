@@ -106,7 +106,7 @@ void cat_file(const char *filename, offset_t fileptr, char mount_point, picos_de
 	      fileptr += mount.block_size;
 	      break;
 	    case DEV_RAW_FILE:
-	      picfs_dump(0);
+	      picfs_dump(file);
 	      break;
 	    case DEV_STDOUT:
 	      IO_puts((char*)picfs_buffer);
@@ -488,7 +488,7 @@ signed char picfs_dump(file_handle_t fh)
 
   //Save some data to the first block
   picfs_getblock(&addr,file.mount_point,first_block);
-  SRAM_read(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);// restore the swapped-out data
+  SRAM_read(SRAM_PICLANG_RAW_FILE_BUFFER,(void*)picfs_buffer,mount.block_size);// load raw buffer
   memcpy(write_overflow,(void*)picfs_buffer+mount.block_size-2,2);//save the last two.
   first_block = mount.block_size-1;// shift the buffer
   for(;first_block > 1;first_block--)
@@ -503,6 +503,9 @@ signed char picfs_dump(file_handle_t fh)
   picfs_buffer[0] = MAGIC_RAW;
   memcpy((void*)picfs_buffer+2,write_overflow,2);// add the last two back to the buffer
   device_write((void*)picfs_buffer,addr,mount.block_size,dev);//write 6 to clean the pointer away
+
+  // Swap picfs_buffer back
+  SRAM_read(SRAM_PICFS_WRITE_SWAP_ADDR,(void*)picfs_buffer,mount.block_size);
 
   return SUCCESS;
 }

@@ -30,6 +30,7 @@ def <three_digit>
 
 def <main>
 {
+  fclear();
   fputd(2000+time('Y'));
   time('m');
   call <two_digit>;

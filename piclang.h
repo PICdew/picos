@@ -33,6 +33,7 @@
 
 // bitmap masks
 #define PICLANG_ZERO 0x1 // Set if the result of arithmetic is zero OR if a boolen arithmetic is TRUE (cleared if FALSE)
+#define PICLANG_BLOCKING_CALL 0x2// Set if the program should NOT loose control of IO
 
 typedef struct{
   picos_size_t page_size;// Size of data pages
