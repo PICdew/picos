@@ -1218,8 +1218,11 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       len = FS_read_eeprom(sb,eeprom_file);
       if(offset != 0)
 	fseek(eeprom_file,offset,SEEK_SET);
-      log_msg("eeprom length = %d\n",len);
+      log_msg("eeprom length = %d, size = %d\n",len,size);
+      if(len > size)
+	len = size;
       size = fread(buf,sizeof(char),len,eeprom_file);
+      log_msg("Read %d bytes of eeprom\n",size);
       fclose(eeprom_file);
       return len;
     }
@@ -1229,7 +1232,9 @@ static int FS_read(const char *path, char *buf, size_t size, off_t offset,
       len = FS_read_picc(sb,eeprom_file);
       if(offset != 0)
 	fseek(eeprom_file,offset,SEEK_SET);
-      log_msg("picc length = %d\n",len);
+      if(len > size)
+	len = size;
+      log_msg("picc length = %d size = %d\n",len,size);
       size = fread(buf,sizeof(char),len,eeprom_file);
       fclose(eeprom_file);
       return len;
