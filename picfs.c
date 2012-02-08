@@ -22,8 +22,6 @@
 FS_Unit picfs_last_raw_block = 0;
 char picfs_fh_bitmap = 0xff;// max 8 files open. defined with MAX_OPEN_FILES
 
-#define ISOPEN(fh) ((fh & ~picfs_fh_bitmap) == 0)
-
 // First four bytes are address within the devices of the beginning of the
 // files system.
 // Fifth byte is the device ID (see picfs.h for definitions)
@@ -126,6 +124,12 @@ void cat_file(const char *filename, offset_t fileptr, char mount_point, picos_de
     {
       IO_puts("Could not open file");
     }
+}
+
+static char ISOPEN(file_handle_t fh)
+{
+  fh = 1 << fh;
+  return ((fh & picfs_fh_bitmap) == 0);
 }
 
 static signed char picfs_get_free_handle( char *bitmap )

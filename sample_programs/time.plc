@@ -24,6 +24,7 @@ def <display_time>
 def <sig_action>
 {
   clear();
+  unlock();
   sprint("DONE!");
   exit(0);
 }
@@ -36,6 +37,7 @@ def <sig_action>
 def <main>
 {
   signal(SIGINT,<sig_action>);
+  lock();
   seconds = time('S'); 
   breakit = 1;
   call <display_time>;

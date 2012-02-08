@@ -271,6 +271,8 @@ struct assembly_map opcodes[] = {
   {"chdir", PICLANG_CHDIR, 0},
   {"getdir", PICLANG_PWDIR, 0},
   {"mount", PICLANG_MOUNT, 2},
+  {"lock",PICLANG_MUTEX_LOCK,0},
+  {"unlock",PICLANG_MUTEX_UNLOCK,0},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 

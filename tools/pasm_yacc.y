@@ -771,6 +771,14 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tclear\n");
       insert_code(PICLANG_CLEAR);
       break;
+    case PICLANG_MUTEX_LOCK:
+      write_assembly(assembly_file,"\tlock\n");
+      insert_code(PICLANG_MUTEX_LOCK);
+      break;
+    case PICLANG_MUTEX_UNLOCK:
+      write_assembly(assembly_file,"\tunlock\n");
+      insert_code(PICLANG_MUTEX_UNLOCK);
+      break;
     case PICLANG_SET_TIME:
       ex(p->opr.op[0]);
       ex(p->opr.op[1]);

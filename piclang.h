@@ -132,6 +132,8 @@ enum PICLANG_COMMANDS
     PICLANG_CHDIR/* Change working directory */,
     PICLANG_PWDIR/* Puts working directory on stack*/,
     PICLANG_MOUNT/* Mount a directory */,
+    PICLANG_MUTEX_LOCK/* Lock thread */,
+    PICLANG_MUTEX_UNLOCK/* Unlock thread*/,
     PICLANG_NUM_COMMANDS
   };
 

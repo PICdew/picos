@@ -263,7 +263,7 @@ void PICLANG_next()
   
   if(picos_processes[picos_curr_process].expires == 0)
     {
-      if((curr_process.bitmap & PICLANG_BLOCKING_CALL) == 0)// Check for blocking call
+      if((curr_process.bitmap & PICLANG_BLOCKING_CALL) == 0 || PICLANG_debug == TRUE)// Check for blocking call
 	{
 	  PICLANG_save(PICLANG_SUSPENDED);
 	  return;
@@ -503,17 +503,17 @@ void PICLANG_next()
       break;
     case PICLANG_FOPEN:
       {
-	mount_t mount;
-	SRAM_read(curr_dir*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));
+	/*	mount_t mount;
+		SRAM_read(curr_dir*sizeof(mount_t)+SRAM_MTAB_ADDR,&mount,sizeof(mount_t));*/
 	a = PICLANG_pop();
 	if(a < ARG_SIZE)
 	  {
-	    sch1 = picfs_open(ARG_buffer+a,mount.device_id);
+	    sch1 = picfs_open(ARG_buffer+a,curr_dir);
 	  }
 	else if(a < ARG_SIZE + FS_BUFFER_SIZE)
 	  {
 	    a -= ARG_SIZE;
-	    sch1 = picfs_open((const char*)picfs_buffer+a,mount.device_id);
+	    sch1 = picfs_open((const char*)picfs_buffer+a,curr_dir);
 	  }
 	else
 	  {
@@ -522,7 +522,7 @@ void PICLANG_next()
 	    SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this out
 	    picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address);
 	    picfs_load(picos_processes[picos_curr_process].program_file);
-	    sch1 = picfs_open((const char*)(picfs_buffer+a),mount.device_id);
+	    sch1 = picfs_open((const char*)(picfs_buffer+a),curr_dir);
 	    SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this back in
 	  }
 	PICLANG_pushl(sch1);
@@ -555,6 +555,12 @@ void PICLANG_next()
     case PICLANG_CLEAR:
       clear_output();
       break;
+    case PICLANG_MUTEX_LOCK:
+      PICLANG_block();
+      break;
+    case PICLANG_MUTEX_UNLOCK:
+      PICLANG_unblock();
+      break;
     case PICLANG_GETCH:
       {
 	PICLANG_block();
@@ -564,7 +570,9 @@ void PICLANG_next()
       }
     case PICLANG_GETD:
       {
+	PICLANG_block();
 	ch1 = getch();
+	PICLANG_unblock();
 	if(ch1 < '0' || ch1 > '9')
 	  {
 	    PICLANG_error(ARG_INVALID);
