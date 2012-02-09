@@ -3061,7 +3061,7 @@ void set_pcb_type(struct compiled_code *the_pcb)
 
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, picos_size_t piclang_bitmap)
 {
-  int i;
+  int i, pad_size;
   static const char name[] = "David";
 
   struct compiled_code *magic_number = NULL, *first_byte = NULL, *code_index = NULL;
@@ -3108,8 +3108,9 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 
   // Pad block with zeros
   set_pcb_type(first_byte);
-  i = CountCode(first_byte) + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
-  for(;i<FS_BUFFER_SIZE;i++)
+  i = 0;
+  pad_size = FS_BUFFER_SIZE - (CountCode(first_byte) + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t))%FS_BUFFER_SIZE;
+  for(;i<pad_size;i++)
     {
       end_of_call_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       end_of_call_stack = end_of_call_stack->next;
@@ -3117,7 +3118,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
       end_of_call_stack->type = typeStr;
       end_of_call_stack->val = name[i%5];
     }
-  start_address->val = 1;
+  start_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
 
   // Pad pages to fit into blocks
   page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t));

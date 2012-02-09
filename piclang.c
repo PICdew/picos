@@ -29,6 +29,7 @@ char PICLANG_load(file_handle_t fh)
   thread_id_t new_thread;
   file_t file;
   mount_t mount;
+  picos_size_t block_counter;
   extern char ARG_buffer[ARG_SIZE];
   // Check to see if there is an available thread space
   new_thread = thread_allocate();
@@ -52,8 +53,13 @@ char PICLANG_load(file_handle_t fh)
 
   // Load PCB
   picos_processes[new_thread].block_size = mount.block_size;
-  picfs_load(fh);
-  SRAM_write(SRAM_PICFS_FILE_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
+  block_counter = 0;
+  while(block_counter < PCB_SIZE)
+    {    
+      picfs_load(fh);
+      SRAM_write(SRAM_PICFS_FILE_ADDR + block_counter,(void*)picfs_buffer,mount.block_size);
+      block_counter += mount.block_size;
+    }
 
   // Reset current page index 
   picos_processes[new_thread].current_page = -1;
@@ -282,12 +288,7 @@ void PICLANG_next()
       picos_processes[picos_curr_process].signal_sent = PICOS_NUM_SIGNALS;
     }
 
-  extern FILE *usart_fifo;
-  if(usart_fifo)
-    {fprintf(usart_fifo,"at %3hu running ",curr_process.pc);fflush(usart_fifo);}
   command = PICLANG_get_next_word();
-  if(usart_fifo)
-    {fprintf(usart_fifo,"0x%x\n",command);fflush(usart_fifo);}
   if(curr_process.status != PICLANG_SUCCESS)
     return;
 
