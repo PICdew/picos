@@ -1103,8 +1103,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 
   // Attach strings
   end_of_call_stack->next = the_code;
-  string_address->val = CountCode(first_byte) + PCB_SIZE;
-  string_address->val /= FS_BUFFER_SIZE;// should be a multiple of the buffer size do to padding.
+  string_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
 
   
   // Find the location of the main function

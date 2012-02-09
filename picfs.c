@@ -174,6 +174,26 @@ signed char picfs_verify_fs(unsigned int sd_addr, picos_dev_t dev)
   return SUCCESS;
 }
 
+signed char picfs_umount(char mount_point)
+{
+  char mount_point_mask = 1 << mount_point;
+  mount_t mount;
+  unsigned int addr;
+  
+  if((mount_point_mask & picfs_mtab_bitmap) != 0)
+    return PICFS_NOENT;
+
+  if(curr_dir == mount_point)
+    return PICFS_BUSY;
+
+  addr = sizeof(mount_t) * mount_point + SRAM_MTAB_ADDR;
+  memset(&mount,0,sizeof(mount_t));
+  SRAM_write(addr,&mount,sizeof(mount_t));
+
+  return SUCCESS;
+
+}
+
 /**
  * Mounts the device onto the lowest available mount point.
  *

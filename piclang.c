@@ -253,6 +253,34 @@ void PICLANG_unblock()
   curr_process.bitmap &= ~PICLANG_BLOCKING_CALL; 
 }
 
+signed char PICLANG_next_dereference(char a/*ddress*/, picos_size_t command)
+{
+  signed char retval = SUCCESS;
+  SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this out
+  picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address + (a/picos_processes[picos_curr_process].block_size));
+  picfs_load(picos_processes[picos_curr_process].program_file);
+
+  a = a% picos_processes[picos_curr_process].block_size;
+
+  switch(command)
+    {
+    case PICLANG_DEREF:
+      PICLANG_pushl(picfs_buffer[a]);
+      break;
+    case PICLANG_SPRINT:
+      IO_puts((const char*)(picfs_buffer+a));
+      break;
+    case PICLANG_FOPEN:
+      retval = picfs_open((const char*)(picfs_buffer+a),curr_dir);
+    default:
+      break;
+    }
+	
+  SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this back in
+  
+  return retval;
+}
+
 void PICLANG_next()
 {
   picos_size_t command;
@@ -412,12 +440,7 @@ void PICLANG_next()
 	
 	// string section
 	b -= ARG_SIZE + picos_processes[picos_curr_process].block_size;
-	SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this out
-	picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address);
-	picfs_load(picos_processes[picos_curr_process].program_file);
-	c = picfs_buffer[b];
-	SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this back in
-	PICLANG_pushl(c);
+	PICLANG_next_dereference(b,command);
 	break;
       }
     case PICLANG_BSL: case PICLANG_BSR:// bit shifts
@@ -520,11 +543,7 @@ void PICLANG_next()
 	  {
 	    c = 0;
 	    a -= ARG_SIZE + picos_processes[picos_curr_process].block_size;
-	    SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this out
-	    picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address);
-	    picfs_load(picos_processes[picos_curr_process].program_file);
-	    sch1 = picfs_open((const char*)(picfs_buffer+a),curr_dir);
-	    SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this back in
+	    sch1 = PICLANG_next_dereference(a,command);
 	  }
 	PICLANG_pushl(sch1);
 	break;
@@ -603,11 +622,7 @@ void PICLANG_next()
 	  }
 	// Reading String from program
 	a -= ARG_SIZE + picos_processes[picos_curr_process].block_size;
-	SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this out
-	picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address);
-	picfs_load(picos_processes[picos_curr_process].program_file);
-	IO_puts((const char*)(picfs_buffer+a));
-	SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this back in
+	PICLANG_next_dereference(a,command);
 	IO_flush();
 	break;
       }
