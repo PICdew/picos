@@ -190,6 +190,8 @@ signed char picfs_umount(char mount_point)
   memset(&mount,0,sizeof(mount_t));
   SRAM_write(addr,&mount,sizeof(mount_t));
 
+  picfs_mtab_bitmap |= mount_point_mask;
+
   return SUCCESS;
 
 }
