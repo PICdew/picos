@@ -55,6 +55,7 @@ volatile FS_Unit picfs_buffer[FS_BUFFER_SIZE];
 volatile char curr_dir;
 
 signed char picfs_mount(unsigned int fs_addr, picos_dev_t dev);
+signed char picfs_umount(char mount_point);
 signed char picfs_open(const char *name,char mount_point);
 signed char picfs_close(file_handle_t fh);
 

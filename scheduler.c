@@ -1,5 +1,8 @@
 #include "scheduler.h"
+#include "picfs.h"
 #include "picfs_error.h"
+
+#include <stdbool.h>
 
 picos_thread picos_processes[PICOS_MAX_PROCESSES];
 thread_id_t picos_free_queue,picos_wait_queue, picos_curr_process;
@@ -7,15 +10,15 @@ thread_id_t picos_free_queue,picos_wait_queue, picos_curr_process;
 char thread_valid_id(thread_id_t tid)
 {
   if(tid > -1 && tid < PICOS_MAX_PROCESSES)
-    return TRUE;
-  return FALSE;
+    return true;
+  return false;
 }
 
 char signal_valid_id(picos_signal_t sid)
 {
   if(sid < PICOS_NUM_SIGNALS)
-    return TRUE;
-  return FALSE;
+    return true;
+  return false;
 }
 
 void thread_init()
@@ -97,7 +100,7 @@ signed char thread_resume(thread_id_t new_thread)
   if(picos_curr_process > -1)
     return error_return(THREAD_CANNOT_INTERRUPT);
   
-  if(thread_valid_id(new_thread) == FALSE)
+  if(thread_valid_id(new_thread) == false)
     return error_return(THREAD_INVALID_SIGNAL);
 
   if(picos_processes[new_thread].next > -1)
@@ -118,7 +121,7 @@ signed char thread_resume(thread_id_t new_thread)
 void thread_free(thread_id_t tid)
 {
   picos_signal_t sigs;
-  if(thread_valid_id(tid) == FALSE)
+  if(thread_valid_id(tid) == false)
     return;
 
   if(picos_processes[tid].next > -1)
@@ -151,7 +154,7 @@ void thread_free(thread_id_t tid)
 
 signed char signal_assign(picos_signal_t signal, thread_id_t thread, picos_size_t handler_addr)
 {
-  if(signal_valid_id(signal) == FALSE)
+  if(signal_valid_id(signal) == false)
     return error_return(THREAD_INVALID_SIGNAL);
   if(signals[signal].owner != PICOS_MAX_PROCESSES)
     return error_return(PICFS_EAGAIN);
@@ -164,12 +167,12 @@ signed char signal_assign(picos_signal_t signal, thread_id_t thread, picos_size_
 
 signed char signal_send(picos_signal_t signal)
 {
-  if(signal_valid_id(signal) == FALSE)
+  if(signal_valid_id(signal) == false)
     return error_return(THREAD_INVALID_SIGNAL);
   if(signals[signal].owner == PICOS_MAX_PROCESSES)
     return 0;
   
-  if(thread_valid_id(signals[signal].owner) == FALSE)
+  if(thread_valid_id(signals[signal].owner) == false)
     {
       signal_free(signal);
       return 0;

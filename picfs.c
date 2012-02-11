@@ -17,7 +17,7 @@
 #endif
 
 #include <string.h>
-
+#include <stdbool.h>
 
 FS_Unit picfs_last_raw_block = 0;
 char picfs_fh_bitmap = 0xff;// max 8 files open. defined with MAX_OPEN_FILES
@@ -623,8 +623,8 @@ signed char picfs_close(file_handle_t fh)
 char picfs_is_open(file_handle_t fh)
 {
   if(ISOPEN(fh) && fh != 0xff)
-    return TRUE;
-  return FALSE;
+    return true;
+  return false;
 }
 
 signed char picfs_chdir(char mount_point)

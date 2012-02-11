@@ -18,10 +18,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define PICLANG_error(code)  curr_process.status = code
 char PICLANG_file_buffer_index;
-bit PICLANG_debug = FALSE;
+bit PICLANG_debug = false;
 PCB curr_process;
 
 char PICLANG_load(file_handle_t fh)
@@ -297,7 +298,7 @@ void PICLANG_next()
   
   if(picos_processes[picos_curr_process].expires == 0)
     {
-      if((curr_process.bitmap & PICLANG_BLOCKING_CALL) == 0 || PICLANG_debug == TRUE)// Check for blocking call
+      if((curr_process.bitmap & PICLANG_BLOCKING_CALL) == 0 || PICLANG_debug == true)// Check for blocking call
 	{
 	  PICLANG_save(PICLANG_SUSPENDED);
 	  return;
@@ -306,7 +307,7 @@ void PICLANG_next()
   
   if(picos_processes[picos_curr_process].signal_sent != PICOS_NUM_SIGNALS)
     {
-      if(signal_valid_id(picos_processes[picos_curr_process].signal_sent) == FALSE)
+      if(signal_valid_id(picos_processes[picos_curr_process].signal_sent) == false)
 	{
 	  PICLANG_error(THREAD_INVALID_SIGNAL);
 	  return;
@@ -320,7 +321,7 @@ void PICLANG_next()
   if(curr_process.status != PICLANG_SUCCESS)
     return;
 
-  if(PICLANG_debug == TRUE)
+  if(PICLANG_debug == true)
     PICLANG_debug_out(command);
 
 
@@ -460,13 +461,13 @@ void PICLANG_next()
 	char hex_val[PICOS_SIZE_T_DECIMAL_DIGITS];//ch1 = index
 	dec_to_word(hex_val,PICLANG_pop());
 	ch1 = 0;
-	flag1 = FALSE;
+	flag1 = false;
 	for(;ch1 < 5;ch1++)
 	  {
-	    if(flag1 == TRUE || hex_val[ch1] != 0x30)
+	    if(flag1 == true || hex_val[ch1] != 0x30)
 	      {
 		SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER+PICLANG_file_buffer_index++,&hex_val[ch1],sizeof(char));
-		flag1 = TRUE;
+		flag1 = true;
 	      }
 	    if(PICLANG_file_buffer_index >= FS_BUFFER_SIZE)
 	      {
@@ -478,7 +479,7 @@ void PICLANG_next()
 		PICLANG_file_buffer_index = 0;
 	      }
 	  }
-	if(flag1 == FALSE)
+	if(flag1 == false)
 	  {
 	    ch1 = '0';
 	    SRAM_write(SRAM_PICLANG_RAW_FILE_BUFFER+PICLANG_file_buffer_index++,&ch1,sizeof(char));

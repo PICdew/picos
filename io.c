@@ -18,6 +18,7 @@
 #include "utils.h"
 
 #include <string.h>
+#include <stdbool.h>
 
 extern char getch(void);
 
@@ -27,14 +28,14 @@ void IO_putd(picos_size_t d)
   static bit leading_digit;
   dec_to_word(hex_val,d);
   index = 0;
-  leading_digit = FALSE;
+  leading_digit = false;
   for(;index < 5;index++)
-    if(leading_digit == TRUE || hex_val[index] != 0x30)
+    if(leading_digit == true || hex_val[index] != 0x30)
       {
 	putch(hex_val[index]);
-	leading_digit = TRUE;
+	leading_digit = true;
       }
-  if(leading_digit == FALSE)
+  if(leading_digit == false)
     putch(0x30);
 }
 
@@ -62,7 +63,7 @@ void morse_ditdat_sound(char dat_not_dit)
   if(SOUND_counter != 0)
     return;// can only set, not update.
   SOUND_counter = 4;
-  if(dat_not_dit == TRUE)
+  if(dat_not_dit == true)
     SOUND_counter = SOUND_counter * 2;
   tone_440();
 }
@@ -162,9 +163,9 @@ char get_command()
   clear_output();
   ARG_clear();
   IO_puts("$");
-  have_command = FALSE;
+  have_command = false;
 
-  while(TRUE)
+  while(true)
     {
       ditdat = getch();
       if(ditdat == 0)
@@ -175,7 +176,7 @@ char get_command()
     
 	 if(ditdat == ' ')
 	{
-		have_command =TRUE;
+		have_command =true;
 		ARG_putch(0x0);
 	}
 	else
