@@ -12,7 +12,6 @@
 #endif
 
 #include "arg.h"
-#include "usart.h"
 #include "io.h"
 #include "picos_time.h"
 #include "utils.h"
