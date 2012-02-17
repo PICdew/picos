@@ -21,6 +21,7 @@ typedef unsigned int picos_addr_t;// Address type to unify devices connected to 
 
 extern void dec_to_word(char *three_chars, picos_size_t hex);
 extern void hex_to_word(char *two_chars, char hex);
+extern void binary_to_octuplet(char *eight_chars, char binary);
 extern void calculate_crc(char *crc, char newval);
 extern char TEMPERATURE_read();
 extern void picos_delay(unsigned long cycles);

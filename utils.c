@@ -52,6 +52,17 @@ void dec_to_word(char *five_chars, picos_size_t hex)
   five_chars[PICOS_SIZE_T_DECIMAL_DIGITS-1] = hex + 0x30;
 }
 
+void binary_to_octuplet(char *eight_chars, char binary)
+{
+  signed char counter = 7,mask = 1;
+  
+  for(;counter >= 0;counter--)
+    {
+      eight_chars[counter] = (binary & mask) ? '1' : '0';
+      mask <<= 1;
+    }
+}
+
 void calculate_crc(char *crc, char newval)
 {
 #if 0//old
