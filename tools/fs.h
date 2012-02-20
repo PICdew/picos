@@ -56,12 +56,5 @@ enum {
   FS_SuperBlock_length
 };
 
-#ifndef FALSE
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
-
 #endif// FS_H
 

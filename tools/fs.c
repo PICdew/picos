@@ -19,6 +19,7 @@
 #include <math.h>
 #include <sys/types.h>
 #include <sys/xattr.h>
+#include <stdbool.h>
 
 const char FS_proc_filename[] = "/proc";
 const char FS_dump_filename[] = "/proc/dump";
@@ -33,7 +34,7 @@ static int fs_inodedump_filler(const char *path, void *buf, fuse_fill_dir_t fill
 static void log_msg(const char *format, ...)
 {
     va_list ap;
-    if(FS_PRIVATE_DATA->verbose_log == TRUE)
+    if(FS_PRIVATE_DATA->verbose_log == true)
       {
 	va_start(ap, format);
 	vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
@@ -310,7 +311,7 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
   char *token;
   size_t num_entries,dir_counter,direntry_idx;
   FS_Block *dirent;
-  int moved_up = FALSE;
+  int moved_up = false;
     
   if(dir == NULL || path == NULL || dir[FS_INode_magic_number] != MAGIC_DIR)
     return NULL;
@@ -321,7 +322,7 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
   log_msg("FS_resolve (%s)\n",token);
   while(token != NULL)
     {
-      moved_up = FALSE;
+      moved_up = false;
       num_entries = dir[FS_INode_size];
       dir_counter = 0;
       for(;dir_counter<num_entries;dir_counter++)
@@ -338,7 +339,7 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
 	      if(strcmp(d_name,token) == 0)
 		{
 		  dir = FS_getblock(sb,dirent[0]);
-		  moved_up = TRUE;
+		  moved_up = true;
 		  if(dir[FS_INode_magic_number] != MAGIC_DIR)
 		    {
 		      free(rw_path);
@@ -373,7 +374,7 @@ static FS_Block* FS_resolve(FS_Block *dir, const char *path, FS_Block *sb)
 static int fs_getattr(const char *path, struct stat *stbuf)
 {
     int res = 0;
-    signed char is_inode_directory = FALSE;
+    signed char is_inode_directory = false;
     FS_Block *sb = FS_PRIVATE_DATA->super_block;
     FS_Block *dir = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
 
@@ -397,7 +398,7 @@ static int fs_getattr(const char *path, struct stat *stbuf)
 	    stbuf->st_size = 0;
 	    return 0;
 	  }
-	is_inode_directory = TRUE;
+	is_inode_directory = true;
 	path += (size_t)strlen(FS_inodedump_filename);
       }
     else if(strcmp(path,FS_dump_filename) == 0)
@@ -843,7 +844,7 @@ static int FS_removefile(const char *path, FS_Block *sb)
     {
       size_t len = strlen(path) - strlen(strrchr(path,'/'))+2;
       char parent[len];
-      int have_dir_name = FALSE;
+      int have_dir_name = false;
       FS_Block *dirlist = NULL;
       
       memset(parent,0,len);
@@ -884,7 +885,7 @@ static int FS_removefile(const char *path, FS_Block *sb)
 			  FS_free_block(sb,dirlist[len]);
 			}
 		      
-		      have_dir_name = TRUE;
+		      have_dir_name = true;
 		      dirlist--;
 		      //shift directory listing
 		      memset(tmp_filelist,0,FS_BLOCK_SIZE);
@@ -1094,7 +1095,7 @@ static int FS_read_inodedump_file(const char *path, char *buf, size_t size)
   FS_Block *file = NULL;
   size_t data_ptr = 0, inode_index, target_inode;
   char *token = NULL, *token_saver = NULL;
-  int have_inode = FALSE;
+  int have_inode = false;
   size_t number_of_pointers;
 
   if(path == NULL)
@@ -1145,8 +1146,8 @@ static int FS_read_inodedump_file(const char *path, char *buf, size_t size)
 
   inode_index = file[FS_INode_pointers + data_ptr];
   file_head = FS_getblock(sb, inode_index);
-  have_inode = (inode_index == target_inode) ? TRUE : FALSE;
-  while(have_inode == FALSE && file != NULL && inode_index != 0)
+  have_inode = (inode_index == target_inode) ? true : false;
+  while(have_inode == false && file != NULL && inode_index != 0)
     {
       data_ptr++;
       if(data_ptr >= number_of_pointers)
@@ -1588,7 +1589,7 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	    break;
 	  }
 	case 'v':
-	  the_state->verbose_log = TRUE;
+	  the_state->verbose_log = true;
 	  break;
 	default:
 	  fprintf(stderr,"Unknown flag: %c\n",ch);
@@ -1604,7 +1605,7 @@ void FS_default_state(struct fs_fuse_state *the_state)
   the_state->super_block = NULL;
   the_state->logfile = stderr;
   the_state->rootdir = NULL;
-  the_state->verbose_log = FALSE;
+  the_state->verbose_log = false;
   the_state->num_blocks = 16;
   the_state->block_size = 16;
 }

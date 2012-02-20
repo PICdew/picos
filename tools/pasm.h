@@ -115,10 +115,3 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
 #define COMPILE_MAX_WIDTH 8//max width
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables);
 
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
-

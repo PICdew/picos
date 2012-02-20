@@ -8,16 +8,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <math.h>
 #include <getopt.h>
 #include <errno.h>
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-#ifndef TRUE
-#define TRUE 1
-#endif
 
 struct compiled_code *the_code;
 struct compiled_code *the_code_end;
@@ -184,7 +178,7 @@ int handle_string(const char *pStr)
   int retval = -1;
   if(pStr != NULL)
     {
-      int is_new = TRUE;
+      int is_new = true;
       retval = resolve_string(pStr,&is_new) + PICLANG_STRING_OFFSET;// when referencing strings, arguments will go first.
       if(is_new)
 	{
@@ -354,7 +348,7 @@ int main(int argc, char **argv)
   continue_to_label = -1;
   FS_BUFFER_SIZE = 128;
   
-  while(TRUE)
+  while(true)
     {    
       opt = getopt_long(argc,argv,short_options,long_options,&opt_index);
       if(opt == -1)
@@ -901,12 +895,12 @@ int resolve_string(const char *str, int *is_new)
       string_list[0] = strdup(str);
       num_strings = 1;
       if(is_new != NULL)
-	*is_new = TRUE;
+	*is_new = true;
       return 0;
     }
   
   if(is_new != NULL)
-    *is_new = FALSE;
+    *is_new = false;
   i = 0;
   retval = 0;
   for(;i<num_strings;i++)
@@ -916,7 +910,7 @@ int resolve_string(const char *str, int *is_new)
       retval += strlen(string_list[i]) + 1;
   
   if(is_new != NULL)
-    *is_new = TRUE;
+    *is_new = true;
   string_list = (char**)realloc(string_list,(num_strings+1)*sizeof(char*));
   string_list[num_strings++] = strdup(str);
   return retval;
