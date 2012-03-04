@@ -32,6 +32,7 @@ extern void TIME_init(void);
  * Increments time one second.
  */
 extern void TIME_tick(void);
+extern void TIME_inc_minute();
 
 extern void TIME_sleep(char x);
 

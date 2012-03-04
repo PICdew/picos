@@ -20,19 +20,10 @@
 
 static TIME_t TIME_curr;
 
-
-
-void TIME_tick(void)
+void TIME_inc_minute()
 {
   char maxdays;
 
-  TIME_curr.seconds++;
-  TIME_tickCounter = 0;
-  if(TIME_curr.seconds >= 60)
-    {
-      TIME_curr.minutes++;
-      TIME_curr.seconds = 0;
-    }
   if(TIME_curr.minutes >= 60)
     {
       TIME_curr.hours++;
@@ -66,6 +57,18 @@ void TIME_tick(void)
     }
   if(TIME_curr.month > 12)
     TIME_curr.month = 1;//no zero months...
+}
+
+void TIME_tick(void)
+{
+  TIME_curr.seconds++;
+  TIME_tickCounter = 0;
+  if(TIME_curr.seconds >= 60)
+    {
+      TIME_curr.minutes++;
+      TIME_curr.seconds = 0;
+    }
+  TIME_inc_minute();
 }
 
 const TIME_t* TIME_get()
