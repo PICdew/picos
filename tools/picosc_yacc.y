@@ -445,8 +445,6 @@ int main(int argc, char **argv)
 	    continue;
 	  if(curr_code->type == typeStr)
 	    {
-	      if(first_string == NULL)
-		first_string = curr_code;
 	      continue;
 	    }
 	  curr = opcode2assembly(curr_code->val);
@@ -496,6 +494,7 @@ int main(int argc, char **argv)
 	  fprintf(lst_file,"\n");
 	}
       // print strings
+      first_string = the_strings;
       if(first_string != NULL)
 	fprintf(lst_file,"Strings:\n\"");
       for(;first_string != NULL;first_string = first_string->next)
