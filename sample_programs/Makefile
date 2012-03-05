@@ -1,5 +1,5 @@
 BLOCK_SIZE=255
-COMP=../tools/pasm
+COMP=../tools/picosc
 
 
 all:
