@@ -86,17 +86,10 @@ function:
 stmt: 
 ';'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
         | RETURN stmt                     { $$ = opr(PICLANG_RETURN,1,$2);}
-        | CALL SUBROUTINE ';'            { $$ = opr(PICLANG_CALL,1,$2); }
-        | DEFINE SUBROUTINE  stmt       {  $$ = opr(PASM_DEFINE,2,$2,$3);}
-        | PASM_CR '(' ')' ';'                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
-        | expr ';'                       { $$ = $1; }
+        | CALL SUBROUTINE      { $$ = opr(PICLANG_CALL,1,$2); }
+        | SUBROUTINE ':'  stmt       {  $$ = opr(PASM_DEFINE,2,1,$3);}
+        | PASM_CR                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | VARIABLE '=' expr ';'          { $$ = opr(PICLANG_POP, 2, id($1), $3); }
-        | WHILE '(' expr ')' stmt        { $$ = opr(PASM_WHILE, 2, $3, $5); }
-        | BREAK ';'                      { $$ = opr(PASM_BREAK, 0); }
-        | CONTINUE ';'                   { $$ = opr(PASM_CONTINUE, 0); }
-        | IF '(' expr ')' stmt %prec IFX { $$ = opr(PASM_IF, 2, $3, $5); }
-        | IF '(' expr ')' stmt ELSE stmt { $$ = opr(PASM_IF, 3, $3, $5, $7); }
-        | '{' stmt_list '}'              { $$ = $2; }
         | EXIT {YYACCEPT;}
         ;
 
@@ -114,28 +107,7 @@ expr:
         | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
         | PASM_POP '(' ')'      { $$ = opr(PICLANG_POP,0); }
-        | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
-        | FUNCT '(' INTEGER ',' SUBROUTINE ')' { $$ = opr($1,2,con($3),$5); }
-        | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
-        | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
-        | FUNCT '(' ')'         { $$ = opr($1,0); }
-        | expr '[' expr ']' { $$ = opr(PICLANG_DEREF,2, $1,$3); }
-        | '-' expr %prec UMINUS { $$ = opr(PICLANG_UMINUS, 1, $2); }
-        | expr '+' expr         { $$ = opr(PICLANG_ADD, 2, $1, $3); }
-        | expr '-' expr         { $$ = opr(PICLANG_SUB, 2, $1, $3); }
-        | expr '*' expr         { $$ = opr(PICLANG_MULT, 2, $1, $3); }
-        | expr '/' expr         { $$ = opr(PICLANG_DIV, 2, $1, $3); }
-        | expr '<' expr         { $$ = opr(PICLANG_COMPLT, 2, $1, $3); }
-        | expr '>' expr         { $$ = opr(PICLANG_COMPGT, 2, $1, $3); }
-        | expr '%' expr         { $$ = opr(PICLANG_MOD, 2, $1, $3); }
-        | expr '&' expr         { $$ = opr(PICLANG_AND, 2, $1, $3); }
-        | expr '|' expr         { $$ = opr(PICLANG_OR, 2, $1, $3); }
-        | '~' expr              { $$ = opr(PICLANG_NOT, 1, $2); }
-        | expr BSL expr          { $$ = opr(PICLANG_BSL, 2, $1, $3); }
-        | expr BSR expr          { $$ = opr(PICLANG_BSR, 2, $1, $3); }
-        | expr NE expr          { $$ = opr(PICLANG_COMPNE, 2, $1, $3); }
-        | expr EQ expr          { $$ = opr(PICLANG_COMPEQ, 2, $1, $3); }
-        | '(' expr ')'          { $$ = $2; }
+        | FUNCT expr    { $$ = opr($1,1,$1); }
         ;
 
 %%
@@ -183,7 +155,7 @@ int handle_string(const char *pStr)
       if(is_new)
 	{
 	  if(assembly_file != NULL)
-	    write_assembly(assembly_file,"\tstring \"%s\" = %d\n", pStr,retval);
+	    write_assembly(assembly_file,"\t; \"%s\" = %d\n", pStr,retval);
 	  while(pStr != NULL)
 	    {
 	      insert_string(*pStr);
@@ -560,7 +532,7 @@ int ex(nodeType *p) {
     case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
       {
 	const char *subroutine = p->opr.op[0]->str.string;
-	write_assembly(assembly_file,"L%03d:\t//<%s>\n", (lbl1 = label_counter),subroutine);
+	write_assembly(assembly_file,"L%03d:\t;<%s>\n", (lbl1 = label_counter),subroutine);
 	label_counter++;
 	insert_label(PICLANG_LABEL,lbl1);
 	insert_subroutine(subroutine,lbl1);
