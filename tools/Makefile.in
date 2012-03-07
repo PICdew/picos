@@ -57,17 +57,18 @@ fs_OBJECTS = $(am_fs_OBJECTS)
 fs_DEPENDENCIES =
 fs_LINK = $(CCLD) $(fs_CFLAGS) $(CFLAGS) $(fs_LDFLAGS) $(LDFLAGS) -o \
 	$@
-am_pasm_OBJECTS = pasm-picosc_lex.$(OBJEXT) pasm-pasm_yacc.$(OBJEXT) \
-	pasm-pasm_src.$(OBJEXT) pasm-utils.$(OBJEXT) \
-	pasm-arg.$(OBJEXT) pasm-picfs_error.$(OBJEXT)
+am_pasm_OBJECTS = pasm-compiler.$(OBJEXT) pasm-picosc_lex.$(OBJEXT) \
+	pasm-pasm_yacc.$(OBJEXT) pasm-pasm_src.$(OBJEXT) \
+	pasm-utils.$(OBJEXT) pasm-arg.$(OBJEXT) \
+	pasm-picfs_error.$(OBJEXT)
 pasm_OBJECTS = $(am_pasm_OBJECTS)
 pasm_DEPENDENCIES =
 pasm_LINK = $(CCLD) $(pasm_CFLAGS) $(CFLAGS) $(pasm_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_picosc_OBJECTS = picosc-picosc_lex.$(OBJEXT) \
-	picosc-picosc_yacc.$(OBJEXT) picosc-pasm_src.$(OBJEXT) \
-	picosc-utils.$(OBJEXT) picosc-arg.$(OBJEXT) \
-	picosc-picfs_error.$(OBJEXT)
+am_picosc_OBJECTS = picosc-compiler.$(OBJEXT) \
+	picosc-picosc_lex.$(OBJEXT) picosc-picosc_yacc.$(OBJEXT) \
+	picosc-pasm_src.$(OBJEXT) picosc-utils.$(OBJEXT) \
+	picosc-arg.$(OBJEXT) picosc-picfs_error.$(OBJEXT)
 picosc_OBJECTS = $(am_picosc_OBJECTS)
 picosc_DEPENDENCIES =
 picosc_LINK = $(CCLD) $(picosc_CFLAGS) $(CFLAGS) $(picosc_LDFLAGS) \
@@ -195,11 +196,11 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_YFLAGS = -d 
 picosc_CFLAGS = -g -O0 -DNOT_FOR_PIC -I../
-picosc_SOURCES = picosc_lex.l  picosc_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
+picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
 picosc_LDADD = -lm
 picosc_LDFLAGS = -g -O0
 pasm_CFLAGS = -g -O0 -DNOT_FOR_PIC -I../
-pasm_SOURCES = picosc_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
+pasm_SOURCES = compiler.c picosc_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
 pasm_LDADD = -lm
 pasm_LDFLAGS = -g -O0
 fs_SOURCES = fs.c pasm_src.c ../utils.c
@@ -329,12 +330,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-arg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-compiler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_yacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-picfs_error.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-picosc_lex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-arg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-compiler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picfs_error.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picosc_lex.Po@am__quote@
@@ -396,6 +399,20 @@ fs-utils.obj: ../utils.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../utils.c' object='fs-utils.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -c -o fs-utils.obj `if test -f '../utils.c'; then $(CYGPATH_W) '../utils.c'; else $(CYGPATH_W) '$(srcdir)/../utils.c'; fi`
+
+pasm-compiler.o: compiler.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-compiler.o -MD -MP -MF $(DEPDIR)/pasm-compiler.Tpo -c -o pasm-compiler.o `test -f 'compiler.c' || echo '$(srcdir)/'`compiler.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-compiler.Tpo $(DEPDIR)/pasm-compiler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='compiler.c' object='pasm-compiler.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-compiler.o `test -f 'compiler.c' || echo '$(srcdir)/'`compiler.c
+
+pasm-compiler.obj: compiler.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-compiler.obj -MD -MP -MF $(DEPDIR)/pasm-compiler.Tpo -c -o pasm-compiler.obj `if test -f 'compiler.c'; then $(CYGPATH_W) 'compiler.c'; else $(CYGPATH_W) '$(srcdir)/compiler.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-compiler.Tpo $(DEPDIR)/pasm-compiler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='compiler.c' object='pasm-compiler.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-compiler.obj `if test -f 'compiler.c'; then $(CYGPATH_W) 'compiler.c'; else $(CYGPATH_W) '$(srcdir)/compiler.c'; fi`
 
 pasm-picosc_lex.o: picosc_lex.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-picosc_lex.o -MD -MP -MF $(DEPDIR)/pasm-picosc_lex.Tpo -c -o pasm-picosc_lex.o `test -f 'picosc_lex.c' || echo '$(srcdir)/'`picosc_lex.c
@@ -480,6 +497,20 @@ pasm-picfs_error.obj: ../picfs_error.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../picfs_error.c' object='pasm-picfs_error.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-picfs_error.obj `if test -f '../picfs_error.c'; then $(CYGPATH_W) '../picfs_error.c'; else $(CYGPATH_W) '$(srcdir)/../picfs_error.c'; fi`
+
+picosc-compiler.o: compiler.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-compiler.o -MD -MP -MF $(DEPDIR)/picosc-compiler.Tpo -c -o picosc-compiler.o `test -f 'compiler.c' || echo '$(srcdir)/'`compiler.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-compiler.Tpo $(DEPDIR)/picosc-compiler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='compiler.c' object='picosc-compiler.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-compiler.o `test -f 'compiler.c' || echo '$(srcdir)/'`compiler.c
+
+picosc-compiler.obj: compiler.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-compiler.obj -MD -MP -MF $(DEPDIR)/picosc-compiler.Tpo -c -o picosc-compiler.obj `if test -f 'compiler.c'; then $(CYGPATH_W) 'compiler.c'; else $(CYGPATH_W) '$(srcdir)/compiler.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-compiler.Tpo $(DEPDIR)/picosc-compiler.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='compiler.c' object='picosc-compiler.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-compiler.obj `if test -f 'compiler.c'; then $(CYGPATH_W) 'compiler.c'; else $(CYGPATH_W) '$(srcdir)/compiler.c'; fi`
 
 picosc-picosc_lex.o: picosc_lex.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-picosc_lex.o -MD -MP -MF $(DEPDIR)/picosc-picosc_lex.Tpo -c -o picosc-picosc_lex.o `test -f 'picosc_lex.c' || echo '$(srcdir)/'`picosc_lex.c
