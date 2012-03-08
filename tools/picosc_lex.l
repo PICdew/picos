@@ -1,6 +1,6 @@
 %{
 #include "pasm.h"
-#include "pasm_yacc.h"
+#include "picosc_yacc.h"
 #include "piclang.h"
 void yyerror(char *);
 

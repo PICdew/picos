@@ -1,15 +1,15 @@
 #include "pasm.h"
-#include "pasm_yacc.h"
+#include "picosc_yacc.h"
 #include "../piclang.h"
 #include "page.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
 
 extern FILE *assembly_file;
-picos_size_t label_counter = 0;
 
 int write_assembly(FILE *stream, const char *format, ...)
 {
@@ -309,6 +309,10 @@ struct assembly_map* opcode2assembly(int opcode)
     }
   return curr_opcode;
 }
+
+
+
+
 
 
 

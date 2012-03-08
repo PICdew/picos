@@ -1,5 +1,9 @@
-#include "../piclang.h"
-#include "../arg.h"
+#ifndef PASM_H
+#define PASM_H 1
+
+#include "piclang.h"
+#include "arg.h"
+#include "utils.h"
 #include "fs.h"
 
 #include <stdio.h>
@@ -91,6 +95,10 @@ struct assembly_map
   int opcode, has_arg;
 };
 
+nodeType *opr(int oper, int nops, ...);
+nodeType *id(idNodeType var);
+nodeType *con(int value);
+
 struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 
@@ -114,4 +122,6 @@ void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned ch
 void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type);
 #define COMPILE_MAX_WIDTH 8//max width
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables);
+
+#endif
 
