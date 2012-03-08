@@ -52,7 +52,7 @@ void yyerror(char *s);
 
 %token <iValue> INTEGER FUNCT
 %token <variable> VARIABLE
-%type <nPtr> stmt expr stmt_list STRING SUBROUTINE
+%type <nPtr> stmt expr STRING SUBROUTINE
 
 %token WHILE BREAK CONTINUE IF CALL SUBROUTINE
 %token STRING RETURN DEFINE EXIT 
@@ -81,18 +81,14 @@ function:
         ;
 
 stmt: 
-';'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
+'\n'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
         | RETURN stmt                     { $$ = opr(PICLANG_RETURN,1,$2);}
         | CALL SUBROUTINE      { $$ = opr(PICLANG_CALL,1,$2); }
-        | SUBROUTINE ':'  stmt       {  $$ = opr(PASM_DEFINE,2,1,$3);}
+        | SUBROUTINE ':' stmt       {  $$ = opr(PASM_LABEL,2,$1,$3);}
         | PASM_CR                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | VARIABLE '=' expr ';'          { $$ = opr(PICLANG_POP, 2, id($1), $3); }
+        | expr '\n' { $$ = $1; }
         | EXIT {YYACCEPT;}
-        ;
-
-stmt_list:
-          stmt                  { $$ = $1; }
-        | stmt_list stmt        { $$ = opr(PASM_STATEMENT_DELIM, 2, $1, $2); }
         ;
 
 expr:
@@ -104,7 +100,7 @@ expr:
         | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
         | PASM_POP '(' ')'      { $$ = opr(PICLANG_POP,0); }
-        | FUNCT expr    { $$ = opr($1,1,$1); }
+        | FUNCT expr    { $$ = opr($1,1,$2); }
         ;
 
 %%
@@ -126,7 +122,7 @@ static struct option long_options[] =
 void print_help()
 {
   printf("\n");
-  printf("pasm -- Piclang compiler.\n");
+  printf("pasm -- Piclang assembler.\n");
   printf("Copyright 2011 David Coss, PhD\n");
   printf("-------------------------------\n");
   printf("Compiles piclang programs for use with the Pic Operating System.\n");
@@ -224,7 +220,7 @@ int main(int argc, char **argv)
 	yyin = input;
     }
   else
-    printf("Welcome to the piclang compiler.\n");
+    printf("Welcome to the piclang assembler.\n");
   
   yyparse();
   insert_code(PICLANG_PUSHL);

@@ -106,14 +106,12 @@ imagdecimal {decimal}[iI]
                   return INTEGER;
                  }
 
-\<{variable}\>  {
-                size_t text_len = strlen(&yytext[1]);
-                yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
-                strncpy(yylval.nPtr->str.string,&yytext[1],text_len-1);// minus 1 for the end quotation mark
-                yylval.nPtr->str.string[text_len-1] = 0;
-                yylval.nPtr->type = typeSubroutine;
-                return SUBROUTINE;
-           }
+\<{variable}\>  { return parse_subroutine(1,1); }
+L{nonnegative} { return parse_subroutine(1,0); }
+"main" { return parse_subroutine(0,0); }
+
+
+
 
 {variable} {
               struct assembly_map *asmb = keyword2assembly(yytext);
@@ -138,14 +136,25 @@ imagdecimal {decimal}[iI]
                 return INTEGER;
             }
 
-[-,()<>=+*/;{}\[\]%~&|] {
+[-,()<>=+*/;{}\[\]%~&|:\n] {
                 return *yytext;
              }
 
-[ \t\n]+        ;       /* ignore whitespace */
+[ \t]+        ;       /* ignore whitespace */
 
 .               yyerror("Unknown character");
 %%
 int yywrap(void) {
     return 1;
+}
+
+
+int parse_subroutine(size_t left_offset, size_t right_offset)
+{
+  size_t text_len = strlen(&yytext[left_offset]);
+  yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
+  strncpy(yylval.nPtr->str.string,&yytext[left_offset],text_len-right_offset);// minus 1 for the end quotation mark
+  yylval.nPtr->str.string[text_len-right_offset] = 0;
+  yylval.nPtr->type = typeSubroutine;
+  return SUBROUTINE;
 }

@@ -76,12 +76,13 @@ program:
         ;
 
 function: 
-          function stmt         { ex($2); freeNode($2); }
+         function stmt         { ex($2); freeNode($2); }
         | /* NULL */
         ;
 
 stmt: 
 ';'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
+        | '\n'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
         | RETURN stmt                     { $$ = opr(PICLANG_RETURN,1,$2);}
         | CALL SUBROUTINE ';'            { $$ = opr(PICLANG_CALL,1,$2); }
         | DEFINE SUBROUTINE  stmt       {  $$ = opr(PASM_DEFINE,2,$2,$3);}
@@ -156,13 +157,13 @@ static struct option long_options[] =
 void print_help()
 {
   printf("\n");
-  printf("pasm -- Piclang compiler.\n");
+  printf("picosc -- Piclang compiler.\n");
   printf("Copyright 2011 David Coss, PhD\n");
   printf("-------------------------------\n");
   printf("Compiles piclang programs for use with the Pic Operating System.\n");
   printf("Note: If no source file is provided, the compiler will act as \n\tan interpreter.\n");
   printf("\n");
-  printf("Usage: pasm [options] [source code]\n\n");
+  printf("Usage: picosc [options] [source code]\n\n");
   printf("Options:\n");
   printf("--help, -h :\t\t Displays this dialog.\n");
   printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");

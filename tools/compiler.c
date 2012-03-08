@@ -46,7 +46,7 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\texit\n",0); 
       insert_code(PICLANG_EXIT);
       break;
-    case PICLANG_PUSH:
+    case PICLANG_PUSH: case PICLANG_PUSHL:
       ex(p->opr.op[0]);
       break;
     case PICLANG_CALL:
@@ -55,6 +55,16 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tcall\tL%03d\n",subroutine->label);
 	insert_code(PICLANG_CALL);
 	insert_code(subroutine->label);
+	break;
+      }
+    case PASM_LABEL:
+      {
+	const char *subroutine = p->opr.op[0]->str.string;
+	write_assembly(assembly_file,"L%03d:\t//<%s>\n", (lbl1 = label_counter),subroutine);
+	label_counter++;
+	insert_label(PICLANG_LABEL,lbl1);
+	insert_subroutine(subroutine,lbl1);
+	ex(p->opr.op[1]);
 	break;
       }
     case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
@@ -313,8 +323,10 @@ int ex(nodeType *p) {
       break;
     default:// all piclang functions
       {
-	ex(p->opr.op[0]);
-	ex(p->opr.op[1]);
+	size_t op_index = 0;
+	for(;op_index < p->opr.nops;op_index++)
+	  ex(p->opr.op[op_index]);
+
 	switch(p->opr.oper) {
 	case PICLANG_DEREF:// array access
 	  write_assembly(assembly_file,"\tderef\n");
