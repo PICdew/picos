@@ -449,7 +449,7 @@ int handle_string(const char *pStr)
       if(is_new)
 	{
 	  if(assembly_file != NULL)
-	    write_assembly(assembly_file,"\tstring \"%s\" = %d\n", pStr,retval);
+	    write_assembly(assembly_file,"\t\"%s\"\n", pStr,retval);
 	  while(pStr != NULL)
 	    {
 	      insert_string(*pStr);

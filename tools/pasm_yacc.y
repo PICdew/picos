@@ -86,7 +86,9 @@ stmt:
         | CALL SUBROUTINE      { $$ = opr(PICLANG_CALL,1,$2); }
         | SUBROUTINE ':' stmt       {  $$ = opr(PASM_LABEL,2,$1,$3);}
         | PASM_CR                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
-        | VARIABLE '=' expr ';'          { $$ = opr(PICLANG_POP, 2, id($1), $3); }
+        | VARIABLE '=' expr       { $$ = opr(PICLANG_POP, 2, id($1), $3); }
+        | PASM_POP VARIABLE      { $$ = opr(PICLANG_POP,1,id($2)); }
+        | STRING                { handle_string($1->str.string); }
         | expr '\n' { $$ = $1; }
         | EXIT {YYACCEPT;}
         ;
@@ -94,12 +96,10 @@ stmt:
 expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
-        | STRING                { $$ = con(handle_string($1->str.string)); }
         | ARGC                  { $$ = opr(PICLANG_ARGC,0); }
         | FIN                   { $$ = con(ARG_SIZE); }
         | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
-        | PASM_POP '(' ')'      { $$ = opr(PICLANG_POP,0); }
         | FUNCT expr    { $$ = opr($1,1,$2); }
         | FUNCT         { $$ = opr($1,0); }
         ;
