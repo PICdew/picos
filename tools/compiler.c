@@ -512,8 +512,15 @@ void freeNode(nodeType *p) {
 
 void yyerror(char *s) {
   extern char *yytext;
-  fprintf(stdout, "(%d - %d) %s: %s\n",yylloc.first_line,yylloc.last_line, s,yytext);
-    exit(-1);
+  fprintf(stdout, "(Line");
+  if(yylloc.first_line != yylloc.last_line)
+    fprintf(stdout,"s");
+  fprintf(stdout," %d",yylloc.first_line);
+  if(yylloc.first_line != yylloc.last_line)
+    fprintf(stdout," - %d",yylloc.last_line);
+  
+  fprintf(stdout,") %s %s\n",s,yytext);
+  exit(-1);
 }
 
 
