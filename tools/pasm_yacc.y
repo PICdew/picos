@@ -101,6 +101,7 @@ expr:
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
         | PASM_POP '(' ')'      { $$ = opr(PICLANG_POP,0); }
         | FUNCT expr    { $$ = opr($1,1,$2); }
+        | FUNCT         { $$ = opr($1,0); }
         ;
 
 %%
