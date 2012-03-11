@@ -115,6 +115,8 @@ const struct subroutine_map* get_subroutine(const char *name);
 void _attach_label(struct compiled_code *ptrlist_end, picos_size_t label);
 extern int write_assembly(FILE *stream, const char *format, ...);
 
+int lookup_label(const struct compiled_code* code, picos_size_t label);
+
 enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
 size_t CountCode(struct compiled_code *the_code);
 void FreeCode(struct compiled_code* code);

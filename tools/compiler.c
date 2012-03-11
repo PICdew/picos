@@ -14,6 +14,16 @@ extern char *yytext;
 extern YYLTYPE yylloc;
 picos_size_t label_counter = 0;
 
+static void deal_with_arguments(oprNodeType *opr)
+{
+  size_t op_index = 0;
+  if(opr == NULL)
+    return;
+  for(;op_index < opr->nops;op_index++)
+    ex(opr->op[op_index]);
+
+}
+
 int ex(nodeType *p) {
   extern FILE *assembly_file;
   int lbl1, lbl2;
@@ -42,12 +52,12 @@ int ex(nodeType *p) {
 	  insert_code(0);
 	}
       else
-	ex(p->opr.op[0]);
+	deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\texit\n",0); 
       insert_code(PICLANG_EXIT);
       break;
     case PICLANG_PUSH: case PICLANG_PUSHL:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       break;
     case PICLANG_CALL:
       {
@@ -57,18 +67,6 @@ int ex(nodeType *p) {
 	insert_code(subroutine->label);
 	break;
       }
-#if 0
-    case PASM_LABEL:
-      {
-	const char *subroutine = p->opr.op[0]->str.string;
-	write_assembly(assembly_file,"L%03d:\t;<%s>\n", (lbl1 = label_counter),subroutine);
-	label_counter++;
-	insert_label(PICLANG_LABEL,lbl1);
-	insert_subroutine(subroutine,lbl1);
-	ex(p->opr.op[1]);
-	break;
-      }
-#endif
     case PASM_LABEL: case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
       {
 	const char *subroutine = p->opr.op[0]->str.string;
@@ -80,7 +78,7 @@ int ex(nodeType *p) {
 	label_counter++;
 	insert_label(PICLANG_LABEL,lbl1);
 	insert_subroutine(subroutine,lbl1);
-	ex(p->opr.op[1]);
+	deal_with_arguments(&p->opr);
 	if(strcmp(subroutine,"main") == 0 && p->opr.oper != PASM_LABEL)
 	  {
 	    write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
@@ -90,7 +88,8 @@ int ex(nodeType *p) {
 	  break;
       }
     case PICLANG_RETURN:// KEEP RETURN AFTER DEFINE
-      ex(p->opr.op[0]);
+      if(p->opr.oper == PICLANG_RETURN && p->opr.nops)
+	deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\treturn\n");
       insert_code(PICLANG_RETURN);
       break;
@@ -163,12 +162,18 @@ int ex(nodeType *p) {
 	insert_label(PICLANG_LABEL,lbl1);
       }
       break;
+    case PICLANG_JZ:
+      {
+	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
+	write_assembly(assembly_file,"\tjz %s;%d\n",subroutine->name,subroutine->label);
+	break;
+      }
     case PICLANG_PRINT:     
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tputd\n");insert_code(PICLANG_PRINTL);
       break;
     case PICLANG_ARGV:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\targv\n");
       insert_code(PICLANG_ARGV);
       break;
@@ -177,27 +182,27 @@ int ex(nodeType *p) {
       insert_code(PICLANG_ARGC);
       break;
     case PICLANG_PRINTL:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
       break;
     case PICLANG_FPUTCH:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tfputch\n");insert_code(PICLANG_FPUTCH);
       break;
     case PICLANG_FPUTD:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tfputd\n");insert_code(PICLANG_FPUTD);
       break;
     case PICLANG_FOPEN:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tfopen\n");insert_code(PICLANG_FOPEN);
       break;
     case PICLANG_FCLOSE:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tfclose\n");insert_code(PICLANG_FCLOSE);
       break;
     case PICLANG_FREAD:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
     case PICLANG_DROP:
@@ -218,7 +223,7 @@ int ex(nodeType *p) {
       insert_code(resolve_variable(p->opr.op[0]->id.name));
       break;
     case PICLANG_UMINUS:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tneg\n");
       insert_code(PICLANG_UMINUS);
       break;
@@ -251,22 +256,22 @@ int ex(nodeType *p) {
 	break;
       }
     case PICLANG_SLEEP:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tsleep\n");
       insert_code(PICLANG_SLEEP);
       break;
     case PICLANG_SPRINT:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tsprint\n");
       insert_code(PICLANG_SPRINT);
       break;
     case PICLANG_MORSE:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tmorse\n");
       insert_code(PICLANG_MORSE);
       break;
     case PICLANG_TIME:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\ttime\n");
       insert_code(PICLANG_TIME);
       break;
@@ -291,15 +296,12 @@ int ex(nodeType *p) {
       insert_code(PICLANG_MUTEX_UNLOCK);
       break;
     case PICLANG_SET_TIME:
-      ex(p->opr.op[0]);
-      ex(p->opr.op[1]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tsettime\n");
       insert_code(PICLANG_SET_TIME);
       break;
     case PICLANG_SET_DATE:
-      ex(p->opr.op[0]);
-      ex(p->opr.op[1]);
-      ex(p->opr.op[2]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tsetdate\n");
       insert_code(PICLANG_SET_DATE);
       break;
@@ -310,12 +312,12 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tgetch\n");insert_code(PICLANG_GETCH);
       break;
     case PICLANG_NOT:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tnot\n");
       insert_code(PICLANG_NOT);
       break;
     case PICLANG_CHDIR:
-      ex(p->opr.op[0]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tchdir\n");
       insert_code(PICLANG_CHDIR);
       break;
@@ -324,17 +326,13 @@ int ex(nodeType *p) {
       insert_code(PICLANG_PWDIR);
       break;
     case PICLANG_MOUNT:
-      ex(p->opr.op[0]);
-      ex(p->opr.op[1]);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tmount\n");
       insert_code(PICLANG_MOUNT);
       break;
     default:// all piclang functions
       {
-	size_t op_index = 0;
-	for(;op_index < p->opr.nops;op_index++)
-	  ex(p->opr.op[op_index]);
-
+	deal_with_arguments(&p->opr);
 	switch(p->opr.oper) {
 	case PICLANG_DEREF:// array access
 	  write_assembly(assembly_file,"\tderef\n");
@@ -377,19 +375,19 @@ int ex(nodeType *p) {
 	  insert_code(PICLANG_DIV);
 	  break;
 	case PICLANG_COMPLT:   
-	  write_assembly(assembly_file,"\tcompLT\n"); 
+	  write_assembly(assembly_file,"\tcomplt\n"); 
 	  insert_code(PICLANG_COMPLT);
 	  break;
 	case PICLANG_COMPGT:   
-	  write_assembly(assembly_file,"\tcompGT\n"); 
+	  write_assembly(assembly_file,"\tcompgt\n"); 
 	  insert_code(PICLANG_COMPGT);
 	  break;
 	case PICLANG_COMPNE:    
-	  write_assembly(assembly_file,"\tcompNE\n"); 
+	  write_assembly(assembly_file,"\tcompne\n"); 
 	  insert_code(PICLANG_COMPNE);
 	  break;
 	case PICLANG_COMPEQ:    
-	  write_assembly(assembly_file,"\tcompEQ\n"); 
+	  write_assembly(assembly_file,"\tcompeq\n"); 
 	  insert_code(PICLANG_COMPEQ);
 	  break;
 	case PASM_STATEMENT_DELIM:
