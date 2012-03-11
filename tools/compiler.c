@@ -162,10 +162,14 @@ int ex(nodeType *p) {
 	insert_label(PICLANG_LABEL,lbl1);
       }
       break;
-    case PICLANG_JZ:
+    case PICLANG_JZ: case PICLANG_JMP:
       {
 	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
-	write_assembly(assembly_file,"\tjz %s;%d\n",subroutine->name,subroutine->label);
+	if(p->opr.oper == PICLANG_JZ)
+	  write_assembly(assembly_file,"\tjz ");
+	else
+	  write_assembly(assembly_file,"\tjmp ");
+	write_assembly(assembly_file,"%s;%d\n",subroutine->name,subroutine->label);
 	break;
       }
     case PICLANG_PRINT:     
@@ -654,8 +658,7 @@ const struct subroutine_map* get_subroutine(const char *name)
     }
   if(subroutines == NULL)
     {
-      fprintf(stderr,"No subroutines yet defined.\n");
-      exit(-1);
+      insert_subroutine(name,(size_t)-1);
     }
   
   retval = subroutines;
@@ -665,8 +668,10 @@ const struct subroutine_map* get_subroutine(const char *name)
 	return retval;
       retval = retval->next;
     }
-  fprintf(stderr,"No such subroutine: %s\n",name);
-  exit(-1);
+  
+  // If here, the subroutine was not yet defined.
+  insert_subroutine(name,(size_t)-1);
+  return get_subroutine(name);
 }
 
 void set_pcb_type(struct compiled_code *the_pcb)
