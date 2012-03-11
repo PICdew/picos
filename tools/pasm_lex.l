@@ -31,7 +31,7 @@ unsigned char do_crc(const char *str)
 
 %option yylineno
 
-%x C_COMMENT
+%x C_COMMENT ASM_COMMENT
 
 whitespace [ \t]+
 zero 0
@@ -40,7 +40,7 @@ integer [1-9]{nonnegative}*
 exponent [eE][+-]{nonnegative}*
 decimal {zero}?{integer}*\.{nonnegative}*{exponent}?
 alpha [a-zA-Z]
-variable {alpha}({nonnegative}|{alpha}|[_])*
+variable [a-zA-KM-Z]({nonnegative}|{alpha}|[_])*
 hex 0x[0-9a-fA-F]*
 octal 0[0-9a-fA-F]*
 imagint {integer}[iI]
@@ -52,6 +52,10 @@ imagdecimal {decimal}[iI]
 "/*"            BEGIN(C_COMMENT);
 <C_COMMENT>"*/" {BEGIN(INITIAL);}
 <C_COMMENT>. {}
+
+";"            BEGIN(ASM_COMMENT);
+<ASM_COMMENT>"\n" {BEGIN(INITIAL);}
+<ASM_COMMENT>. {}
 
 ">>"            return BSR;
 "<<"            return BSL;
@@ -106,8 +110,8 @@ imagdecimal {decimal}[iI]
                   return INTEGER;
                  }
 
+L{nonnegative}+ { return parse_subroutine(0,1); }
 \<{variable}\>  { return parse_subroutine(1,1); }
-L{nonnegative} { return parse_subroutine(1,0); }
 "main" { return parse_subroutine(0,0); }
 
 

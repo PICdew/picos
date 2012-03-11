@@ -57,29 +57,37 @@ int ex(nodeType *p) {
 	insert_code(subroutine->label);
 	break;
       }
+#if 0
     case PASM_LABEL:
       {
 	const char *subroutine = p->opr.op[0]->str.string;
-	write_assembly(assembly_file,"L%03d:\t//<%s>\n", (lbl1 = label_counter),subroutine);
+	write_assembly(assembly_file,"L%03d:\t;<%s>\n", (lbl1 = label_counter),subroutine);
 	label_counter++;
 	insert_label(PICLANG_LABEL,lbl1);
 	insert_subroutine(subroutine,lbl1);
 	ex(p->opr.op[1]);
 	break;
       }
-    case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
+#endif
+    case PASM_LABEL: case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
       {
 	const char *subroutine = p->opr.op[0]->str.string;
-	write_assembly(assembly_file,"L%03d:\t//<%s>\n", (lbl1 = label_counter),subroutine);
+	lbl1 = label_counter;
+	if(strcmp(subroutine,"main") == 0)
+	  write_assembly(assembly_file,"main:\t;<%s>\n",subroutine);
+	else
+	  write_assembly(assembly_file,"L%03d:\t;<%s>\n", lbl1,subroutine);
 	label_counter++;
 	insert_label(PICLANG_LABEL,lbl1);
 	insert_subroutine(subroutine,lbl1);
 	ex(p->opr.op[1]);
-	if(strcmp(subroutine,"main") == 0)
+	if(strcmp(subroutine,"main") == 0 && p->opr.oper != PASM_LABEL)
 	  {
 	    write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
 	    break;
 	  }
+	if(p->opr.oper == PASM_LABEL)
+	  break;
       }
     case PICLANG_RETURN:// KEEP RETURN AFTER DEFINE
       ex(p->opr.op[0]);
