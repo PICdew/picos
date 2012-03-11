@@ -37,8 +37,8 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	compile depcomp install-sh missing pasm_yacc.c pasm_yacc.h \
-	picosc_lex.c picosc_yacc.c picosc_yacc.h ylwrap
+	compile depcomp install-sh missing pasm_lex.c pasm_yacc.c \
+	pasm_yacc.h picosc_lex.c picosc_yacc.c picosc_yacc.h ylwrap
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -57,7 +57,7 @@ fs_OBJECTS = $(am_fs_OBJECTS)
 fs_DEPENDENCIES =
 fs_LINK = $(CCLD) $(fs_CFLAGS) $(CFLAGS) $(fs_LDFLAGS) $(LDFLAGS) -o \
 	$@
-am_pasm_OBJECTS = pasm-compiler.$(OBJEXT) pasm-picosc_lex.$(OBJEXT) \
+am_pasm_OBJECTS = pasm-compiler.$(OBJEXT) pasm-pasm_lex.$(OBJEXT) \
 	pasm-pasm_yacc.$(OBJEXT) pasm-pasm_src.$(OBJEXT) \
 	pasm-utils.$(OBJEXT) pasm-arg.$(OBJEXT) \
 	pasm-picfs_error.$(OBJEXT)
@@ -200,7 +200,7 @@ picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y pasm_src.c ../utils.c ..
 picosc_LDADD = -lm
 picosc_LDFLAGS = -g -O0
 pasm_CFLAGS = -g -O0 -DNOT_FOR_PIC -I../
-pasm_SOURCES = compiler.c picosc_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
+pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
 pasm_LDADD = -lm
 pasm_LDFLAGS = -g -O0
 fs_SOURCES = fs.c pasm_src.c ../utils.c
@@ -331,10 +331,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-arg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-compiler.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_lex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_yacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-picfs_error.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-picosc_lex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-arg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-compiler.Po@am__quote@
@@ -414,19 +414,19 @@ pasm-compiler.obj: compiler.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-compiler.obj `if test -f 'compiler.c'; then $(CYGPATH_W) 'compiler.c'; else $(CYGPATH_W) '$(srcdir)/compiler.c'; fi`
 
-pasm-picosc_lex.o: picosc_lex.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-picosc_lex.o -MD -MP -MF $(DEPDIR)/pasm-picosc_lex.Tpo -c -o pasm-picosc_lex.o `test -f 'picosc_lex.c' || echo '$(srcdir)/'`picosc_lex.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-picosc_lex.Tpo $(DEPDIR)/pasm-picosc_lex.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picosc_lex.c' object='pasm-picosc_lex.o' libtool=no @AMDEPBACKSLASH@
+pasm-pasm_lex.o: pasm_lex.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_lex.o -MD -MP -MF $(DEPDIR)/pasm-pasm_lex.Tpo -c -o pasm-pasm_lex.o `test -f 'pasm_lex.c' || echo '$(srcdir)/'`pasm_lex.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-pasm_lex.Tpo $(DEPDIR)/pasm-pasm_lex.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_lex.c' object='pasm-pasm_lex.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-picosc_lex.o `test -f 'picosc_lex.c' || echo '$(srcdir)/'`picosc_lex.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_lex.o `test -f 'pasm_lex.c' || echo '$(srcdir)/'`pasm_lex.c
 
-pasm-picosc_lex.obj: picosc_lex.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-picosc_lex.obj -MD -MP -MF $(DEPDIR)/pasm-picosc_lex.Tpo -c -o pasm-picosc_lex.obj `if test -f 'picosc_lex.c'; then $(CYGPATH_W) 'picosc_lex.c'; else $(CYGPATH_W) '$(srcdir)/picosc_lex.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-picosc_lex.Tpo $(DEPDIR)/pasm-picosc_lex.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picosc_lex.c' object='pasm-picosc_lex.obj' libtool=no @AMDEPBACKSLASH@
+pasm-pasm_lex.obj: pasm_lex.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_lex.obj -MD -MP -MF $(DEPDIR)/pasm-pasm_lex.Tpo -c -o pasm-pasm_lex.obj `if test -f 'pasm_lex.c'; then $(CYGPATH_W) 'pasm_lex.c'; else $(CYGPATH_W) '$(srcdir)/pasm_lex.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-pasm_lex.Tpo $(DEPDIR)/pasm-pasm_lex.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_lex.c' object='pasm-pasm_lex.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-picosc_lex.obj `if test -f 'picosc_lex.c'; then $(CYGPATH_W) 'picosc_lex.c'; else $(CYGPATH_W) '$(srcdir)/picosc_lex.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-pasm_lex.obj `if test -f 'pasm_lex.c'; then $(CYGPATH_W) 'pasm_lex.c'; else $(CYGPATH_W) '$(srcdir)/pasm_lex.c'; fi`
 
 pasm-pasm_yacc.o: pasm_yacc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-pasm_yacc.o -MD -MP -MF $(DEPDIR)/pasm-pasm_yacc.Tpo -c -o pasm-pasm_yacc.o `test -f 'pasm_yacc.c' || echo '$(srcdir)/'`pasm_yacc.c
@@ -833,6 +833,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f pasm_lex.c
 	-rm -f pasm_yacc.c
 	-rm -f pasm_yacc.h
 	-rm -f picosc_lex.c

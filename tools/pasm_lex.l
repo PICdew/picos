@@ -33,7 +33,7 @@ unsigned char do_crc(const char *str)
 
 %x C_COMMENT
 
-whitespace [ \t\n]+
+whitespace [ \t]+
 zero 0
 nonnegative [0-9]
 integer [1-9]{nonnegative}*
@@ -136,7 +136,7 @@ L{nonnegative} { return parse_subroutine(1,0); }
                 return INTEGER;
             }
 
-[-,()<>=+*/;{}\[\]%~&|:] {
+[-,()<>=+*/;{}\[\]%~&|:\n] {
                 return *yytext;
              }
 

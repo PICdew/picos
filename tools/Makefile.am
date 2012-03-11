@@ -7,7 +7,7 @@ picosc_LDADD = -lm
 picosc_LDFLAGS = -g -O0
 
 pasm_CFLAGS = -g -O0 -DNOT_FOR_PIC -I../
-pasm_SOURCES = compiler.c picosc_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
+pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c ../utils.c ../arg.c ../picfs_error.c
 pasm_LDADD = -lm
 pasm_LDFLAGS = -g -O0
 

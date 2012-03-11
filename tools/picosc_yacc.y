@@ -82,7 +82,6 @@ function:
 
 stmt: 
 ';'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
-        | '\n'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
         | RETURN stmt                     { $$ = opr(PICLANG_RETURN,1,$2);}
         | CALL SUBROUTINE ';'            { $$ = opr(PICLANG_CALL,1,$2); }
         | DEFINE SUBROUTINE  stmt       {  $$ = opr(PASM_DEFINE,2,$2,$3);}
