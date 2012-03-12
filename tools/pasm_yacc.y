@@ -88,8 +88,9 @@ stmt:
         | FUNCT SUBROUTINE      {$$ = opr($1,1,$2); }
         | PASM_CR                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | VARIABLE '=' expr       { $$ = opr(PICLANG_POP, 2, id($1), $3); }
+| VARIABLE '=' STRING       { $$ = opr(PICLANG_POP, 2, id($1), con(handle_string($3->str.string))); }
         | PASM_POP VARIABLE      { $$ = opr(PICLANG_POP,1,id($2)); }
-        | STRING                { handle_string($1->str.string); }
+        | STRING                 { handle_string($1->str.string); }
         | expr '\n' { $$ = $1; }
         | EXIT {YYACCEPT;}
         ;

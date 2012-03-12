@@ -62,22 +62,25 @@ int ex(nodeType *p) {
     case PICLANG_CALL:
       {
 	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
-	write_assembly(assembly_file,"\tcall\tL%03d\n",subroutine->label);
+	write_assembly(assembly_file,"\tcall\t%s ;%d\n",subroutine->name,subroutine->index);
 	insert_code(PICLANG_CALL);
-	insert_code(subroutine->label);
+	insert_label(PASM_SUBROUTINE,subroutine->index);
 	break;
       }
     case PASM_LABEL: case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
       {
-	const char *subroutine = p->opr.op[0]->str.string;
-	lbl1 = label_counter;
-	if(strcmp(subroutine,"main") == 0)
-	  write_assembly(assembly_file,"main:\t;<%s>\n",subroutine);
-	else
-	  write_assembly(assembly_file,"L%03d:\t;<%s>\n", lbl1,subroutine);
-	label_counter++;
+	const char *subroutine_name = p->opr.op[0]->str.string;
+	const struct subroutine_map *subroutine = NULL;
+	lbl1 = label_counter;	label_counter++;
+	insert_subroutine(subroutine_name,lbl1);
+	subroutine = get_subroutine(subroutine_name);
+	if(subroutine == NULL)
+	  {
+	    fprintf(stderr,"Could not declare subroutine: %s\n",subroutine_name);
+	    exit(-1);
+	  }
+	write_assembly(assembly_file,"%s: ;%d\n", subroutine->name,subroutine->index);
 	insert_label(PICLANG_LABEL,lbl1);
-	insert_subroutine(subroutine,lbl1);
 	deal_with_arguments(&p->opr);
 	if(strcmp(subroutine,"main") == 0 && p->opr.oper != PASM_LABEL)
 	  {
@@ -407,6 +410,8 @@ int ex(nodeType *p) {
   return 0;
 }
 
+
+static compiler_subroutine_counter = 0;
 void insert_subroutine(const char *name, size_t label)
 {
   
@@ -414,12 +419,39 @@ void insert_subroutine(const char *name, size_t label)
     subroutines = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
   else
     {
-      struct subroutine_map* tmp = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+      struct subroutine_map* tmp;
+
+      // Search to see if this subroutine exists
+      tmp = subroutines;
+      while(tmp != NULL)
+	{
+	  if(strcmp(tmp->name,name) == 0)
+	    {
+	      // already defined here. Check to see if the label is the same
+	      // If it is -1, then it was declared by not defined.
+	      // If not, this a multiple definition error
+	      if(tmp->label == -1)
+		tmp->label = label;
+	      else if(tmp->label != label)
+		{
+		  fprintf(stderr,"Multiple definitions of %s\n",name);
+		  exit(-1);
+		}
+	      
+	      
+	      return;
+	    }
+	  tmp = tmp->next;
+	}
+      
+      // Not found. Create it.
+      tmp = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
       tmp->next = subroutines;
       subroutines = tmp;
     }
   strcpy(subroutines->name,name);
   subroutines->label = label;
+  subroutines->index = compiler_subroutine_counter++;
 }
 
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)

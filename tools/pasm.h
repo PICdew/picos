@@ -85,8 +85,9 @@ struct compiled_code
 
 struct subroutine_map
 {
-  char name[FILENAME_MAX];
-  size_t label;
+  char name[FILENAME_MAX];// Human-readable name.
+  size_t index;// Unique for each subroutine
+  size_t label;// Links subroutines to code address.
   struct subroutine_map *next;
 };
 
