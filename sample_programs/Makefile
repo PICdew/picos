@@ -1,6 +1,9 @@
+ifndef BLOCK_SIZE
 BLOCK_SIZE=255
+endif
+ifndef COMP
 COMP=../tools/picosc
-
+endif
 
 all:
 	$(COMP) -b $(BLOCK_SIZE) -o fs/time time.plc
