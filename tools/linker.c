@@ -24,7 +24,7 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
     {
       if(code->type == typePCB)
 	continue;
-      if(code->type == typeLabel)
+      if(code->type == typeLabel && code->val == PICLANG_LABEL)
 	{
 	  if(code->label == label)
 	    return code_counter;
