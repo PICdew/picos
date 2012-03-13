@@ -84,7 +84,7 @@ stmt:
 '\n'                            { $$ = opr(PASM_STATEMENT_DELIM, 2, NULL, NULL); }
         | RETURN stmt                     { $$ = opr(PICLANG_RETURN,1,$2);}
         | CALL SUBROUTINE      { $$ = opr(PICLANG_CALL,1,$2); }
-        | SUBROUTINE ':' stmt       {  $$ = opr(PASM_LABEL,2,$1,$3);}
+        | SUBROUTINE stmt       {  $$ = opr(PASM_LABEL,2,$1,$2);}
         | FUNCT SUBROUTINE      {$$ = opr($1,1,$2); }
         | PASM_CR                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | VARIABLE '=' expr       { $$ = opr(PICLANG_POP, 2, id($1), $3); }

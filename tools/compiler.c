@@ -45,14 +45,7 @@ int ex(nodeType *p) {
   case typeOpr:
     switch(p->opr.oper) {
     case PICLANG_EXIT:
-      if(p->opr.nops == 0)
-	{
-	  write_assembly(assembly_file,"\tpushl\t0\n",0); 
-	  insert_code(PICLANG_PUSHL);
-	  insert_code(0);
-	}
-      else
-	deal_with_arguments(&p->opr);
+      deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\texit\n",0); 
       insert_code(PICLANG_EXIT);
       break;
@@ -62,7 +55,7 @@ int ex(nodeType *p) {
     case PICLANG_CALL:
       {
 	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
-	write_assembly(assembly_file,"\tcall\t%s ;%d\n",subroutine->name,subroutine->index);
+	write_assembly(assembly_file,"\tcall\t<%s>\n",subroutine->name);
 	insert_code(PICLANG_CALL);
 	insert_label(PASM_SUBROUTINE,subroutine->index);
 	break;
@@ -79,12 +72,16 @@ int ex(nodeType *p) {
 	    fprintf(stderr,"Could not declare subroutine: %s\n",subroutine_name);
 	    exit(-1);
 	  }
-	write_assembly(assembly_file,"%s: ;%d\n", subroutine->name,subroutine->index);
+	write_assembly(assembly_file,"%s:\n", subroutine->name);
 	insert_label(PICLANG_LABEL,lbl1);
 	deal_with_arguments(&p->opr);
 	if(strcmp(subroutine,"main") == 0 && p->opr.oper != PASM_LABEL)
 	  {
-	    write_assembly(assembly_file,"\texit\n");//eop will be written by the compile routine
+	    write_assembly(assembly_file,"\tpushl\t0x0\n",0); 
+	    insert_code(PICLANG_PUSHL);
+	    insert_code(0);
+	    write_assembly(assembly_file,"\texit\n",0); 
+	    insert_code(PICLANG_EXIT);
 	    break;
 	  }
 	if(p->opr.oper == PASM_LABEL)

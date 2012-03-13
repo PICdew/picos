@@ -110,7 +110,7 @@ imagdecimal {decimal}[iI]
                   return INTEGER;
                  }
 
-L{nonnegative}+ { return parse_subroutine(0,0); }
+{variable}\: { return parse_subroutine(0,1); }
 \<{variable}\>  { return parse_subroutine(1,1); }
 "main" { return parse_subroutine(0,0); }
 
