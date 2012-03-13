@@ -50,10 +50,26 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	    }
 	  if(word == 0xdead || word == 0xadde)
 	    continue;
-	  if(word &0xff)
-	    fprintf(assembly_file,"%c",(char)(word&0xff));
-	  if(word&0xff00)
-	    fprintf(assembly_file,"%c",(char)(word >> 8));
+	  if((word & 0xff != 0xad) && (word & 0xff != 0xde))
+	    {
+	      if(word & 0xff == 0)
+		{
+		  fprintf(assembly_file,"\"\n");
+		  have_string = false;
+		}
+	      else
+		fprintf(assembly_file,"%c",(char)(word&0xff));
+	    }
+	  if((word&0xff00 != 0xad00) && (word & 0xff00 != 0xde00))
+	    {
+	      if(word & 0xff00 == 0)
+		{
+		  fprintf(assembly_file,"\"\n");
+		  have_string = false;
+		}
+	      else
+		fprintf(assembly_file,"%c",(char)(word >> 8));
+	    }
 	  continue;
 	}
 
@@ -84,7 +100,7 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	      continue;
 	      break;
 	    default:
-	      fprintf(assembly_file,"\tUNK(%d,%d)",(int)asmb->opcode,(int)word);
+	      fprintf(assembly_file,"\tUNK(0x%x,0x%x)",(int)asmb->opcode,(int)word);
 	      break;
 	    }
 	}
@@ -135,6 +151,7 @@ void print_help()
   printf("Options:\n");
   printf("--help, -h :\t\t Displays this dialog.\n");
   printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");
+  printf("--block_size,- <file> :\t Sets the block size of the binary.\n");
 }
 
 int main(int argc, char **argv) 
@@ -164,6 +181,7 @@ int main(int argc, char **argv)
 	      fprintf(stderr,"Invalid block_size: %s\n",optarg);
 	      exit(-1);
 	    }
+	  break;
 	case 'h':
 	  print_help();
 	  return 0;
@@ -192,7 +210,7 @@ int main(int argc, char **argv)
       exit(-1);
     }
 
-  fseek(hex_file,FS_BUFFER_SIZE-sizeof(pcb)-2*sizeof(picos_size_t),SEEK_CUR);
+  fseek(hex_file,pcb.start_address*FS_BUFFER_SIZE,SEEK_SET);
   if(feof(hex_file))
     {
       fprintf(stderr,"Incomplete binary. No data.\n");
