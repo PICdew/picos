@@ -37,6 +37,7 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
       // String section?
       if(ftell(hex_file)>= pcb->string_address*FS_BUFFER_SIZE)
 	{
+	  char byte_counter;
 	  if(!have_string)
 	    {
 	      fprintf(assembly_file,"\t\"");
@@ -50,25 +51,20 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	    }
 	  if(word == 0xdead || word == 0xadde)
 	    continue;
-	  if((word & 0xff != 0xad) && (word & 0xff != 0xde))
+	  byte_counter = 0;
+	  for(;byte_counter < 2;byte_counter++)
 	    {
-	      if(word & 0xff == 0)
+	      if((word&0xff) != 0xad && (word & 0xff) != 0xde)
 		{
-		  fprintf(assembly_file,"\"\n");
-		  have_string = false;
+		  if(word & 0xff == 0)
+		    {
+		      fprintf(assembly_file,"\"\n");
+		      have_string = false;
+		    }
+		  else
+		    fprintf(assembly_file,"%c",(char)(word));
 		}
-	      else
-		fprintf(assembly_file,"%c",(char)(word&0xff));
-	    }
-	  if((word&0xff00 != 0xad00) && (word & 0xff00 != 0xde00))
-	    {
-	      if(word & 0xff00 == 0)
-		{
-		  fprintf(assembly_file,"\"\n");
-		  have_string = false;
-		}
-	      else
-		fprintf(assembly_file,"%c",(char)(word >> 8));
+	      word >>= 8;
 	    }
 	  continue;
 	}
