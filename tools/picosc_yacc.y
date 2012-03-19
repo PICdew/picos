@@ -257,9 +257,6 @@ int main(int argc, char **argv)
     printf("Welcome to the piclang compiler.\n");
   
   yyparse();
-  insert_code(PICLANG_PUSHL);
-  insert_code(PICLANG_SUCCESS);
-  insert_code(PICLANG_EXIT);
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");

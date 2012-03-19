@@ -123,11 +123,11 @@ int ex(nodeType *p) {
       label_counter++;
       break_to_label = lbl2;
       insert_code(PICLANG_JZ);
-      insert_code(lbl2);
+      insert_label(PASM_ADDR,lbl2);
       ex(p->opr.op[1]);
       write_assembly(assembly_file,"\tjmp\tL%03d\n", lbl1);
       insert_code(PICLANG_JMP);
-      insert_code(lbl1);
+      insert_label(PASM_ADDR,lbl1);
       write_assembly(assembly_file,"L%03d:\n", lbl2);
       insert_label(PICLANG_LABEL,lbl2);
       break_to_label = previous_break_to_label;
@@ -140,12 +140,12 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tjz\tL%03d\n", (lbl1 = label_counter));
 	label_counter++;
 	insert_code(PICLANG_JZ);
-	insert_code(lbl1);
+	insert_label(PASM_ADDR,lbl1);
 	ex(p->opr.op[1]);
 	write_assembly(assembly_file,"\tjmp\tL%03d\n", (lbl2 = label_counter));
 	label_counter++;
 	insert_code(PICLANG_JMP);
-	insert_code(lbl2);
+	insert_label(PASM_ADDR,lbl2);
 	write_assembly(assembly_file,"L%03d:\n", lbl1);
 	insert_label(PICLANG_LABEL,lbl1);
 	ex(p->opr.op[2]);
@@ -156,7 +156,7 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tjz\tL%03d\n", (lbl1 = label_counter));
 	label_counter++;
 	insert_code(PICLANG_JZ);
-	insert_code(lbl1);
+	insert_label(PASM_ADDR,lbl1);
 	ex(p->opr.op[1]);
 	write_assembly(assembly_file,"L%03d:\n", lbl1);
 	insert_label(PICLANG_LABEL,lbl1);

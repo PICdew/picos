@@ -26,7 +26,8 @@ enum LANGUAGE_TOKENS{
   PASM_FIN,
   PASM_FEOF,
   PASM_STATEMENT_DELIM,
-  PASM_LABEL
+  PASM_LABEL/* Tags an address as being referenced by a label*/,
+  PASM_ADDR/*Address reference*/
  };
   
 
