@@ -15,9 +15,11 @@ int label_counter = 0;
 static picos_size_t get_next_word(FILE *hex_file)
 {
   picos_size_t retval = -1;
-  if(hex_file != NULL)
-    fread(&retval,sizeof(picos_size_t),1,hex_file);
 
+  if(hex_file == NULL || feof(hex_file))
+    return retval;
+
+  fread(&retval,sizeof(picos_size_t),1,hex_file);
   return retval;
 }
 
@@ -34,6 +36,8 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
   while(!feof(hex_file))
     {
       word = get_next_word(hex_file);
+      if(word == 0xdead || word == 0xadde)
+	continue;
       // String section?
       if(ftell(hex_file)>= pcb->string_address*FS_BUFFER_SIZE)
 	{
@@ -44,11 +48,6 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	      have_string = 1;
 	    }
 	  have_string = 1;
-	  if(feof(hex_file))
-	    {
-	      fprintf(assembly_file,"\"\n");
-	      break;
-	    }
 	  if(word == 0xdead || word == 0xadde)
 	    continue;
 	  byte_counter = 0;
@@ -56,19 +55,25 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	    {
 	      if((word&0xff) != 0xad && (word & 0xff) != 0xde)
 		{
-		  if(word & 0xff == 0)
+		  if((word & 0xff) == 0)
 		    {
 		      fprintf(assembly_file,"\"\n");
 		      have_string = false;
 		    }
 		  else
-		    fprintf(assembly_file,"%c",(char)(word));
+		    fprintf(assembly_file,"%c",(char)(word&0xff));
 		}
 	      word >>= 8;
 	    }
+	  if(feof(hex_file))
+	    break;
 	  continue;
+	}// End string parser
+      if((word & 0xff) == 0xde)
+	{
+	  word >>= 8;
+	  fseek(hex_file,11,SEEK_CUR);
 	}
-
       asmb = opcode2assembly((int)word);
       if(asmb == NULL)
 	{

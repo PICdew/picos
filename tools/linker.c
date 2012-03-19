@@ -1,5 +1,5 @@
 #include "pasm.h"
-
+#include <stdlib.h>
 
 const struct subroutine_map* lookup_subroutine(int index)
 {
@@ -34,6 +34,21 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
   return -1;
 }
 
+int get_subroutine_addr(struct compiled_code *code_head, struct compiled_code *code)
+{
+  const struct subroutine_map *subroutine = lookup_subroutine(code->label);
+  if(subroutine == NULL || subroutine->label == -1)
+    {
+      if(subroutine == NULL)
+	fprintf(stderr,"Undefined reference: #%d\n",code->label);
+      else
+	fprintf(stderr,"Undefined reference: %s\n",subroutine->name);
+      exit(-1);
+    }
+  return lookup_label(code_head, subroutine->label);
+  
+}
+
 void resolve_labels(struct compiled_code* code)
 {
   const struct compiled_code* code_head = code;
@@ -55,18 +70,7 @@ void resolve_labels(struct compiled_code* code)
 	      // 2.) Otherwise the next byte is the label itself, which is
 	      //     used to find the target *address*.
 	      if(code->next->val == PASM_SUBROUTINE)
-		{
-		  const struct subroutine_map *subroutine = lookup_subroutine(code->next->label);
-		  if(subroutine == NULL || subroutine->label == -1)
-		    {
-		      if(subroutine == NULL)
-			fprintf(stderr,"Undefined reference: #%d\n",code->next->label);
-		      else
-			fprintf(stderr,"Undefined reference: %s\n",subroutine->name);
-		      exit(-1);
-		    }
-		  label_addr = lookup_label(code_head, subroutine->label);
-		}
+		label_addr = get_subroutine_addr(code_head, code->next);
 	      else
 		label_addr = lookup_label(code_head, code->next->label);
 	      if(label_addr < 0)
@@ -82,12 +86,11 @@ void resolve_labels(struct compiled_code* code)
 	case PICLANG_SIGNAL:
 	  if(code->next != NULL && code->next->next != NULL)
 	    {
-	      int label_addr = lookup_label(code_head, code->next->next->val);
-	      if(label_addr < 0)
-		{
-		  fprintf(stderr,"Could not resolve label %d\n",code->next->next->val);
-		  return;
-		}
+	      int label_addr;
+	      if(code->next->next->val == PASM_SUBROUTINE)
+		label_addr = get_subroutine_addr(code_head, code->next->next);
+	      else
+		label_addr = lookup_label(code_head, code->next->next->label);
 	      code->next->next->val = (picos_size_t)label_addr;
 	      code = code->next->next;
 	      continue;
