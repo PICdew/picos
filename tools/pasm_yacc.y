@@ -86,6 +86,7 @@ stmt:
         | CALL SUBROUTINE      { $$ = opr(PICLANG_CALL,1,$2); }
         | SUBROUTINE stmt       {  $$ = opr(PASM_LABEL,2,$1,$2);}
         | FUNCT SUBROUTINE      {$$ = opr($1,1,$2); }
+        | FUNCT expr ',' SUBROUTINE      {$$ = opr($1,2,$2,$4); }
         | PASM_CR                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | VARIABLE '=' expr       { $$ = opr(PICLANG_POP, 2, id($1), $3); }
 | VARIABLE '=' STRING       { $$ = opr(PICLANG_POP, 2, id($1), con(handle_string($3->str.string))); }

@@ -253,7 +253,7 @@ int ex(nodeType *p) {
 	    fprintf(stderr,"Invalid subroutine: %s\n",p->opr.op[1]->str.string);
 	    yyerror("Syntax error");
 	  }
-	write_assembly(assembly_file,"\tsignal %d, %s\n", p->opr.op[0]->con.value, subroutine->name);
+	write_assembly(assembly_file,"\tsignal %d, <%s>\n", p->opr.op[0]->con.value, subroutine->name);
 	insert_code(PICLANG_SIGNAL);
 	insert_code(p->opr.op[0]->con.value);
 	insert_label(PASM_SUBROUTINE,subroutine->index);

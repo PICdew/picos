@@ -228,7 +228,7 @@ void PICLANG_call_push(picos_size_t val)
 
 picos_size_t PICLANG_call_pop()
 {
-  if(curr_process.call_stack_head >= PICLANG_CALL_STACK_SIZE)
+  if(curr_process.call_stack_head > PICLANG_CALL_STACK_SIZE|| curr_process.call_stack_head == 0)
     {
       PICLANG_error(PICLANG_STACK_OVERFLOW);
       return 0;

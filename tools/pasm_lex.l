@@ -41,8 +41,9 @@ exponent [eE][+-]{nonnegative}*
 decimal {zero}?{integer}*\.{nonnegative}*{exponent}?
 alpha [a-zA-Z]
 variable [a-zA-KM-Z]({nonnegative}|{alpha}|[_])*
+label L{nonnegative}*
 hex 0x[0-9a-fA-F]*
-octal 0[0-9a-fA-F]*
+octal 0[0-8]*
 imagint {integer}[iI]
 imagdecimal {decimal}[iI]
 
@@ -111,7 +112,9 @@ imagdecimal {decimal}[iI]
                  }
 
 {variable}\: { return parse_subroutine(0,1); }
+{label}\: { return parse_subroutine(0,1); }
 \<{variable}\>  { return parse_subroutine(1,1); }
+{label}* {return parse_subroutine(0,0);}
 "main" { return parse_subroutine(0,0); }
 
 
