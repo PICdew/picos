@@ -228,7 +228,7 @@ void PICLANG_call_push(picos_size_t val)
 
 picos_size_t PICLANG_call_pop()
 {
-  if(curr_process.call_stack_head > PICLANG_CALL_STACK_SIZE|| curr_process.call_stack_head == 0)
+  if(curr_process.call_stack_head > PICLANG_CALL_STACK_SIZE || curr_process.call_stack_head == 0)
     {
       PICLANG_error(PICLANG_STACK_OVERFLOW);
       return 0;
@@ -730,9 +730,13 @@ void PICLANG_next()
       }
     case PICLANG_JZ:case PICLANG_JMP:case PICLANG_CALL:
       {
+	b = curr_process.pc;
 	a = PICLANG_get_next_word();
 	if(curr_process.status != PICLANG_SUCCESS)
-	  break;
+	  {
+	    curr_process.pc = b;
+	    break;
+	  }
 	if(command == PICLANG_CALL)
 	  {
 	    PICLANG_call_push(curr_process.pc);
@@ -742,11 +746,24 @@ void PICLANG_next()
 	  curr_process.pc = a;
 	else if((curr_process.bitmap & PICLANG_ZERO) == 0)
 	  curr_process.pc = a;
+	if(curr_process.status != PICLANG_SUCCESS)
+	  {
+	    curr_process.pc = b;
+	    break;
+	  }
 	break;
       }
     case PICLANG_RETURN:
-      curr_process.pc = PICLANG_call_pop();
-      break;
+      {
+	b = curr_process.pc;
+	curr_process.pc = PICLANG_call_pop();
+	if(curr_process.status != PICLANG_SUCCESS)
+	  {
+	    curr_process.pc = b;
+	    break;
+	  }
+	break;
+      }
     case PICLANG_EXIT:
       PICLANG_save(PICLANG_pop());
       break;

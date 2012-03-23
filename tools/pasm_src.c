@@ -197,6 +197,7 @@ struct assembly_map opcodes[] = {
   {"mount", PICLANG_MOUNT, 2},
   {"lock",PICLANG_MUTEX_LOCK,0},
   {"unlock",PICLANG_MUTEX_UNLOCK,0},
+  {"call",PICLANG_CALL,1},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 

@@ -128,5 +128,8 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
 #define COMPILE_MAX_WIDTH 8//max width
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables);
 
+void create_lst_file(FILE *lst_file, const struct compiled_code *code_to_lst, const struct compiled_code *strings_to_list);
+void create_lnk_file(FILE *lnk_file, const struct compiled_code *code_to_lst);
+
 #endif
 

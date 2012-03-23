@@ -139,7 +139,7 @@ expr:
 
 
 
-static const char short_options[] = "a:b:e:hl:o:";
+static const char short_options[] = "a:b:e:hl:n:o:";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
@@ -149,6 +149,7 @@ static struct option long_options[] =
 	       {"eeprom",1,NULL, 'e'},
 	       {"binary",1,NULL,'o'},
 	       {"list",1,NULL,'l'},
+	       {"linkage",1,NULL,'n'},
 	       {"buffer_size",1,NULL,'b'},
                {0, 0, 0, 0}
              };
@@ -171,13 +172,17 @@ void print_help()
   printf("                     \t with the Hi Tech C Compiler.\n");
   printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
   printf("--list, -l <file> :\t Outputs a list of program addresses (PC values) for each assembly entry.\n");
+  printf("--linkage, -n <file> :\t Outputs a list of linkage for jumps and calls.\n");
   printf("--block_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)");
 }
+
+
 
 int main(int argc, char **argv) 
 {
   char hex_buffer[45];
   FILE *hex_file = NULL, *eeprom_file = NULL, *binary_file = NULL;
+  FILE *lnk_file = NULL;
   char opt;
   int opt_index;
   picos_size_t piclang_bitmap = 0;
@@ -222,6 +227,11 @@ int main(int argc, char **argv)
 	  lst_file = fopen(optarg,"w");
 	  if(lst_file == NULL)
 	    lst_file = stdout;
+	  break;
+	case 'n':
+	  lnk_file = fopen(optarg,"w");
+	  if(lnk_file == NULL)
+	    lnk_file = stdout;
 	  break;
 	case 'o':
 	  binary_file = fopen(optarg,"w");
@@ -275,84 +285,9 @@ int main(int argc, char **argv)
 	}
     }
 
-  if(lst_file != NULL)
-    {
-      struct assembly_map* curr;
-      struct compiled_code *first_string = NULL;
-      int code_counter = 0;
-      curr_code = the_code;
-      for(;curr_code != NULL;curr_code = curr_code->next)
-	{
-	  if(curr_code->type == typePCB)
-	    continue;
-	  if(curr_code->type == typeStr)
-	    {
-	      continue;
-	    }
-	  curr = opcode2assembly(curr_code->val);
-	  fprintf(lst_file,"(%d)\t",code_counter++);
-	  switch(curr->opcode)
-	    {
-	    case PICLANG_NUM_COMMANDS:
-	      if(curr_code->type == typeLabel)
-		{
-		  fprintf(lst_file,"L%03hu",curr_code->label);
-		  break;
-		}
-	      else if(curr_code->val == PICLANG_RETURN)
-		{
-		  fprintf(lst_file,"return");
-		  break;
-		}
-	      else if(curr_code->val == PICLANG_CALL)
-		{
-		  curr_code = curr_code->next;
-		  while(curr_code->next != NULL && curr_code->type == typeStr)
-		    curr_code = curr_code->next;
-		  fprintf(lst_file,"call %hu",curr_code->val);
-		  code_counter++;
-		  break;
-		}
-	    default:
-	      fprintf(lst_file,"%s (0x%x) ",curr->keyword,curr_code->val);
-	      break;
-	    }
-	  if(curr->has_arg)
-	    {
-	      curr_code = curr_code->next;
-	      code_counter++;
-	      fprintf(lst_file," %d",curr_code->val);
-	      if(curr->has_arg > 1)
-		{
-		  int arg_counter = 1;
-		  for(;arg_counter < curr->has_arg;arg_counter++)
-		    {
-		      code_counter++;
-		      curr_code = curr_code->next;
-		      fprintf(lst_file,", %d",curr_code->val);
-		    }
-		}
-	    }
-	  fprintf(lst_file,"\n");
-	}
-      // print strings
-      first_string = the_strings;
-      if(first_string != NULL)
-	fprintf(lst_file,"Strings:\n\"");
-      for(;first_string != NULL;first_string = first_string->next)
-	{
-	  if(first_string->val == 0)
-	    {
-	      fprintf(lst_file,"\"\n");
-	      if(first_string->next != NULL)
-		fprintf(lst_file,"\"");
-	    }
-	  else if(first_string->val == '"')
-	    fprintf(lst_file,"\"%c",first_string->val);
-	  else
-	    fprintf(lst_file,"%c",first_string->val);
-	}
-    }
+  create_lst_file(lst_file, the_code, the_strings);
+  
+  create_lnk_file(lnk_file, the_code);
   
   FreeCode(the_code);
   return 0;

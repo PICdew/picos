@@ -101,7 +101,7 @@ int ex(nodeType *p) {
 	}
       write_assembly(assembly_file,"\tjmp\tL%03d\n", continue_to_label);
       insert_code(PICLANG_JMP);
-      insert_code(continue_to_label);
+      insert_label(PASM_ADDR,continue_to_label);
       break;
     case PASM_BREAK:
       if(break_to_label < 0)
