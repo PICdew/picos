@@ -441,7 +441,7 @@ void PICLANG_next()
 	
 	// string section
 	b -= ARG_SIZE + picos_processes[picos_curr_process].block_size;
-	PICLANG_next_dereference(b,command);
+	PICLANG_next_dereference(b+a,command);
 	break;
       }
     case PICLANG_BSL: case PICLANG_BSR:// bit shifts
