@@ -36,10 +36,9 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
   while(!feof(hex_file))
     {
       word = get_next_word(hex_file);
-      /*if(word == 0xdead || word == 0xadde)
-	continue;*/
-
-      if((word && 0xff == 0xde) || (word && 0xff == 0xad))
+      if(word == 0xdead || word == 0xadde)
+	continue;
+      if(((word & 0xff) == 0xde) || ((word & 0xff) == 0xad))
 	{
 	  fseek(hex_file,-1,SEEK_CUR);
 	  continue;
