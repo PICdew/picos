@@ -1,8 +1,18 @@
 def <error_out>
 {
   clear();
-  sprint("ERRNO ");
-  putd(errno);
+  if(errno == 12)
+    {
+      sprint("Could not find");
+      getch();pop();
+      clear();
+      sprint(filename);
+    }
+  else
+    {
+      sprintf("ERRNO: ");
+      putd(errno);
+    }
   exit();
 }
 
@@ -20,6 +30,9 @@ def <adv>
 def <main>
 {
   filename = argv[1];
+  fh = fopen(filename);
+  if(errno != 0)
+    call <error_out>;
   sprint("Next = n");
   sprint("Quit = q");
   call <adv>;
@@ -30,9 +43,6 @@ def <main>
   sprint(filename);
   call <adv>;
   clear();
-  fh = fopen(filename);
-  if(errno != 0)
-    call <error_out>;
   while(fread(fh) != feof)
     {
       clear();
