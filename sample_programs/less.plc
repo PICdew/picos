@@ -1,3 +1,11 @@
+def <error_out>
+{
+  clear();
+  sprint("ERRNO ");
+  putd(errno);
+  exit();
+}
+
 def <adv>
 {
   blah = getch();
@@ -23,6 +31,8 @@ def <main>
   call <adv>;
   clear();
   fh = fopen(filename);
+  if(errno != 0)
+    call <error_out>;
   while(fread(fh) != feof)
     {
       clear();

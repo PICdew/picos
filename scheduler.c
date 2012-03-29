@@ -54,6 +54,7 @@ thread_id_t thread_allocate()
   picos_processes[retval].addr = PICOS_END_OF_THREADS;
   picos_processes[retval].expires = 0;
   picos_processes[retval].signal_sent = PICOS_NUM_SIGNALS;
+  picos_processes[retval].piclang_errno = SUCCESS;
   picos_processes[retval].next = picos_wait_queue;
   if(thread_valid_id(picos_wait_queue))
     picos_processes[picos_wait_queue].previous = retval;

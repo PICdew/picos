@@ -56,7 +56,7 @@ void yyerror(char *s);
 
 %token WHILE BREAK CONTINUE IF CALL SUBROUTINE
 %token STRING RETURN DEFINE EXIT 
-%token PASM_CR PASM_POP ARGV ARGC FIN FEOF STATEMENT_DELIM
+%token PASM_CR PASM_POP ARGV ARGC ERRNO FIN FEOF STATEMENT_DELIM
 
 %nonassoc IFX
 %nonassoc ELSE
@@ -107,6 +107,7 @@ expr:
         | VARIABLE              { $$ = id($1); }
         | STRING                { $$ = con(handle_string($1->str.string)); }
         | ARGC                  { $$ = opr(PICLANG_ARGC,0); }
+        | ERRNO                  { $$ = opr(PICLANG_ERRNO,0); }
         | FIN                   { $$ = con(ARG_SIZE); }
         | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }

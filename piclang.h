@@ -134,6 +134,7 @@ enum PICLANG_COMMANDS
     PICLANG_MOUNT/* Mount a directory */,
     PICLANG_MUTEX_LOCK/* Lock thread */,
     PICLANG_MUTEX_UNLOCK/* Unlock thread*/,
+    PICLANG_ERRNO/* Push program's errno onto stack*/,
     PICLANG_NUM_COMMANDS
   };
 
