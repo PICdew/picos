@@ -32,7 +32,7 @@ enum LANGUAGE_TOKENS{
   
 
 
-typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubroutine, typePCB } nodeEnum;
+typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubroutine, typePCB, typePreproc} nodeEnum;
 // typeLabel is for label for jumps
 // typeCode is for compiled code
 

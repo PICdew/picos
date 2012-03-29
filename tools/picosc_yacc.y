@@ -52,10 +52,10 @@ void yyerror(char *s);
 
 %token <iValue> INTEGER FUNCT
 %token <variable> VARIABLE
-%type <nPtr> stmt expr stmt_list STRING SUBROUTINE
+%type <nPtr> stmt expr stmt_list STRING SUBROUTINE PREPROC_KEYWORD
 
 %token WHILE BREAK CONTINUE IF CALL SUBROUTINE
-%token STRING RETURN DEFINE EXIT 
+%token STRING RETURN DEFINE EXIT PREPROC_KEYWORD
 %token PASM_CR PASM_POP ARGV ARGC ERRNO FIN FEOF STATEMENT_DELIM
 
 %nonassoc IFX
@@ -94,8 +94,11 @@ stmt:
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(PASM_IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(PASM_IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
+        | PREPROC_KEYWORD stmt {$$ = opr(PASM_STATEMENT_DELIM, 0); }
         | EXIT {YYACCEPT;}
         ;
+
+
 
 stmt_list:
           stmt                  { $$ = $1; }
