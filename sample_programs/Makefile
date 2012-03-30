@@ -27,7 +27,7 @@ all:
 	$(COMP) -b $(BLOCK_SIZE) -o fs/sleep sleep.plc
 
 clean:
-	rm -f fs/*
+	-rm -f fs/*
 
 install:
 	cp fs/proc/dump $(INTERFACE)/$(IMAGE_NAME)

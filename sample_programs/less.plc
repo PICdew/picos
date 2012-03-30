@@ -1,12 +1,16 @@
-#define a=3;
+def <init>
+{
+  const FNF = 12;
+  const filename = argv[1];
+}
 
 def <error_out>
 {
   clear();
-  if(errno == 12)
+  if(errno == FNF)
     {
       sprint("Could not find");
-      getch();pop();
+      getch();drop();
       clear();
       sprint(filename);
     }
@@ -31,7 +35,7 @@ def <adv>
 
 def <main>
 {
-  filename = argv[1];
+  call <init>;
   fh = fopen(filename);
   if(errno != 0)
     call <error_out>;

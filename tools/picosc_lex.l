@@ -75,6 +75,7 @@ imagdecimal {decimal}[iI]
 "fin"           return FIN;
 "feof"          return FEOF;
 "errno"         return ERRNO;
+"const"         return CONST;
 
 "SIGINT"       { yylval.iValue = PICOS_SIGINT; return INTEGER;}
 

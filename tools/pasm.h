@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <limits.h>
+#include <stdbool.h>
 
 enum LANGUAGE_TOKENS{
   PASM_WHILE = PICLANG_NUM_COMMANDS,
@@ -27,14 +28,19 @@ enum LANGUAGE_TOKENS{
   PASM_FEOF,
   PASM_STATEMENT_DELIM,
   PASM_LABEL/* Tags an address as being referenced by a label*/,
-  PASM_ADDR/*Address reference*/
+  PASM_ADDR/*Address reference*/,
+  PASM_INITIALIZATION/* Initial definition. This allows the compiler to differentiate the first definition of a variable and it's modification later.*/
  };
   
 
 
+// Node types
 typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubroutine, typePCB, typePreproc} nodeEnum;
 // typeLabel is for label for jumps
 // typeCode is for compiled code
+
+// Data types
+enum { data_int};
 
 /* constants */
 typedef struct {
@@ -45,6 +51,8 @@ typedef struct {
 typedef struct idNodeType_NODE {
   int i;// index in page memory (zero indexed), when viewed as flat memory
   char name[FILENAME_MAX];// variable name used in program
+  int type;// Type of variable. See data types enum above
+  bool constant;
   struct idNodeType_NODE *next;
 } idNodeType;
 
@@ -99,7 +107,9 @@ struct assembly_map
 };
 
 nodeType *opr(int oper, int nops, ...);
-nodeType *id(idNodeType var);
+nodeType *id(idNodeType var);// creates a non-constant variable
+nodeType *const_id(idNodeType var, bool is_const);// creates a variable which may be made either constant or non-constant
+nodeType *full_id(idNodeType var, bool is_const, int data_type);// data_type: see enum above.
 nodeType *con(int value);
 
 struct assembly_map* keyword2assembly(const char *keyword);
