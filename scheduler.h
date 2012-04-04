@@ -27,6 +27,7 @@ typedef struct {
   char block_size;// block size of FS in which the file is stored
   picos_size_t current_page;// Index of the page of the program currently loaded.
   picos_signal_t signal_sent;// value of the last sent signal
+  char piclang_errno;// Error number that does not cause the program to exit, unlike PICLANG_exception
   thread_id_t next;// next thread in queue
   thread_id_t previous;// previous thread in queue
 }picos_thread;

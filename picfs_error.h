@@ -47,7 +47,8 @@ enum ERROR_CODES{
   THREAD_INVALID_SIGNAL
 };
 
-volatile char error_code;
+typedef unsigned char picos_error_t;
+volatile picos_error_t error_code;
 
 /**
  * Sets 'error_code' to the provided value and returns -1.

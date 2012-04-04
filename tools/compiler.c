@@ -8,11 +8,14 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
+#include <math.h>
 
 extern void yyerror(char*);
 extern char *yytext;
 extern YYLTYPE yylloc;
 picos_size_t label_counter = 0;
+
+idNodeType* resolve_variable(const char *name);
 
 static void deal_with_arguments(oprNodeType *opr)
 {
@@ -37,11 +40,15 @@ int ex(nodeType *p) {
     insert_code(PICLANG_PUSHL);
     insert_code(p->con.value);
     break;
-  case typeId:        
-    write_assembly(assembly_file,"\tpush\t%s\n", p->id.name);
-    insert_code(PICLANG_PUSH);
-    insert_code(resolve_variable(p->id.name));
-    break;
+  case typeId:  
+    {
+      idNodeType *var = resolve_variable(p->id.name);
+      picos_size_t id = (var == NULL)? -1 : var->i;
+      write_assembly(assembly_file,"\tpush\t%s\n", p->id.name);
+      insert_code(PICLANG_PUSH);
+      insert_code(id);
+      break;
+    }
   case typeOpr:
     switch(p->opr.oper) {
     case PICLANG_EXIT:
@@ -75,7 +82,7 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"%s:\n", subroutine->name);
 	insert_label(PICLANG_LABEL,lbl1);
 	deal_with_arguments(&p->opr);
-	if(strcmp(subroutine,"main") == 0 && p->opr.oper != PASM_LABEL)
+	if(strcmp(subroutine->name,"main") == 0 && p->opr.oper != PASM_LABEL)
 	  {
 	    write_assembly(assembly_file,"\tpushl\t0x0\n",0); 
 	    insert_code(PICLANG_PUSHL);
@@ -185,6 +192,10 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\targc\n");
       insert_code(PICLANG_ARGC);
       break;
+    case PICLANG_ERRNO:
+      write_assembly(assembly_file,"\terrno\n");
+      insert_code(PICLANG_ERRNO);
+      break;
     case PICLANG_PRINTL:
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);
@@ -210,22 +221,41 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
     case PICLANG_DROP:
-      write_assembly(assembly_file,"\tfdrop\n");
+      write_assembly(assembly_file,"\tdrop\n");
       insert_code(PICLANG_DROP);
       break;
     case PICLANG_SWAP:
-      write_assembly(assembly_file,"\tfswap\n");
+      write_assembly(assembly_file,"\tswap\n");
       insert_code(PICLANG_SWAP);
       break;
-    case PICLANG_POP:
-      if(p->opr.nops == 0)
+    case PICLANG_POP: case PASM_INITIALIZATION:
+      {
+	idNodeType *var = NULL;
+	if(p->opr.nops == 0)
+	  break;
+	var = resolve_variable(p->opr.op[0]->id.name);
+	if(var == NULL)
+	  {
+	    fprintf(stderr,"Compiler error: Variable list uninitialized");
+	    exit(1);
+	  }
+	if(p->opr.nops > 1)
+	  ex(p->opr.op[1]);
+	if(p->opr.oper == PASM_INITIALIZATION)
+	  {
+	    var->constant = p->opr.op[0]->id.constant;
+	    var->type = p->opr.op[0]->id.type;
+	  }
+	else if(p->opr.oper != PASM_INITIALIZATION && var->constant)
+	  {
+	    fprintf(stdout,"error: assignment of read-only variable '%s'\n",p->opr.op[0]->id.name);
+	    exit(1);
+	  }
+	write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
+	insert_code(PICLANG_POP);
+	insert_code(var->i);
 	break;
-      if(p->opr.nops > 1)
-	ex(p->opr.op[1]);
-      write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
-      insert_code( PICLANG_POP);
-      insert_code(resolve_variable(p->opr.op[0]->id.name));
-      break;
+      }
     case PICLANG_UMINUS:
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tneg\n");
@@ -497,7 +527,7 @@ int handle_string(const char *pStr)
   return retval;
 }
 
-nodeType *id(idNodeType variable_node) {
+nodeType *full_id(idNodeType variable_node, bool is_const, int data_type) {
     nodeType *p;
     size_t nodeSize;
 
@@ -509,11 +539,16 @@ nodeType *id(idNodeType variable_node) {
     /* copy information */
     p->type = typeId;
     p->id.i = variable_node.i;
-    strcpy(p->id.name, variable_node.name);
+    strncpy(p->id.name, variable_node.name,FILENAME_MAX);
     p->id.next = NULL;
-
+    p->id.type = data_type;
+    p->id.constant = is_const;
     return p;
 }
+
+nodeType *const_id(idNodeType variable_node, bool is_const){return full_id(variable_node, is_const,data_int);}
+
+nodeType *id(idNodeType variable_node) { return const_id(variable_node,false);}
 
 nodeType *opr(int oper, int nops, ...) {
     va_list ap;
@@ -549,16 +584,24 @@ void freeNode(nodeType *p) {
     free (p);
 }
 
+void fline_message(FILE *file, char *s)
+{
+  if(file == NULL)
+    file = stdout;
+  fprintf(file, "(Line");
+  if(yylloc.first_line != yylloc.last_line)
+    fprintf(file,"s");
+  fprintf(file," %d",yylloc.first_line);
+  if(yylloc.first_line != yylloc.last_line)
+    fprintf(file," - %d",yylloc.last_line);
+  
+  fprintf(file,") %s ",s);
+}
+
 void yyerror(char *s) {
   extern char *yytext;
-  fprintf(stdout, "(Line");
-  if(yylloc.first_line != yylloc.last_line)
-    fprintf(stdout,"s");
-  fprintf(stdout," %d",yylloc.first_line);
-  if(yylloc.first_line != yylloc.last_line)
-    fprintf(stdout," - %d",yylloc.last_line);
-  
-  fprintf(stdout,") %s %s\n",s,yytext);
+  fline_message(stdout, s);
+  fprintf(stdout," %s\n",yytext);
   exit(-1);
 }
 
@@ -641,14 +684,14 @@ int count_variables()
   return retval;
 }
 
-int resolve_variable(const char *name)
+idNodeType* resolve_variable(const char *name)
 {
   int i;
   idNodeType *curr_variable = variable_list;
   if(name == NULL)
     {
       yyerror("Invalid variable name: NULL POINTER\n");
-      return -1;
+      return NULL;
     }
 
   if(variable_list == NULL)
@@ -657,13 +700,13 @@ int resolve_variable(const char *name)
       variable_list->i = 0;
       strcpy(variable_list->name,name);
       variable_list->next = NULL;
-      return 0;
+      return variable_list;
     }
   
   while(curr_variable != NULL)
     {
       if(strcmp(curr_variable->name,name) == 0)
-	return curr_variable->i;
+	return curr_variable;
       curr_variable = curr_variable->next;
     }
 
@@ -674,7 +717,7 @@ int resolve_variable(const char *name)
   curr_variable->next = variable_list;
   variable_list = curr_variable;
 
-  return curr_variable->i;
+  return curr_variable;
 }
 
 const struct subroutine_map* get_subroutine(const char *name)
@@ -854,5 +897,12 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_co
   if(eeprom_file != NULL)
     FPrintCode(eeprom_file,*the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
 
+}
+
+void preprocess(const char *keyword, nodeType *p)
+{
+  extern FILE *assembly_file;
+  write_assembly(";preproc '%s' with type #%d\n",keyword,p->type);
+  return;
 }
 

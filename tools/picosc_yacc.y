@@ -52,11 +52,11 @@ void yyerror(char *s);
 
 %token <iValue> INTEGER FUNCT
 %token <variable> VARIABLE
-%type <nPtr> stmt expr stmt_list STRING SUBROUTINE
+%type <nPtr> stmt expr stmt_list STRING SUBROUTINE PREPROC_KEYWORD
 
 %token WHILE BREAK CONTINUE IF CALL SUBROUTINE
-%token STRING RETURN DEFINE EXIT 
-%token PASM_CR PASM_POP ARGV ARGC FIN FEOF STATEMENT_DELIM
+%token STRING RETURN DEFINE EXIT PREPROC_KEYWORD CONST
+%token PASM_CR PASM_POP ARGV ARGC ERRNO FIN FEOF STATEMENT_DELIM
 
 %nonassoc IFX
 %nonassoc ELSE
@@ -87,6 +87,7 @@ stmt:
         | DEFINE SUBROUTINE  stmt       {  $$ = opr(PASM_DEFINE,2,$2,$3);}
         | PASM_CR '(' ')' ';'                 { $$ = opr(PICLANG_PRINTL,1,con(0xa));}
         | expr ';'                       { $$ = $1; }
+        | CONST VARIABLE '=' expr ';'    { $$ = opr(PASM_INITIALIZATION, 2, const_id($2,true), $4); }
         | VARIABLE '=' expr ';'          { $$ = opr(PICLANG_POP, 2, id($1), $3); }
         | WHILE '(' expr ')' stmt        { $$ = opr(PASM_WHILE, 2, $3, $5); }
         | BREAK ';'                      { $$ = opr(PASM_BREAK, 0); }
@@ -94,8 +95,11 @@ stmt:
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(PASM_IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(PASM_IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
+        | PREPROC_KEYWORD stmt {preprocess($1->str.string,$2); $$ = opr(PASM_STATEMENT_DELIM, 0); }
         | EXIT {YYACCEPT;}
         ;
+
+
 
 stmt_list:
           stmt                  { $$ = $1; }
@@ -107,6 +111,7 @@ expr:
         | VARIABLE              { $$ = id($1); }
         | STRING                { $$ = con(handle_string($1->str.string)); }
         | ARGC                  { $$ = opr(PICLANG_ARGC,0); }
+        | ERRNO                  { $$ = opr(PICLANG_ERRNO,0); }
         | FIN                   { $$ = con(ARG_SIZE); }
         | FEOF                   { $$ = con(((picos_size_t)(-1))); }
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }

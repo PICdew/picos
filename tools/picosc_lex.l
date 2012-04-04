@@ -74,6 +74,8 @@ imagdecimal {decimal}[iI]
 "argc"          return ARGC;
 "fin"           return FIN;
 "feof"          return FEOF;
+"errno"         return ERRNO;
+"const"         return CONST;
 
 "SIGINT"       { yylval.iValue = PICOS_SIGINT; return INTEGER;}
 
@@ -95,6 +97,16 @@ imagdecimal {decimal}[iI]
            yylval.iValue = (int)yytext[1];
            return INTEGER;
      }
+
+\#[a-zA-Z]* {
+             size_t text_len = strlen(&yytext[1]);
+             yylval.nPtr = (nodeType*)malloc(sizeof(nodeType));
+             strncpy(yylval.nPtr->str.string,&yytext[1],text_len);// minus 1 for the end quotation mark
+             yylval.nPtr->str.string[text_len] = 0;
+             yylval.nPtr->type = typePreproc;
+             return PREPROC_KEYWORD;
+            }
+
 
 0x[0-9a-fA-F][0-9a-fA-F]* { 
                  sscanf(yytext,"0x%x",&yylval.iValue);

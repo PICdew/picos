@@ -20,10 +20,16 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define PICLANG_error(code)  curr_process.status = code
+// PICLANG_exception sets the status of the program. This will cause the
+// program to end.
+#define PICLANG_exception(code)  curr_process.status = code
+
 char PICLANG_file_buffer_index;
 bit PICLANG_debug = false;
 PCB curr_process;
+
+picos_error_t PICLANG_get_errno();
+void PICLANG_set_errno();
 
 char PICLANG_load(file_handle_t fh)
 {
@@ -79,7 +85,7 @@ char PICLANG_resume(thread_id_t new_thread)
     return error_code;
   if(new_thread >= PICOS_MAX_PROCESSES)
     {
-      PICLANG_error(THREAD_TOO_MANY_THREADS);
+      PICLANG_exception(THREAD_TOO_MANY_THREADS);
       return THREAD_TOO_MANY_THREADS;
     }
   sram_addr = picos_processes[new_thread].addr - PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t);
@@ -173,7 +179,7 @@ picos_size_t PICLANG_get_next_word()
     
   if(curr_process.pc >= curr_process.string_address*curr_process.page_size/sizeof(picos_size_t))
     {
-      PICLANG_error(PICLANG_PC_OVERFLOW);
+      PICLANG_exception(PICLANG_PC_OVERFLOW);
       return -1;
     }
 
@@ -200,7 +206,7 @@ void PICLANG_pushl(picos_size_t val)
 {
   if(curr_process.stack_head >= PICLANG_STACK_SIZE)
     {
-      PICLANG_error(PICLANG_SEGV);
+      PICLANG_exception(PICLANG_SEGV);
       return;
     }
   curr_process.stack[curr_process.stack_head++] = val;
@@ -210,7 +216,7 @@ picos_size_t PICLANG_pop()
 {
   if(curr_process.stack_head > PICLANG_STACK_SIZE || curr_process.stack_head == 0)
     {
-      PICLANG_error(PICLANG_SEGV);
+      PICLANG_exception(PICLANG_SEGV);
       return 0;
     }
   return curr_process.stack[--curr_process.stack_head];
@@ -220,7 +226,7 @@ void PICLANG_call_push(picos_size_t val)
 {
   if(curr_process.call_stack_head >= PICLANG_CALL_STACK_SIZE)
     {
-      PICLANG_error(PICLANG_STACK_OVERFLOW);
+      PICLANG_exception(PICLANG_STACK_OVERFLOW);
       return;
     }
   curr_process.call_stack[curr_process.call_stack_head++] = val;
@@ -230,7 +236,7 @@ picos_size_t PICLANG_call_pop()
 {
   if(curr_process.call_stack_head > PICLANG_CALL_STACK_SIZE || curr_process.call_stack_head == 0)
     {
-      PICLANG_error(PICLANG_STACK_OVERFLOW);
+      PICLANG_exception(PICLANG_STACK_OVERFLOW);
       return 0;
     }
   return curr_process.call_stack[--curr_process.call_stack_head];
@@ -309,7 +315,7 @@ void PICLANG_next()
     {
       if(signal_valid_id(picos_processes[picos_curr_process].signal_sent) == false)
 	{
-	  PICLANG_error(THREAD_INVALID_SIGNAL);
+	  PICLANG_exception(THREAD_INVALID_SIGNAL);
 	  return;
 	}
       curr_process.pc = signals[picos_processes[picos_curr_process].signal_sent].sig_action_addr;
@@ -379,7 +385,7 @@ void PICLANG_next()
 	a = PICLANG_get_next_word();
 	b = PAGE_get(a,picos_curr_process);
 	if(error_code != SUCCESS)
-	  PICLANG_error(error_code);
+	  PICLANG_exception(error_code);
 	else
 	  PICLANG_pushl(b);
 	break;
@@ -409,7 +415,7 @@ void PICLANG_next()
 	sch1 = ARG_get(a);
 	if(sch1 < 0)
 	  {
-	    PICLANG_error(PICLANG_INVALID_PARAMETER);
+	    PICLANG_exception(PICLANG_INVALID_PARAMETER);
 	    break;
 	  }
 	b = (picos_size_t)sch1;
@@ -526,6 +532,9 @@ void PICLANG_next()
       SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
       PICLANG_file_buffer_index = 0;
       break;
+    case PICLANG_FSTAT:
+      FIX FSTAT!!!
+      break;
     case PICLANG_FOPEN:
       {
 	/*	mount_t mount;
@@ -546,6 +555,8 @@ void PICLANG_next()
 	    a -= ARG_SIZE + picos_processes[picos_curr_process].block_size;
 	    sch1 = PICLANG_next_dereference(a,command);
 	  }
+	if(sch1 == -1)
+	  PICLANG_set_errno();
 	PICLANG_pushl(sch1);
 	break;
       }
@@ -565,7 +576,7 @@ void PICLANG_next()
 	      error_code = SUCCESS;
 	    }
 	  else
-	    PICLANG_error(error_code);
+	    PICLANG_exception(error_code);
 	}
       PICLANG_pushl(b);
       break;
@@ -596,7 +607,7 @@ void PICLANG_next()
 	PICLANG_unblock();
 	if(ch1 < '0' || ch1 > '9')
 	  {
-	    PICLANG_error(ARG_INVALID);
+	    PICLANG_exception(ARG_INVALID);
 	    break;
 	  }
 	ch1 -= 0x30;
@@ -631,6 +642,9 @@ void PICLANG_next()
       PICLANG_system = PICLANG_pop();
       picos_processes[picos_curr_process].expires = 0;// will suspend for system call
       break;
+    case PICLANG_ERRNO:
+      PICLANG_pushl(PICLANG_get_errno());
+      break;
     case PICLANG_SIGNAL:
       a = PICLANG_get_next_word();// signal id
       b = PICLANG_get_next_word();// signal action
@@ -641,7 +655,7 @@ void PICLANG_next()
 	}
       sch1 = signal_assign(a,picos_curr_process,b);
       if(sch1 != 0)
-	PICLANG_error(error_code);
+	PICLANG_exception(error_code);
       break;
     case PICLANG_SLEEP:
       a = PICLANG_pop();
@@ -696,7 +710,7 @@ void PICLANG_next()
 	    PICLANG_pushl(thetime->seconds);
 	    break;
 	  default:
-	    PICLANG_error(PICLANG_INVALID_PARAMETER);
+	    PICLANG_exception(PICLANG_INVALID_PARAMETER);
 	    break;
 	  }
 	break;
@@ -711,7 +725,7 @@ void PICLANG_next()
 	    if(newtime.minutes > 59 || newtime.hours > 23)
 	      {
 		newtime.minutes = newtime.hours = 0;
-		PICLANG_error(TIME_INVALID);
+		PICLANG_exception(TIME_INVALID);
 	      }
 	  }
 	else
@@ -722,7 +736,7 @@ void PICLANG_next()
 	    if(newtime.month > 12 || newtime.day > 31)
 	      {
 		newtime.month = newtime.day = 0;
-		PICLANG_error(TIME_INVALID);
+		PICLANG_exception(TIME_INVALID);
 	      }
 	  }
 	TIME_set(&newtime);
@@ -816,8 +830,23 @@ void PICLANG_next()
       PICLANG_pushl(~a);
       break;
     case PICLANG_NUM_COMMANDS:default:
-      PICLANG_error(PICLANG_UNKNOWN_COMMAND);
+      PICLANG_exception(PICLANG_UNKNOWN_COMMAND);
       break;
     }
 
 }
+
+void PICLANG_set_errno()
+{
+  picos_processes[picos_curr_process].piclang_errno = error_code;
+  error_code = curr_process.status = SUCCESS;
+}
+
+picos_error_t PICLANG_get_errno()
+{
+  if(picos_curr_process == -1 || picos_curr_process >= PICOS_MAX_PROCESSES)
+    return SUCCESS;// not running anything
+  return picos_processes[picos_curr_process].piclang_errno;
+}
+
+
