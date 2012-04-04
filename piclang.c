@@ -532,6 +532,9 @@ void PICLANG_next()
       SRAM_read(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);
       PICLANG_file_buffer_index = 0;
       break;
+    case PICLANG_FSTAT:
+      FIX FSTAT!!!
+      break;
     case PICLANG_FOPEN:
       {
 	/*	mount_t mount;
