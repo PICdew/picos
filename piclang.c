@@ -536,7 +536,15 @@ void PICLANG_next()
       PICLANG_file_buffer_index = 0;
       break;
     case PICLANG_FSTAT:
-      IO_puts("Finish FSTAT");
+      a = PICLANG_pop();
+      sch1 = picfs_stat(a);
+      if(sch1 < 0)
+	{
+	  PICLANG_set_errno();
+	  sch1 = 0;
+	}
+      a = picfs_buffer[ST_SIZE] << 8;
+      a += picfs_buffer[ST_SIZE+1];
       break;
     case PICLANG_READDIR:
       a = PICLANG_pop();

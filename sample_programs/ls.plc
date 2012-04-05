@@ -1,6 +1,47 @@
+def <init>
+{
+  const FNF = 12;
+  const filename = argv[1];
+}
+
+def <error_out>
+{
+  clear();
+  if(errno == FNF)
+    {
+      sprint("Could not find");
+      getch();drop();
+      clear();
+      sprint(filename);
+    }
+  else
+    {
+      sprint("ERRNO: ");
+      putd(errno);
+    }
+  exit();
+}
+
+def <stat_this>
+{
+  fh = fopen(filename);
+  if(errno != 0)
+    call <error_out>;
+  size = fstat(fh);
+  putd(size);
+  fclose(fh);
+}
+
 def <main>
 {
   const buffer_size = 255;
+
+  if(argc > 1)
+    {
+      clear();
+      call <stat_this>;
+      exit();
+    }
 
   readdir(0);drop();
   idx = 0;

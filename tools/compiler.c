@@ -220,6 +220,10 @@ int ex(nodeType *p) {
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
+    case PICLANG_FSTAT:
+      deal_with_arguments(&p->opr);
+      write_assembly(assembly_file,"\tfstat\n");insert_code(PICLANG_FSTAT);
+      break;
     case PICLANG_READDIR:
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\treaddir\n");insert_code(PICLANG_READDIR);

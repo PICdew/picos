@@ -200,6 +200,7 @@ struct assembly_map opcodes[] = {
   {"call",PICLANG_CALL,1},
   {"readdir",PICLANG_READDIR,1},
   {"sprintn",PICLANG_SPRINTN,2},
+  {"fstat",PICLANG_FSTAT,1},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 
