@@ -1,5 +1,6 @@
 def <init>
 {
+  const buffer_size = 255;
   const FNF = 12;
   const filename = argv[1];
 }
@@ -34,7 +35,7 @@ def <stat_this>
 
 def <main>
 {
-  const buffer_size = 255;
+  call <init>;
 
   if(argc > 1)
     {

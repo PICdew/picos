@@ -275,7 +275,7 @@ signed char PICLANG_next_dereference(picos_size_t a/*ddress*/, picos_size_t comm
 	  picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address + (a/picos_processes[picos_curr_process].block_size));
 	  picfs_load(picos_processes[picos_curr_process].program_file);
 	}
-      array = picfs_buffer;
+      array = (const char*)picfs_buffer;
     }
 
   switch(command)
@@ -545,6 +545,7 @@ void PICLANG_next()
 	}
       a = picfs_buffer[ST_SIZE] << 8;
       a += picfs_buffer[ST_SIZE+1];
+      PICLANG_pushl(a);
       break;
     case PICLANG_READDIR:
       a = PICLANG_pop();
