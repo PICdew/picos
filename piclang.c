@@ -260,25 +260,42 @@ void PICLANG_unblock()
   curr_process.bitmap &= ~PICLANG_BLOCKING_CALL; 
 }
 
-signed char PICLANG_next_dereference(char a/*ddress*/, picos_size_t command)
+signed char PICLANG_next_dereference(picos_size_t a/*ddress*/, picos_size_t command)
 {
+  extern char ARG_buffer[ARG_SIZE];
   signed char retval = SUCCESS;
+  const char *array = ARG_buffer;
   SRAM_write(SRAM_PICLANG_NEXT_SWAP_ADDR,(void*)picfs_buffer,FS_BUFFER_SIZE);// swap this out
-  picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address + (a/picos_processes[picos_curr_process].block_size));
-  picfs_load(picos_processes[picos_curr_process].program_file);
-
-  a = a% picos_processes[picos_curr_process].block_size;
+  if(a >= ARG_SIZE)
+    {
+      a -= ARG_SIZE;
+      if(a >= picos_processes[picos_curr_process].block_size)
+	{
+	  a -= picos_processes[picos_curr_process].block_size;
+	  picfs_select_block(picos_processes[picos_curr_process].program_file,curr_process.string_address + (a/picos_processes[picos_curr_process].block_size));
+	  picfs_load(picos_processes[picos_curr_process].program_file);
+	}
+      array = picfs_buffer;
+    }
 
   switch(command)
     {
     case PICLANG_DEREF:
-      PICLANG_pushl(picfs_buffer[a]);
+      PICLANG_pushl(array[a]);
       break;
     case PICLANG_SPRINT:
-      IO_puts((const char*)(picfs_buffer+a));
+      IO_puts((const char*)(array+a));
       break;
+    case PICLANG_SPRINTN:
+      {
+	picos_size_t idx = 0;
+	picos_size_t nchars = PICLANG_pop();
+	for(;idx < nchars;idx++)
+	  putch(array[a+idx]);
+	break;
+      }
     case PICLANG_FOPEN:
-      retval = picfs_open((const char*)(picfs_buffer+a),curr_dir);
+      retval = picfs_open((const char*)(array+a),curr_dir);
     default:
       break;
     }
@@ -433,20 +450,6 @@ void PICLANG_next()
       {
 	a = PICLANG_pop();// array index
 	b = PICLANG_pop();// array starting address
-	if(b < ARG_SIZE)
-	  {
-	    PICLANG_pushl(*(ARG_buffer+a+b));
-	    break;
-	  }
-	else if(b < ARG_SIZE + picos_processes[picos_curr_process].block_size)
-	  {
-	    b -= ARG_SIZE;
-	    PICLANG_pushl(*(picfs_buffer+a+b));
-	    break;
-	  }
-	
-	// string section
-	b -= ARG_SIZE + picos_processes[picos_curr_process].block_size;
 	PICLANG_next_dereference(b+a,command);
 	break;
       }
@@ -533,7 +536,14 @@ void PICLANG_next()
       PICLANG_file_buffer_index = 0;
       break;
     case PICLANG_FSTAT:
-      FIX FSTAT!!!
+      IO_puts("Finish FSTAT");
+      break;
+    case PICLANG_READDIR:
+      a = PICLANG_pop();
+      sch1 = picfs_readdir(1,a);
+      if(sch1 != SUCCESS)
+	PICLANG_set_errno();
+      PICLANG_pushl(sch1);
       break;
     case PICLANG_FOPEN:
       {
@@ -614,26 +624,10 @@ void PICLANG_next()
 	PICLANG_pushl(ch1);
 	break;
       }
-    case PICLANG_SPRINT:
+    case PICLANG_SPRINT:case PICLANG_SPRINTN:
       {
 	// string addresses start with arguments then const strings in executable
 	/*string_pointer*/a = PICLANG_pop();
-	if(a < ARG_SIZE)
-	  {
-	    IO_puts(ARG_buffer + a);
-	    IO_flush();
-	    break;
-	  }
-	else if(a < ARG_SIZE + picos_processes[picos_curr_process].block_size)
-	  {
-	    // Reading picfs_buffer
-	    a -= ARG_SIZE;
-	    IO_puts((const char*)picfs_buffer + a);
-	    IO_flush();
-	    break;
-	  }
-	// Reading String from program
-	a -= ARG_SIZE + picos_processes[picos_curr_process].block_size;
 	PICLANG_next_dereference(a,command);
 	IO_flush();
 	break;

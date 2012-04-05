@@ -73,6 +73,7 @@ signed char picfs_load(file_handle_t fh);// Load a block of data from a file.
 signed char picfs_stat(file_handle_t fh);
 
 signed char picfs_chdir(char mount_point);
+signed char picfs_readdir(char mount_point, picos_size_t block_id);
 
 char picfs_is_open(file_handle_t fh); 
 /**

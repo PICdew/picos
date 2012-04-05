@@ -117,7 +117,7 @@ expr:
         | ARGV '[' expr ']'     { $$ = opr(PICLANG_ARGV,1,$3); }
         | PASM_POP '(' ')'      { $$ = opr(PICLANG_POP,0); }
         | FUNCT '(' expr ')'    { $$ = opr($1,1,$3); }
-        | FUNCT '(' INTEGER ',' SUBROUTINE ')' { $$ = opr($1,2,con($3),$5); }
+        | FUNCT '(' expr ',' SUBROUTINE ')' { $$ = opr($1,2,$3,$5); }
         | FUNCT '(' expr ',' expr  ')'    { $$ = opr($1,2,$3,$5); }
         | FUNCT '(' expr ',' expr ',' expr ')'    { $$ = opr($1,3,$3,$5,$7); }
         | FUNCT '(' ')'         { $$ = opr($1,0); }

@@ -135,6 +135,9 @@ enum PICLANG_COMMANDS
     PICLANG_MUTEX_LOCK/* Lock thread */,
     PICLANG_MUTEX_UNLOCK/* Unlock thread*/,
     PICLANG_ERRNO/* Push program's errno onto stack*/,
+    PICLANG_FSTAT/* Put file stat into picfs_buffer */,
+    PICLANG_READDIR/* Read directory entries into picfs_buffer */,
+    PICLANG_SPRINTN/* SPRINT only N characters */,
     PICLANG_NUM_COMMANDS
   };
 

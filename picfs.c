@@ -632,3 +632,73 @@ signed char picfs_chdir(char mount_point)
   curr_dir = mount_point;
   return SUCCESS;
 }
+
+signed char picfs_readdir(char mount_point, picos_size_t block_id)
+{
+  signed char retval = SUCCESS;
+  char ch, pointer;
+  char mount_point_mask = 1 << mount_point;
+  mount_t mount;
+  picos_dev_t dev;
+  picos_addr_t sram_addr,addr, inode;
+
+  if(picfs_fh_bitmap == 0)
+    return error_return(PICFS_ENFILE);
+
+  if((mount_point_mask & picfs_mtab_bitmap) != 0)
+    return error_return(PICFS_EBADF);
+
+  // Get Device address and ID info
+  sram_addr = mount_point*sizeof(mount_t) + SRAM_MTAB_ADDR;
+  SRAM_read(sram_addr,&mount,sizeof(mount_t));
+  dev = mount.device_id;
+
+  inode = mount.root_address + FS_SuperBlock_root_block;
+  device_read(inode,&ch,1,mount.device_id);
+  if(ch == 0)
+    return error_return(PICFS_NOENT);
+  
+  retval = picfs_getblock(&inode,mount_point,ch); // now contains inode's address
+  if(retval != SUCCESS)
+    return retval;
+  
+  inode += FS_INode_pointers;// now contains the first pointer
+  pointer = 0;
+  for(;pointer < FS_INode_pointers;pointer++,inode++)
+    {
+      char entrypos = 0;
+      device_read(inode,&ch,1,dev);//dir entry listing
+      if(ch == 0)
+	break;
+      retval = picfs_getblock(&addr,mount_point,ch);
+      if(retval != SUCCESS)
+	return retval;
+      
+      if(pointer == block_id)
+	{
+	  device_read(addr,&ch,1,dev);
+	  if(ch == 0)
+	    break;
+	  device_read(addr,(void*)picfs_buffer,mount.block_size,dev);// filename
+	  
+	  pointer = 0;
+	  while(pointer < mount.block_size)
+	    {
+	      ch = picfs_buffer[pointer];
+	      if(ch == 0)
+		return SUCCESS;
+	      picfs_buffer[pointer] = ' ';
+	      pointer += ch + 1;
+	      picfs_buffer[pointer] = ' ';
+	      pointer ++;
+	    }
+
+	  return SUCCESS;
+	}
+    }
+
+  return error_return(PICFS_EOF);
+
+}
+
+

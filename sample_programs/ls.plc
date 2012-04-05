@@ -1,0 +1,18 @@
+def <main>
+{
+  const buffer_size = 255;
+
+  readdir(0);drop();
+  idx = 0;
+  while(idx < buffer_size)
+    {
+      if(fin[idx] == 0)
+	break;
+      clear();
+      sprintn(16,fin+idx);
+      idx = idx + 16;
+      stop = getch();
+      if(stop == 'q')
+	break;
+    }
+}

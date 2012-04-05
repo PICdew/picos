@@ -220,6 +220,10 @@ int ex(nodeType *p) {
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tfread\n");insert_code(PICLANG_FREAD);
       break;
+    case PICLANG_READDIR:
+      deal_with_arguments(&p->opr);
+      write_assembly(assembly_file,"\treaddir\n");insert_code(PICLANG_READDIR);
+      break;
     case PICLANG_DROP:
       write_assembly(assembly_file,"\tdrop\n");
       insert_code(PICLANG_DROP);
@@ -298,6 +302,11 @@ int ex(nodeType *p) {
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tsprint\n");
       insert_code(PICLANG_SPRINT);
+      break;
+    case PICLANG_SPRINTN:
+      deal_with_arguments(&p->opr);
+      write_assembly(assembly_file,"\tsprintn\n");
+      insert_code(PICLANG_SPRINTN);
       break;
     case PICLANG_MORSE:
       deal_with_arguments(&p->opr);

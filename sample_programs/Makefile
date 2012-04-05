@@ -25,6 +25,7 @@ all:
 	$(COMP) -b $(BLOCK_SIZE) -o fs/echo echo.plc
 	$(COMP) -b $(BLOCK_SIZE) -o fs/less less.plc
 	$(COMP) -b $(BLOCK_SIZE) -o fs/sleep sleep.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/ls ls.plc
 
 clean:
 	-rm -f fs/*
