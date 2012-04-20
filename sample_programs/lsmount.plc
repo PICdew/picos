@@ -1,0 +1,27 @@
+def <init>
+{
+  const SUCCESS = 0;
+  const ERR = -1;
+}
+
+def <main>
+{
+  call <init>;
+  lsmount();
+  ch = fin;
+  
+  while(ch[0] != 0)
+    {
+      if(ch[0] == 0xa)
+	{
+	  getch();drop();
+	  clear();
+	}
+      else
+	{
+	  putch(ch[0]);
+	}
+      ch = ch + 1;
+    }
+    
+}

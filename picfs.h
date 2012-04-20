@@ -85,6 +85,11 @@ char picfs_is_open(file_handle_t fh);
  */
 void cat_file(const char *filename, offset_t fileptr,char mount_point, picos_dev_t output_device);
 
+/**
+ * Write information about mounted files systems to picfs_buffer
+ */
+void lsmount();
+
 // SRAM block assignments
 // These are the addresses (unsigned int) for temporary storage.
 #define SRAM_MTAB_ADDR 0 // First byte is number of devices mounted, After that is the mount table

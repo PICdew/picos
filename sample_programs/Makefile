@@ -26,6 +26,7 @@ all:
 	$(COMP) -b $(BLOCK_SIZE) -o fs/less less.plc
 	$(COMP) -b $(BLOCK_SIZE) -o fs/sleep sleep.plc
 	$(COMP) -b $(BLOCK_SIZE) -o fs/ls ls.plc
+	$(COMP) -b $(BLOCK_SIZE) -o fs/lsmount lsmount.plc
 
 clean:
 	-rm -f fs/*

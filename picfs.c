@@ -701,4 +701,43 @@ signed char picfs_readdir(char mount_point, picos_size_t block_id)
 
 }
 
+void lsmount()
+{
+  char *outbuf = (char*)picfs_buffer;
+  mount_t curr;
+  char mount_point, mount_mask;
+  picos_size_t addr;
+
+  if(outbuf == NULL)
+    return;
+
+  mount_point = 0;
+  if(FS_BUFFER_SIZE < 13*MTAB_ENTRY_MAX + 1)
+    {
+      if(FS_BUFFER_SIZE > 17)
+	strcat(outbuf,"Buffer to small.");
+      return;
+    }
+  
+  memset(outbuf,0,FS_BUFFER_SIZE*sizeof(char));
+  for(;mount_point < MTAB_ENTRY_MAX;mount_point++)
+    {
+      mount_mask = 1 << mount_point;
+      if((mount_mask & picfs_mtab_bitmap) != 0)
+	continue;
+
+      addr = sizeof(mount_t) * mount_point + SRAM_MTAB_ADDR;
+      memset(&curr,0,sizeof(mount_t));
+      SRAM_read(addr,&curr,sizeof(mount_t));
+      
+      *outbuf = '/';outbuf++;
+      hex_to_word(outbuf,mount_point);outbuf += 2;
+      *outbuf = ' ';outbuf++;
+      strcat(outbuf,"/dev/");outbuf += 5;
+      hex_to_word(outbuf,curr.device_id);outbuf += 2;
+      *outbuf = '\n';outbuf++;
+    }
+  *outbuf = 0;
+}
+
 

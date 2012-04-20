@@ -589,13 +589,9 @@ void PICLANG_next()
       b = sch1;
       if(sch1 < 0)
 	{
-	  if(error_code == PICFS_EOF)
-	    {
-	      b = -1;
-	      error_code = SUCCESS;
-	    }
-	  else
-	    PICLANG_exception(error_code);
+	  b = -1;
+	  error_code = SUCCESS;
+	  PICLANG_exception(error_code);
 	}
       PICLANG_pushl(b);
       break;
@@ -641,9 +637,11 @@ void PICLANG_next()
 	IO_flush();
 	break;
       }
-    case PICLANG_SYSTEM:
-      PICLANG_system = PICLANG_pop();
-      picos_processes[picos_curr_process].expires = 0;// will suspend for system call
+    case PICLANG_LSOF:
+      IO_puts("Implement lsof");
+      break;
+    case PICLANG_LSMOUNT:
+      lsmount();
       break;
     case PICLANG_ERRNO:
       PICLANG_pushl(PICLANG_get_errno());

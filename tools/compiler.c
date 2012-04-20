@@ -192,6 +192,14 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\targc\n");
       insert_code(PICLANG_ARGC);
       break;
+    case PICLANG_LSOF:
+      write_assembly(assembly_file,"\tlsof\n");
+      insert_code(PICLANG_LSOF);
+      break;
+    case PICLANG_LSMOUNT:
+      write_assembly(assembly_file,"\tlsmount\n");
+      insert_code(PICLANG_LSMOUNT);
+      break;
     case PICLANG_ERRNO:
       write_assembly(assembly_file,"\terrno\n");
       insert_code(PICLANG_ERRNO);
@@ -269,14 +277,6 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tneg\n");
       insert_code(PICLANG_UMINUS);
       break;
-    case PICLANG_SYSTEM:
-      {
-	int op_counter = p->opr.nops - 1;
-	for(;op_counter >= 0 ;op_counter--)
-	  ex(p->opr.op[op_counter]);
-	write_assembly(assembly_file,"\tsystem\n");insert_code(PICLANG_SYSTEM);
-	break;
-      }
     case PICLANG_SIGNAL:
       {
 	const struct subroutine_map *subroutine = NULL;
@@ -915,7 +915,7 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_co
 void preprocess(const char *keyword, nodeType *p)
 {
   extern FILE *assembly_file;
-  write_assembly(";preproc '%s' with type #%d\n",keyword,p->type);
+  write_assembly(assembly_file,";preproc '%s' with type #%d\n",keyword,p->type);
   return;
 }
 
