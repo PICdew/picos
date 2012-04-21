@@ -56,6 +56,9 @@ static void log_msg(const char *format, ...)
 static void error_log(const char *format, ...)
 {
     va_list ap;
+    if(FS_PRIVATE_DATA == NULL || FS_PRIVATE_DATA->logfile == NULL)
+      return;
+
     va_start(ap, format);
     vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
 }
@@ -171,11 +174,11 @@ static int FS_read_picc(FS_Block *sb,FILE *c_file)
   return len;
 }
 
-void FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
+int FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
 {
   size_t num_blocks,block_size;
   if(block == NULL || the_state == NULL)
-    return;
+    return 0;
 
   if(the_state->block_size < FS_SuperBlock_length || the_state->block_size < FS_INode_length)
     {
@@ -198,6 +201,8 @@ void FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
 
   block[FS_SuperBlock_free_queue] = 2;
   block[FS_SuperBlock_raw_file] = 0;
+
+  return 0;
 }
 
 void FS_mkinode(FS_Block *inode, FS_Unit block_size)
@@ -1331,7 +1336,8 @@ static FS_Block* FS_format(struct fs_fuse_state *the_state)
   int block_count = 2;
   int num_blocks = the_state->num_blocks, block_size = the_state->block_size;
   FS_allocate(&super_block,num_blocks,the_state->block_size);
-  FS_mksuperblock(super_block,the_state);
+  if(FS_mksuperblock(super_block,the_state))
+    return NULL;
   
   //setup top most inode
   rootdir = &super_block[block_size*super_block[FS_SuperBlock_root_block]];
@@ -1622,6 +1628,130 @@ void FS_default_state(struct fs_fuse_state *the_state)
   the_state->block_size = 16;
 }
 
+void FS_load_rc(struct fs_fuse_state *the_state, char *keyword, char *arg)
+{
+  size_t len,idx;
+  int have_arg, iarg;
+  if(the_state == NULL)
+    return;
+  if(keyword == NULL || strlen(keyword) == 0)
+    return;
+  
+  have_arg = (arg != NULL) & strlen(arg);
+
+  len = strlen(keyword);idx = 0;
+  for(;idx < len;idx++)
+    {
+      if(keyword[idx] == ' ')
+	{
+	  keyword[idx] = '\0';
+	  break;
+	}
+      keyword[idx] = tolower(keyword[idx]);
+    }
+  
+  if(have_arg)
+    {
+      len = strlen(arg);idx = 0;
+      for(;idx < len;idx++)
+	{
+	  if(arg[idx] == ' ')
+	    {
+	      arg[idx] = '\0';
+	      break;
+	    }
+	  arg[idx] = tolower(arg[idx]);
+	}
+    }
+
+  if(strcmp(keyword,"block_size") == 0)
+    {
+      if(have_arg)
+	{
+	  if(sscanf(arg,"%d",&iarg) != 1)
+	    fprintf(stderr,"Invalid block size \"%s\"\n",arg);
+	  else
+	    the_state->block_size = (char)iarg;
+	}
+      else
+	fprintf(stderr,"No argument for BLOCK_SIZE\n");
+    }
+  else if(strcmp(keyword,"num_blocks") == 0)
+    {
+      if(have_arg)
+	{
+	  if(sscanf(arg,"%d",&iarg) != 1)
+	    fprintf(stderr,"Invalid number of blocks \"%s\"\n",arg);
+	  else
+	    the_state->num_blocks = (char)iarg;
+	}
+      else
+	fprintf(stderr,"No argument for NUM_BLOCKS\n");
+    }
+}
+
+void FS_check_load_rc(struct fs_fuse_state *the_state)
+{
+  char *home_dir = NULL;
+  const size_t buffer_size = 2048;
+  char rc_path[FILENAME_MAX], buf[buffer_size];
+  FILE *rc_file = NULL;
+  char *keyword, *arg, *saveptr;
+  if(the_state == NULL)
+    return;
+
+  home_dir = getenv("HOME");
+  
+  if(home_dir == NULL)
+    {
+      fprintf(stderr,"No home directory.\n");
+      return;
+    }
+  
+  sprintf(rc_path,"%s/.picfsrc",home_dir);
+
+  if(access(rc_path,R_OK) != 0)
+    {
+      fprintf(stderr,"No rc file (%s)\nReason(%d): %s\n",rc_path,errno,strerror(errno));
+      return;
+    }
+  
+  rc_file = fopen(rc_path,"r");
+  
+  while(!feof(rc_file))
+    {
+      if(fgets(buf,buffer_size,rc_file) == NULL)
+	break;
+      arg = strrchr(buf,'\n');
+      if(arg)
+	*arg = '\0';
+      arg = strrchr(buf,'\r');
+      if(arg)
+	*arg = '\0';
+      arg = strchr(buf,'#');
+      if(arg)
+	*arg = '\0';
+      keyword = buf;
+      if(*keyword == 0)
+	continue;
+      while(*keyword == ' ')
+	keyword++;
+      if(strlen(keyword) == 0)
+	continue;
+      
+      arg = strchr(keyword,' ');
+      *arg = 0;arg++;
+      while(*arg == ' ')
+	arg++;
+      if(*arg == 0)
+	continue;
+      
+      FS_load_rc(the_state,keyword,arg);
+    }
+  
+  fclose(rc_file);
+}
+
 FILE *assembly_file;
 int main(int argc, char **argv)
 {
@@ -1632,6 +1762,9 @@ int main(int argc, char **argv)
   the_state = calloc(1,sizeof(struct fs_fuse_state));
   //defaults
   FS_default_state(the_state);
+
+  FS_check_load_rc(the_state);
+
   FS_parse_args(the_state,argc,argv);
   setvbuf(the_state->logfile, NULL, _IOLBF, 0);
   super_block = the_state->super_block;
