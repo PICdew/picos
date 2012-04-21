@@ -185,7 +185,7 @@ void load_rc(char *keyword, char *arg)
 	  if(sscanf(arg,"%d",&iarg) != 1)
 	    fprintf(stderr,"Invalid block size \"%s\"\n",arg);
 	  else
-	    FS_BUFFER_SIZE = (char)iarg;
+	    FS_BUFFER_SIZE = (picos_size_t)iarg;
 	}
       else
 	fprintf(stderr,"No argument for BLOCK_SIZE\n");

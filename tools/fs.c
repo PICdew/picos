@@ -1683,7 +1683,7 @@ void FS_load_rc(struct fs_fuse_state *the_state, char *keyword, char *arg)
 	  if(sscanf(arg,"%d",&iarg) != 1)
 	    fprintf(stderr,"Invalid number of blocks \"%s\"\n",arg);
 	  else
-	    the_state->num_blocks = (char)iarg;
+	    the_state->num_blocks = (FS_Unit)iarg;
 	}
       else
 	fprintf(stderr,"No argument for NUM_BLOCKS\n");

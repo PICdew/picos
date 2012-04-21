@@ -1,6 +1,3 @@
-ifndef BLOCK_SIZE
-BLOCK_SIZE=255
-endif
 ifndef COMP
 COMP=../tools/picosc
 endif
@@ -12,21 +9,21 @@ IMAGE_NAME=sdcard
 endif
 
 all:
-	$(COMP) -b $(BLOCK_SIZE) -o fs/time time.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/start startup_message.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/setdate setdate.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/settime settime.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/test test.plc	
-	$(COMP) -b $(BLOCK_SIZE) -o fs/morse morse.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/ed ed.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/timestamp timestamp.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/calc calc.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/base64 base64.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/echo echo.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/less less.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/sleep sleep.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/ls ls.plc
-	$(COMP) -b $(BLOCK_SIZE) -o fs/lsmount lsmount.plc
+	$(COMP)  -o fs/time time.plc
+	$(COMP)  -o fs/start startup_message.plc
+	$(COMP)  -o fs/setdate setdate.plc
+	$(COMP)  -o fs/settime settime.plc
+	$(COMP)  -o fs/test test.plc	
+	$(COMP)  -o fs/morse morse.plc
+	$(COMP)  -o fs/ed ed.plc
+	$(COMP)  -o fs/timestamp timestamp.plc
+	$(COMP)  -o fs/calc calc.plc
+	$(COMP)  -o fs/base64 base64.plc
+	$(COMP)  -o fs/echo echo.plc
+	$(COMP)  -o fs/less less.plc
+	$(COMP)  -o fs/sleep sleep.plc
+	$(COMP)  -o fs/ls ls.plc
+	$(COMP)  -o fs/lsmount lsmount.plc
 
 clean:
 	-rm -f fs/*

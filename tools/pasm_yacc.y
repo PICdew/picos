@@ -354,7 +354,7 @@ int main(int argc, char **argv)
 	  if(curr_code->type != typeStr)
 	    write_val_for_pic(binary_file,curr_code->val);
 	  else
-	    fprintf(binary_file,"%c",(char)curr_code->val);
+	    fprintf(binary_file,"%c",(picos_size_t)curr_code->val);
 	  curr_code = curr_code->next;
 	}
     }
