@@ -12,6 +12,7 @@
 #include <math.h>
 #include <getopt.h>
 #include <errno.h>
+#include <unistd.h>
 
 struct compiled_code *the_code;
 struct compiled_code *the_code_end;
@@ -142,7 +143,115 @@ expr:
 
 %%
 
+void load_rc(char *keyword, char *arg)
+{
+  size_t len,idx;
+  int have_arg, iarg;
 
+  if(keyword == NULL || strlen(keyword) == 0)
+    return;
+  
+  have_arg = (arg != NULL) & strlen(arg);
+
+  len = strlen(keyword);idx = 0;
+  for(;idx < len;idx++)
+    {
+      if(keyword[idx] == ' ')
+	{
+	  keyword[idx] = '\0';
+	  break;
+	}
+      keyword[idx] = tolower(keyword[idx]);
+    }
+  
+  if(have_arg)
+    {
+      len = strlen(arg);idx = 0;
+      for(;idx < len;idx++)
+	{
+	  if(arg[idx] == ' ')
+	    {
+	      arg[idx] = '\0';
+	      break;
+	    }
+	  arg[idx] = tolower(arg[idx]);
+	}
+    }
+
+  if(strcmp(keyword,"block_size") == 0)
+    {
+      if(have_arg)
+	{
+	  if(sscanf(arg,"%d",&iarg) != 1)
+	    fprintf(stderr,"Invalid block size \"%s\"\n",arg);
+	  else
+	    FS_BUFFER_SIZE = (char)iarg;
+	}
+      else
+	fprintf(stderr,"No argument for BLOCK_SIZE\n");
+    }
+}
+
+
+void check_load_rc()
+{
+  char *home_dir = NULL;
+  const size_t buffer_size = 2048;
+  char rc_path[FILENAME_MAX], buf[buffer_size];
+  FILE *rc_file = NULL;
+  char *keyword, *arg, *saveptr;
+
+  home_dir = getenv("HOME");
+  
+  if(home_dir == NULL)
+    {
+      fprintf(stderr,"No home directory.\n");
+      return;
+    }
+  
+  sprintf(rc_path,"%s/.picfsrc",home_dir);
+
+  if(access(rc_path,R_OK) != 0)
+    {
+      fprintf(stderr,"No rc file (%s)\nReason(%d): %s\n",rc_path,errno,strerror(errno));
+      return;
+    }
+  
+  rc_file = fopen(rc_path,"r");
+  
+  while(!feof(rc_file))
+    {
+      if(fgets(buf,buffer_size,rc_file) == NULL)
+	break;
+      arg = strrchr(buf,'\n');
+      if(arg)
+	*arg = '\0';
+      arg = strrchr(buf,'\r');
+      if(arg)
+	*arg = '\0';
+      arg = strchr(buf,'#');
+      if(arg)
+	*arg = '\0';
+      keyword = buf;
+      if(*keyword == 0)
+	continue;
+      while(*keyword == ' ')
+	keyword++;
+      if(strlen(keyword) == 0)
+	continue;
+      
+      arg = strchr(keyword,' ');
+      *arg = 0;arg++;
+      while(*arg == ' ')
+	arg++;
+      if(*arg == 0)
+	continue;
+      
+      load_rc(keyword,arg);
+    }
+  
+  fclose(rc_file);
+}
 
 static const char short_options[] = "a:b:e:hl:n:o:";
 enum OPTION_INDICES{OUTPUT_HEX};
@@ -202,6 +311,8 @@ int main(int argc, char **argv)
   break_to_label = -1;
   continue_to_label = -1;
   FS_BUFFER_SIZE = 128;
+
+  check_load_rc();
   
   while(true)
     {    
