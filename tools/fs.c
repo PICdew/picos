@@ -1648,7 +1648,6 @@ int main(int argc, char **argv)
     }
   the_state->super_block = super_block;
   
-  #if 1
   // Initialize an empty argument list
   struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
   if(optind < argc)
@@ -1663,14 +1662,8 @@ int main(int argc, char **argv)
       exit(-1);
     }
   fuse_stat = fuse_main(args.argc,args.argv, &fs_ops, the_state);
-#else
-  fuse_stat = 0;
-  FILE *dump = fopen("debug","w");
-  FS_removefile("/cat",super_block);
-  fwrite(super_block,sizeof(FS_Unit),super_block[FS_SuperBlock_num_blocks] * super_block[FS_SuperBlock_block_size],dump);
-  fclose(dump);
-#endif
-  time_t starttime = time(NULL);
+
+ time_t starttime = time(NULL);
   if(fuse_stat == 0)
     fprintf(the_state->logfile,"fuse mounted %s on %s\n",args.argv[args.argc-1],ctime(&starttime));
   return fuse_stat;
