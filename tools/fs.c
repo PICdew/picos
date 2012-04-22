@@ -10,7 +10,10 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+
+#define FUSE_USE_VERSION 26
 #include <fuse.h>
+
 #include <libgen.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -20,6 +23,16 @@
 #include <sys/types.h>
 #include <sys/xattr.h>
 #include <stdbool.h>
+
+struct fs_fuse_state {
+  FILE *logfile;
+  int verbose_log;
+  char *rootdir;
+  FS_Unit *super_block;
+  FS_Unit num_blocks,block_size;
+};
+#define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
+#define FS_BLOCK_SIZE (((struct fs_fuse_state*)fuse_get_context()->private_data)->block_size)
 
 const char FS_proc_filename[] = "/proc";
 const char FS_dump_filename[] = "/proc/dump";
@@ -1632,6 +1645,7 @@ int main(int argc, char **argv)
   the_state = calloc(1,sizeof(struct fs_fuse_state));
   //defaults
   FS_default_state(the_state);
+
   FS_parse_args(the_state,argc,argv);
   setvbuf(the_state->logfile, NULL, _IOLBF, 0);
   super_block = the_state->super_block;

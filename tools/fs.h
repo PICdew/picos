@@ -1,25 +1,10 @@
 #ifndef FS_H
 #define FS_H
 
-#define FUSE_USE_VERSION 26
 #include <stdio.h>
 
 typedef unsigned char FS_Unit;
 typedef unsigned char FS_Block;
-
-
-#ifdef NOT_FOR_PIC
-struct fs_fuse_state {
-  FILE *logfile;
-  int verbose_log;
-  char *rootdir;
-  FS_Unit *super_block;
-  FS_Unit num_blocks,block_size;
-};
-#define FS_PRIVATE_DATA ((struct fs_fuse_state*)fuse_get_context()->private_data)
-#define FS_BLOCK_SIZE (((struct fs_fuse_state*)fuse_get_context()->private_data)->block_size)
-
-#endif//not for pic
 
 enum FS_MAGIC_NUMBERS{ 
   MAGIC_SUPERBLOCK = 0,
