@@ -1349,6 +1349,7 @@ static FS_Block* FS_format(struct fs_fuse_state *the_state)
   int block_count = 2;
   int num_blocks = the_state->num_blocks, block_size = the_state->block_size;
   FS_allocate(&super_block,num_blocks,the_state->block_size);
+  memset(super_block,0,num_blocks*block_size*sizeof(FS_Block));
   if(FS_mksuperblock(super_block,the_state))
     return NULL;
   
