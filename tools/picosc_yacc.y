@@ -213,7 +213,7 @@ void check_load_rc()
 
   if(access(rc_path,R_OK) != 0)
     {
-      fprintf(stderr,"No rc file (%s)\nReason(%d): %s\n",rc_path,errno,strerror(errno));
+      // Cannot read rc file. Moving on...
       return;
     }
   
