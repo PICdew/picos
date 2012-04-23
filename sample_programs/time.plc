@@ -15,10 +15,6 @@ def <display_time>
   if(time('M') < 10)
     putd(0);
   putd(time('M'));
-  putch(':');
-  if(time('S') < 10)
-    putd(0);
-  putd(time('S'));
 }
 
 def <sig_action>
@@ -38,14 +34,14 @@ def <main>
 {
   signal(SIGINT,<sig_action>);
   lock();
-  seconds = time('S'); 
+  minutes = time('M'); 
   breakit = 1;
   call <display_time>;
   while(breakit == 1)/* Ctrl-D */
     {
-      if(time('S') == seconds)
+      if(time('M') == minutes)
 	continue;
       call <display_time>;
-      seconds = time('S');
+      minutes = time('M');
     }
 }
