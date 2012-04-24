@@ -139,6 +139,9 @@ enum PICLANG_COMMANDS
     PICLANG_FSTAT/* Put file stat into picfs_buffer */,
     PICLANG_READDIR/* Read directory entries into picfs_buffer */,
     PICLANG_SPRINTN/* SPRINT only N characters */,
+    PICLANG_MOVE/* Move cursor */,
+    PICLANG_GETX/* Retrieve the column of the cursor */,
+    PICLANG_GETY/* Retrieve the row of the cursor */,
     PICLANG_NUM_COMMANDS
   };
 

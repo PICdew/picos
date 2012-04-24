@@ -29,8 +29,6 @@ def <sig_action>
   exit(0);
 }
 
-
-
 /**
  * This is a program that will display the date
  */

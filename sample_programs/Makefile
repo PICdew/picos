@@ -30,3 +30,7 @@ clean:
 
 install:
 	cp fs/proc/dump $(INTERFACE)/$(IMAGE_NAME)
+
+rebuild: clean all install
+
+

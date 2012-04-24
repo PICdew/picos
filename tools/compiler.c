@@ -312,6 +312,19 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tsprintn\n");
       insert_code(PICLANG_SPRINTN);
       break;
+    case PICLANG_MOVE:
+      deal_with_arguments(&p->opr);
+      write_assembly(assembly_file,"\tmove\n");
+      insert_code(PICLANG_MOVE);
+      break;
+    case PICLANG_GETY:
+      write_assembly(assembly_file,"\tgety\n");
+      insert_code(PICLANG_GETY);
+      break;
+    case PICLANG_GETX:
+      write_assembly(assembly_file,"\tgetx\n");
+      insert_code(PICLANG_GETX);
+      break;
     case PICLANG_MORSE:
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tmorse\n");

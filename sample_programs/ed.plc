@@ -1,14 +1,111 @@
 /**
  * This program reads input and stores it in the mounted filesystem's raw file.
  */
+
+def <init>
+{
+  const ESC = 0x1b;
+  const COLS = 8;
+  const ROWS = 2;
+  x = 0;
+  y = 0;
+  a = 0;
+}
+
+def <sig_action>
+{
+  clear();
+  unlock();
+  sprint("DONE!");
+  exit(0);
+}
+
+def <adjust_coords>
+{
+  if(x == COLS)
+    {
+      y = y + 1;
+      x = 0;
+    }
+  if(y == ROWS)
+    {
+      y = 0;
+    }
+}
+
+def <insert_loop>
+{
+  a = getch();
+  while(a != ESC)
+    {
+      fputch(a);
+      putch(a);
+      a = getch();
+    }
+}
+
 def <main>
 {
+  signal(SIGINT,<sig_action>);
+  lock();
+  call <init>;
   a = getch();
   fclear();
   while(a != 4)
     {
-      fputch(a);
-      putch(a);
+      if (a == 'i')
+	{
+	  call <insert_loop>;
+	}
+      if(a == 'h')
+	{
+	  x = getx();
+	  y = gety();
+	  if(x == 0)
+	    {
+	      y = ROWS - 1;
+	      x = COLS - 1;
+	    }
+	  else
+	    {
+	      x = x - 1;
+	      call <adjust_coords>;
+	    }
+	  move(x,y);
+	}
+      if(a == 'j')
+	{
+	  x = getx();
+	  y = gety() + 1;
+	  call <adjust_coords>;
+	  move(x,y);
+	}
+      if(a == 'k')
+	{
+	  x = getx();
+	  y = gety();
+	  if( y == 0)
+	    {
+	      y = ROWS - 1;
+	    }
+	  else
+	    {
+	      y = y - 1;
+	    }
+	  call <adjust_coords>;
+	  move(x,y);
+	}
+      if(a == 'l')
+	{
+	  x = getx() + 1;
+	  y = gety();
+	  call <adjust_coords>;
+	  move(x,y);
+	}
+      if(a == 'q')
+	{
+	  break;
+	}
       a = getch();
     }
   clear();

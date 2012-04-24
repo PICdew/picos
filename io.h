@@ -49,6 +49,23 @@ char morse_decode(char encode);
 
 void IO_puts(const char *str);
 void IO_putd(picos_size_t d);
+
+/**
+ * Move cursor to coordinates. How this happens is up to the hardware
+ * driver programmer. Thus, it is extern.
+ *
+ * Note: The arguments are row and column, in that order.
+ */
+extern void IO_move(picos_size_t row, picos_size_t column);
+
+/**
+ * Places the x and y coordinates of the cursor in the provided
+ * memory locations. How this happens is up to the hardware
+ * driver programmer. Thus, it is externed.
+ *
+ * Note: to ignore a coordinate, provide NULL.
+ */
+extern void IO_getxy(picos_size_t *x, picos_size_t *y);
 extern void IO_flush();
 
 #define OUT_LCD 1

@@ -519,6 +519,18 @@ void PICLANG_next()
 	picfs_chdir(a);
 	break;
       }
+    case PICLANG_MOVE:
+      a = PICLANG_pop();// y
+      b = PICLANG_pop();// x
+      IO_move(a,b);
+      break;
+    case PICLANG_GETY: case PICLANG_GETX:
+      IO_getxy(&a,&b);
+      if(command == PICLANG_GETX)
+	PICLANG_pushl(a);
+      else
+	PICLANG_pushl(b);
+      break;
     case PICLANG_FPUTCH:// KEEP FPUTCH before FFLUSH
       {
 	ch1 = (char)PICLANG_pop();
