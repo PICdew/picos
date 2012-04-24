@@ -15,7 +15,7 @@ all:
 	$(COMP)  -o fs/settime settime.plc
 	$(COMP)  -o fs/test test.plc	
 	$(COMP)  -o fs/morse morse.plc
-	$(COMP)  -o fs/ed ed.plc
+	$(COMP)  -o fs/pvi pvi.plc
 	$(COMP)  -o fs/timestamp timestamp.plc
 	$(COMP)  -o fs/calc calc.plc
 	$(COMP)  -o fs/base64 base64.plc
