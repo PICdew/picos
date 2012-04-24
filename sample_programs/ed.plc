@@ -44,6 +44,49 @@ def <insert_loop>
     }
 }
 
+def <do_quit>
+{
+  a = getch();
+  while(a != ESC)
+    {
+      if(a == 0xa)
+	{
+	  call <sig_action>;
+	}
+      putch(a);
+      a = getch();
+    }
+}
+
+def <command_loop>
+{
+  clear();
+  putch(':');
+  a = getch();
+  while( a != ESC)
+    {
+      if(a == 0xa)
+	{
+	  break;
+	}
+      putch(a);
+
+      if(a == 'q')
+	{
+	  call <do_quit>;
+	  break;
+	}
+      if(a == 'w')
+	{
+	  fflush();
+	}
+      a = getch();
+    }
+  clear();
+  rawload();
+  sprint(fin);
+}
+
 def <main>
 {
   signal(SIGINT,<sig_action>);
@@ -102,13 +145,11 @@ def <main>
 	  call <adjust_coords>;
 	  move(x,y);
 	}
-      if(a == 'q')
+      if(a == ':')
 	{
-	  break;
+	  call <command_loop>;
 	}
       a = getch();
     }
-  clear();
-  fflush();
-  sprint("Done");
+  call <sig_action>;
 }

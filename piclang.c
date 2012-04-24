@@ -842,6 +842,9 @@ void PICLANG_next()
       a = PICLANG_pop();
       PICLANG_pushl(~a);
       break;
+    case PICLANG_RAWLOAD:
+      SRAM_read(SRAM_PICLANG_RAW_FILE_BUFFER,(void*)picfs_buffer,FS_BUFFER_SIZE);
+      break;
     case PICLANG_NUM_COMMANDS:default:
       PICLANG_exception(PICLANG_UNKNOWN_COMMAND);
       break;

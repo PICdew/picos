@@ -325,6 +325,10 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\tgetx\n");
       insert_code(PICLANG_GETX);
       break;
+    case PICLANG_RAWLOAD:
+      write_assembly(assembly_file,"\trawload\n");
+      insert_code(PICLANG_RAWLOAD);
+      break;
     case PICLANG_MORSE:
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tmorse\n");

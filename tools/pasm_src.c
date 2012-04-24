@@ -205,6 +205,7 @@ struct assembly_map opcodes[] = {
   {"move", PICLANG_MOVE,2},
   {"getx", PICLANG_GETX, 0},
   {"gety", PICLANG_GETY, 0},
+  {"rawload", PICLANG_RAWLOAD,0},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 
