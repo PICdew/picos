@@ -22,7 +22,7 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
     return -1;
   for(;code != NULL;code = code->next)
     {
-      if(code->type == typePCB)
+      if(code->type == typePCB || code->type == typeStr)
 	continue;
       if(code->type == typeLabel && (code->val == PICLANG_LABEL))
 	{

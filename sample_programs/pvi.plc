@@ -7,16 +7,52 @@ def <init>
   const ESC = 0x1b;
   const COLS = 8;
   const ROWS = 2;
+  const LINES = "---";
   x = 0;
   y = 0;
   a = 0;
 }
 
+def <fsprint>
+{
+  ch = pop();
+  while(ch[0] != 0)
+    {
+      fputch(ch[0]);
+      ch = ch + 1;
+    }
+}
+
+def <write_filename>
+{
+  if(argc == 1)
+    {
+      return;
+    }
+
+  cr();
+  push(LINES);
+  call <fsprint>;
+
+  push(argv[1]);
+  call <fsprint>;
+  
+  push(LINES);
+  call <fsprint>;
+  cr();
+  fflush();
+}
+
 def <sig_action>
 {
   clear();
+  if(argc > 1)
+    {
+      call <write_filename>;
+    }
   unlock();
   sprint("DONE!");
+  putd(argc);
   exit(0);
 }
 
@@ -92,6 +128,10 @@ def <main>
   signal(SIGINT,<sig_action>);
   lock();
   call <init>;
+  if(argc > 1)
+    {
+      call <write_filename>;
+    }
   a = getch();
   fclear();
   while(a != 4)

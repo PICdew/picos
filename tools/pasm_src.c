@@ -202,7 +202,7 @@ struct assembly_map opcodes[] = {
   {"readdir",PICLANG_READDIR,1},
   {"sprintn",PICLANG_SPRINTN,2},
   {"fstat",PICLANG_FSTAT,1},
-  {"move", PICLANG_MOVE,2},
+  {"move", PICLANG_MOVE, 0},
   {"getx", PICLANG_GETX, 0},
   {"gety", PICLANG_GETY, 0},
   {"rawload", PICLANG_RAWLOAD,0},
