@@ -30,7 +30,7 @@ def <write_filename>
       return;
     }
 
-  cr();
+  fputch(0xa);
   push(LINES);
   call <fsprint>;
 
@@ -39,7 +39,7 @@ def <write_filename>
   
   push(LINES);
   call <fsprint>;
-  cr();
+  fputch(0xa);
   fflush();
 }
 
@@ -52,7 +52,6 @@ def <sig_action>
     }
   unlock();
   sprint("DONE!");
-  putd(argc);
   exit(0);
 }
 
