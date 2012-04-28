@@ -69,7 +69,6 @@ imagdecimal {decimal}[iI]
 "def"           return DEFINE;
 "quit"          return EXIT;
 "cr"            return PASM_CR;
-"pop"           return PASM_POP;
 "argv"          return ARGV;
 "argc"          return ARGC;
 "fin"           return FIN;
