@@ -44,7 +44,8 @@ int scan_disk(FILE *image_file)
       
       if(super_block[FS_SuperBlock_magic_number] != 0 || super_block[FS_SuperBlock_magic_number2] != 6 || super_block[FS_SuperBlock_magic_number3] != 0x29 || super_block[FS_SuperBlock_magic_number4] != 0x82)
 	{
-	  fprintf(stderr,"Corrupted disk image at 0x%x. Invalid magic number.\n",fpos);
+	  fprintf(stderr,"Corrupted disk image at %ld. Invalid magic number.\n",fpos);
+	  free(super_block);
 	  return 1;
 	}
       
@@ -54,14 +55,15 @@ int scan_disk(FILE *image_file)
       printf("Block size: %d\n",(int)super_block[FS_SuperBlock_block_size]);
       printf("Number of Blocks: %d\n",(int)super_block[FS_SuperBlock_num_blocks]);
       printf("Number of Free Blocks: %d\n",(int)super_block[FS_SuperBlock_num_free_blocks]);
-      printf("Starting address: 0x%x\n",fpos);
-      printf("Root block: 0x%x\n",(long)super_block[FS_SuperBlock_root_block]*super_block[FS_SuperBlock_block_size] + fpos);
+      printf("Starting address: %ld\n",fpos);
+      printf("Root block: %ld\n",(long)super_block[FS_SuperBlock_root_block]*super_block[FS_SuperBlock_block_size] + fpos);
       image_counter++;
 
       // skip to next image
       fseek(image_file,super_block[FS_SuperBlock_block_size]*super_block[FS_SuperBlock_num_blocks],SEEK_CUR);
     }
   
+  free(super_block);
   return 0;
 }
 
