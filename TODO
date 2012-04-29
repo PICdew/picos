@@ -1,5 +1,8 @@
-* ps function to list running processes
+* Add switch to PICLANG
+* Add initial byte offset to fs, to allow it to use multiple images on one disk.
+* Create a utility similar to fdisk that will read a disk and output information about all of the picfs images.
 * sleep may or may not work.
 * Add timer function to piclang.
 * Fix else if in picosc
-* Add switch to PICLANG
+* Programs need a file table so that their files are closed when the program exits
+* ps function to list running processes

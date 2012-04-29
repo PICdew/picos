@@ -27,7 +27,7 @@ size_t num_strings;
 picos_size_t FS_BUFFER_SIZE;
 
 extern picos_size_t label_counter;
-int break_to_label, continue_to_label;
+int break_to_label, continue_to_label, switch_end_label;
 idNodeType *variable_list = NULL;
 
 /* prototypes */
@@ -53,11 +53,12 @@ void yyerror(char *s);
 
 %token <iValue> INTEGER FUNCT
 %token <variable> VARIABLE
-%type <nPtr> stmt expr stmt_list STRING SUBROUTINE PREPROC_KEYWORD
+%type <nPtr> stmt expr stmt_list switch_block STRING SUBROUTINE PREPROC_KEYWORD
 
 %token WHILE BREAK CONTINUE IF CALL SUBROUTINE
 %token STRING RETURN DEFINE EXIT PREPROC_KEYWORD CONST
 %token PASM_CR PASM_POP ARGV ARGC ERRNO FIN FEOF STATEMENT_DELIM
+%token DEFAULT CASE SWITCH
 
 %nonassoc IFX
 %nonassoc ELSE
@@ -96,11 +97,17 @@ stmt:
         | IF '(' expr ')' stmt %prec IFX { $$ = opr(PASM_IF, 2, $3, $5); }
         | IF '(' expr ')' stmt ELSE stmt { $$ = opr(PASM_IF, 3, $3, $5, $7); }
         | '{' stmt_list '}'              { $$ = $2; }
+        | SWITCH '(' expr ')' '{' switch_block '}' { $$ = opr(PASM_SWITCH, 2, $3, $6); }
         | PREPROC_KEYWORD stmt {preprocess($1->str.string,$2); $$ = opr(PASM_STATEMENT_DELIM, 0); }
         | EXIT {YYACCEPT;}
         ;
 
-
+switch_block:
+    switch_block CASE expr ':' stmt { $$ = opr(PASM_STATEMENT_DELIM,2, $1, opr(PASM_CASE, 2, $3, $5)); }
+  | switch_block DEFAULT ':' stmt { $$ = opr(PASM_STATEMENT_DELIM,2, $1, $4); }
+  | CASE expr ':' stmt { $$ = opr(PASM_CASE, 2, $2, $4); }
+  | DEFAULT ':' stmt { $$ = $3; }
+  ;
 
 stmt_list:
           stmt                  { $$ = $1; }
@@ -310,6 +317,7 @@ int main(int argc, char **argv)
   subroutines = NULL;
   break_to_label = -1;
   continue_to_label = -1;
+  switch_end_label = -1;
   FS_BUFFER_SIZE = 128;
 
   check_load_rc();

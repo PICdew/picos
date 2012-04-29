@@ -32,6 +32,7 @@ int ex(nodeType *p) {
   int lbl1, lbl2;
   int previous_break_to_label = break_to_label;
   int previous_continue_to_label = continue_to_label;
+  //int previous_switch_end_label = switch_end_label;
   
   if (!p) return 0;
   switch(p->type) {
@@ -104,7 +105,7 @@ int ex(nodeType *p) {
       if(continue_to_label < 0)
 	{
 	  yyerror("Not within a block in which to continue");
-	  exit(-1);
+	  exit(1);
 	}
       write_assembly(assembly_file,"\tjmp\tL%03d\n", continue_to_label);
       insert_code(PICLANG_JMP);
@@ -169,6 +170,53 @@ int ex(nodeType *p) {
 	insert_label(PICLANG_LABEL,lbl1);
       }
       break;
+    case PASM_SWITCH:
+      {
+	idNodeType *var = NULL;
+	break_to_label = label_counter++;
+	ex(p->opr.op[0]);// evaluate expression
+	var = resolve_variable("_switch_expr");
+	if(var == NULL)
+	  {
+	    fprintf(stderr,"ex: Error creating variable for switch");
+	    exit(1);
+	  }
+	write_assembly(assembly_file,"\tpop _switch_expr\n");// pop expression into variable
+	insert_code(PICLANG_POP);
+	insert_code(var->i);
+
+	ex(p->opr.op[1]);// go through cases
+
+	write_assembly(assembly_file,"L%03d:\n", break_to_label);// this is the end of the switch
+	insert_label(PICLANG_LABEL,break_to_label);
+	break_to_label = previous_break_to_label;
+	break; // PASM_SWITCH
+      }
+    case PASM_CASE:
+      {
+	idNodeType *var = NULL;
+	int next_case = label_counter++;
+	ex(p->opr.op[0]);// evaluate expression
+	var = resolve_variable("_switch_expr");
+	if(var == NULL)
+	  {
+	    fprintf(stderr,"ex: Error creating variable for switch");
+	    exit(1);
+	  }
+	write_assembly(assembly_file,"\tpush _switch_expr\n");
+	insert_code(PICLANG_PUSH);
+	insert_code(var->i);// push switch expression
+	write_assembly(assembly_file,"\tcompeq\n");// compare
+	insert_code(PICLANG_COMPEQ);
+	write_assembly(assembly_file,"\tjz L%03d\n",next_case);
+	insert_code(PICLANG_JZ);
+	insert_label(PASM_ADDR,next_case);
+	ex(p->opr.op[1]);// evaluate statement
+		
+	write_assembly(assembly_file,"L%03d:\n",next_case);// next case label
+	insert_label(PICLANG_LABEL,next_case);
+	break;
+      }
     case PICLANG_JZ: case PICLANG_JMP:
       {
 	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
