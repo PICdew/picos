@@ -164,7 +164,7 @@ signed char picfs_verify_fs(unsigned int sd_addr, picos_dev_t dev)
 
   device_read(sd_addr,&magic_numbers,FS_SuperBlock_block_size+1,dev);
    
-  if(magic_numbers[0] != 0 && magic_numbers[1] != 0x6 && magic_numbers[2] != 0x29 && magic_numbers[3] != 0x83)
+  if(magic_numbers[0] != 0 || magic_numbers[1] != 0x6 || magic_numbers[2] != 0x29 || magic_numbers[3] != 0x82)
     {
       return error_return(PICFS_INVALID_FILESYSTEM);
     }

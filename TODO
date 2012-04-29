@@ -1,8 +1,9 @@
-* Add switch to PICLANG
+* Allow picosc and pasm to create compiled code segments, which be linked to programs, like libraries.
 * Add initial byte offset to fs, to allow it to use multiple images on one disk.
 * Create a utility similar to fdisk that will read a disk and output information about all of the picfs images.
 * sleep may or may not work.
 * Add timer function to piclang.
 * Fix else if in picosc
+* Fix switch so that default does not *have* to go at the end of the switch.
 * Programs need a file table so that their files are closed when the program exits
 * ps function to list running processes
