@@ -28,7 +28,7 @@ picos_size_t FS_BUFFER_SIZE;
 
 idNodeType *variable_list = NULL;// Variable table
 extern picos_size_t label_counter;
- int break_to_label, continue_to_label;
+ int break_to_label, continue_to_label, switch_end_label;
 
 /* prototypes */
 void freeNode(nodeType *p);
@@ -273,6 +273,7 @@ int main(int argc, char **argv)
   subroutines = NULL;
   break_to_label = -1;
   continue_to_label = -1;
+  switch_end_label = -1;
   FS_BUFFER_SIZE = 128;
   
   check_load_rc();

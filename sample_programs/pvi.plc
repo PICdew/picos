@@ -106,14 +106,18 @@ def <command_loop>
 	}
       putch(a);
 
-      if(a == 'q')
+      switch(a)
 	{
-	  call <do_quit>;
-	  break;
-	}
-      if(a == 'w')
-	{
-	  fflush();
+	case 'q':
+	  {
+	    call <do_quit>;
+	    break;
+	  }
+	case 'w':
+	  {
+	    fflush();
+	    break;
+	  }
 	}
       a = getch();
     }
@@ -135,58 +139,67 @@ def <main>
   fclear();
   while(a != 4)
     {
-      if (a == 'i')
+      switch(a)
 	{
-	  call <insert_loop>;
-	}
-      if(a == 'h')
-	{
-	  x = getx();
-	  y = gety();
-	  if(x == 0)
-	    {
-	      y = ROWS - 1;
-	      x = COLS - 1;
-	    }
-	  else
-	    {
-	      x = x - 1;
-	      call <adjust_coords>;
-	    }
-	  move(x,y);
-	}
-      if(a == 'j')
-	{
-	  x = getx();
-	  y = gety() + 1;
-	  call <adjust_coords>;
-	  move(x,y);
-	}
-      if(a == 'k')
-	{
-	  x = getx();
-	  y = gety();
-	  if( y == 0)
-	    {
-	      y = ROWS - 1;
-	    }
-	  else
-	    {
-	      y = y - 1;
-	    }
-	  call <adjust_coords>;
-	  move(x,y);
-	}
-      if(a == 'l')
-	{
-	  x = getx() + 1;
-	  y = gety();
-	  call <adjust_coords>;
-	  move(x,y);
-	}
-      if(a == ':')
-	{
-	  call <command_loop>;
+	case 'i':
+	  {
+	    call <insert_loop>;
+	    break;
+	  }
+	case 'h':
+	  {
+	    x = getx();
+	    y = gety();
+	    if(x == 0)
+	      {
+		y = ROWS - 1;
+		x = COLS - 1;
+	      }
+	    else
+	      {
+		x = x - 1;
+		call <adjust_coords>;
+	      }
+	    move(x,y);
+	    break;
+	  }
+	case 'j':
+	  {
+	    x = getx();
+	    y = gety() + 1;
+	    call <adjust_coords>;
+	    move(x,y);
+	    break;
+	  }
+	case 'k':
+	  {
+	    x = getx();
+	    y = gety();
+	    if( y == 0)
+	      {
+		y = ROWS - 1;
+	      }
+	    else
+	      {
+		y = y - 1;
+	      }
+	    call <adjust_coords>;
+	    move(x,y);
+	    break;
+	  }
+	case 'l':
+	  {
+	    x = getx() + 1;
+	    y = gety();
+	    call <adjust_coords>;
+	    move(x,y);
+	    break;
+	  }
+	case ':':
+	  {
+	    call <command_loop>;
+	    break;
+	  }
 	}
       a = getch();
     }

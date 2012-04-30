@@ -64,12 +64,14 @@ imagdecimal {decimal}[iI]
 "break"         return BREAK;
 "if"            return IF;
 "else"          return ELSE;
+"switch"        return SWITCH;
+"case"          return CASE;
+"default"       return DEFAULT;
 "call"          return CALL;
 "return"        return RETURN;
 "def"           return DEFINE;
 "quit"          return EXIT;
 "cr"            return PASM_CR;
-"pop"           return PASM_POP;
 "argv"          return ARGV;
 "argc"          return ARGC;
 "fin"           return FIN;

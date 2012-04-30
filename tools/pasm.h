@@ -29,7 +29,10 @@ enum LANGUAGE_TOKENS{
   PASM_STATEMENT_DELIM,
   PASM_LABEL/* Tags an address as being referenced by a label*/,
   PASM_ADDR/*Address reference*/,
-  PASM_INITIALIZATION/* Initial definition. This allows the compiler to differentiate the first definition of a variable and it's modification later.*/
+  PASM_INITIALIZATION/* Initial definition. This allows the compiler to differentiate the first definition of a variable and it's modification later.*/,
+  PASM_SWITCH,
+  PASM_CASE,
+  PASM_DEFAULT
  };
   
 

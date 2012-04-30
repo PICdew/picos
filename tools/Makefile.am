@@ -1,4 +1,4 @@
-bin_PROGRAMS = picosc pasm pdasm fs
+bin_PROGRAMS = picosc pasm pdasm fs picdisk
 
 AM_YFLAGS = -d 
 picosc_CFLAGS =  -DNOT_FOR_PIC -I../
@@ -13,6 +13,9 @@ pasm_LDFLAGS =
 
 pdasm_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../
 pdasm_SOURCES = pdasm.c pasm_src.c
+
+picdisk_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../
+picdisk_SOURCES = picdisk.c
 
 
 fs_SOURCES = fs.c pasm_src.c ../utils.c
