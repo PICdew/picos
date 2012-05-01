@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
-  pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
+  pasm_build(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
 
   if(binary_file != NULL)
     {

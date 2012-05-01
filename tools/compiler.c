@@ -958,13 +958,9 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   return first_byte;
 }
 
-void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables)
+static void dump_code(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code)
 {
   char hex_buffer[45];
-  void resolve_labels(struct compiled_code* code);
-
-  resolve_labels(*the_code);
-  *the_code = MakePCB(*the_code,the_strings,num_variables,*piclang_bitmap);
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));// header + data + checksum
   if(hex_file != NULL)
     {
@@ -975,6 +971,21 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_co
   if(eeprom_file != NULL)
     FPrintCode(eeprom_file,*the_code,0,hex_buffer,0x4200,0,PRINT_EEPROM_DATA);
 
+}
+
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables)
+{
+  resolve_labels(*the_code);
+  dump_code(eeprom_file,hex_file,the_code);
+}
+
+void pasm_build(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables)
+{
+  void resolve_labels(struct compiled_code* code);
+
+  pasm_compile(eeprom_file,hex_file, the_code, the_strings, piclang_bitmap, num_variables);
+  *the_code = MakePCB(*the_code,the_strings,num_variables,*piclang_bitmap);
+  dump_code(eeprom_file,hex_file,the_code);
 }
 
 void preprocess(const char *keyword, nodeType *p)

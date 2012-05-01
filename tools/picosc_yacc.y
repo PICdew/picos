@@ -260,17 +260,19 @@ void check_load_rc()
   fclose(rc_file);
 }
 
-static const char short_options[] = "a:b:e:hl:n:o:";
-enum OPTION_INDICES{OUTPUT_HEX};
+static const char short_options[] = "a:b:ce:hl:n:o:";
+enum OPTION_INDICES{OUTPUT_HEX,OUTPUT_LIST,OUTPUT_LINKAGE};
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
                {"hex", 1,NULL, OUTPUT_HEX},
 	       {"asm", 1,NULL, 'a'},
-	       {"eeprom",1,NULL, 'e'},
 	       {"binary",1,NULL,'o'},
-	       {"list",1,NULL,'l'},
-	       {"linkage",1,NULL,'n'},
+	       {"compile",0,NULL,'c'},
+	       {"eeprom",1,NULL, 'e'},
+	       {"lib",1,NULL,'l'},
+	       {"linkage",1,NULL,OUTPUT_LINKAGE},
+	       {"list",1,NULL,OUTPUT_LIST},
 	       {"buffer_size",1,NULL,'b'},
                {0, 0, 0, 0}
              };
@@ -288,13 +290,16 @@ void print_help()
   printf("Options:\n");
   printf("--help, -h :\t\t Displays this dialog.\n");
   printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");
-  printf("--hex <file>    :\t Outputs Intel Hex to the specified file.\n");
+  printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
+  printf("--buffer_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)");
+  printf("--compile, -c :\t Compile or assemble the source, but do not produce executable code.\n"); 
   printf("--eeprom, -e <file> :\t Outputs \"__EEPROM_DATA(...)\" code for use\n");
   printf("                     \t with the Hi Tech C Compiler.\n");
-  printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
-  printf("--list, -l <file> :\t Outputs a list of program addresses (PC values) for each assembly entry.\n");
-  printf("--linkage, -n <file> :\t Outputs a list of linkage for jumps and calls.\n");
-  printf("--block_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)");
+  printf("--hex <file>    :\t Outputs Intel Hex to the specified file.\n");
+  printf("--lib, -l <file> :\t Link agains pre-compiled library (NOT YET IMPLEMENTED)\n");
+  printf("--linkage <file> :\t Outputs a list of linkage for jumps and calls.\n");
+  printf("--list <file> :\t Outputs a list of program addresses (PC values) for each assembly entry.\n");
+
 }
 
 
@@ -305,6 +310,7 @@ int main(int argc, char **argv)
   FILE *hex_file = NULL, *eeprom_file = NULL, *binary_file = NULL;
   FILE *lnk_file = NULL;
   char opt;
+  int compile_only = false;
   int opt_index;
   picos_size_t piclang_bitmap = 0;
   struct compiled_code *curr_code = NULL;
@@ -342,17 +348,22 @@ int main(int argc, char **argv)
 	      exit(-1);
 	    }
 	  break;
+	case 'c':
+	  compile_only = true;
+	  break;
 	case 'a':
 	  assembly_file = fopen(optarg,"w");
 	  if(assembly_file == NULL)
 	    assembly_file = stdout;
 	  break;
 	case 'l':
+	  break;
+	case OUTPUT_LIST:
 	  lst_file = fopen(optarg,"w");
 	  if(lst_file == NULL)
 	    lst_file = stdout;
 	  break;
-	case 'n':
+	case OUTPUT_LINKAGE:
 	  lnk_file = fopen(optarg,"w");
 	  if(lnk_file == NULL)
 	    lnk_file = stdout;
@@ -394,7 +405,15 @@ int main(int argc, char **argv)
 
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
-  pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
+  
+  if(compile_only)
+    {
+      pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
+    }
+  else
+    {
+      pasm_build(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
+    }
 
   if(binary_file != NULL)
     {
