@@ -177,11 +177,12 @@ static void create_lib_header(FILE *binary_file, const struct compiled_code *cur
   if(!have_type)
     fprintf(binary_file,"-");
   
-  fprintf(binary_file,"STRINGS:");
+  fprintf(binary_file,";STRINGS:");// ';' delimits section
   if(the_strings == NULL)
     fprintf(binary_file,"-");
   else
     fprintf(binary_file,"%d",word_counter);
+  fprintf(binary_file,";CODE:");
   
 }
 
@@ -392,7 +393,29 @@ int main(int argc, char **argv)
 	    assembly_file = stdout;
 	  break;
 	case 'l':
-	  break;
+	  {
+	    FILE *libfile = fopen(optarg,"rb");
+	    struct piclib_object* libobj = NULL;
+	    if(libfile == NULL)
+	      {
+		fprintf(stderr,"Could not open library file \"%s\"\n",optarg);
+		if(errno != 0)
+		  {
+		    fprintf(stderr,"Reason: %s\n",strerror(errno));
+		    exit(errno);
+		  }
+		exit(1);
+	      }
+	    // FREE substricts of piclib_load's piclib_object!!!
+	    libobj = piclib_load(libfile);
+	    if(libobj == NULL)
+	      {
+		fprintf(stderr, "Error loading library.\n");
+		exit(1);
+	      }
+	    free(libobj);
+	    break;
+	  }
 	case OUTPUT_LIST:
 	  lst_file = fopen(optarg,"w");
 	  if(lst_file == NULL)

@@ -103,6 +103,18 @@ struct subroutine_map
   struct subroutine_map *next;
 };
 
+struct piclib_object
+{
+  struct compiled_code *code;
+  struct compiled_code *strings;
+  struct subroutine_map *subroutines;
+  int offset;
+  char filename[FILENAME_MAX];
+  struct piclib_object *next;
+};
+
+
+
 struct assembly_map
 {
   const char keyword[256];
@@ -152,6 +164,11 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_co
  * Compiles and links the code.
  */
 void pasm_build(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables);
+
+/**
+ * Loads a library file and creates a library struct
+ */
+struct piclib_object* piclib_load(FILE *libfile);
 
 void create_lst_file(FILE *lst_file, const struct compiled_code *code_to_lst, const struct compiled_code *strings_to_list);
 void create_lnk_file(FILE *lnk_file, const struct compiled_code *code_to_lst);

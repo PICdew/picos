@@ -233,4 +233,133 @@ void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code)
 }
 
 
+struct piclib_object* piclib_load(FILE *libfile)
+{
+  picos_size_t word;
+  const size_t bufsiz = 1024;
+  char buffer[bufsiz], *name_pointer;
+  struct piclib_object *retval = NULL;
+  int string_loc = -1, index_counter = 0;
+  bool open_tag = false;
+  struct subroutine_map *curr_subroutine = NULL;
+
+  if(libfile == NULL)
+    {
+      fprintf(stderr,"piclib_load: Null pointer for libfile\n");
+      return NULL;
+    }
+
+  fread(buffer,strlen(PICLANG_LIB_MAGIC_NUMBERS),sizeof(char),libfile);
+  if(strncmp(buffer,PICLANG_LIB_MAGIC_NUMBERS,strlen(PICLANG_LIB_MAGIC_NUMBERS)) != 0)
+    {
+      fprintf(stderr,"piclib_load: File is not a PICLIB file\n");
+      return NULL;
+    }
+  
+  // initialize struct
+  retval = (struct piclib_object*)malloc(sizeof(struct piclib_object));
+  retval->offset = 0;
+  memset(retval->filename,0,FILENAME_MAX);
+  retval->next = NULL;
+  retval->code = retval->strings = NULL;
+  
+  // Load subroutine map
+  fread(buffer,strlen("FUNCTS:"),sizeof(char),libfile);
+  if(strncmp(buffer,"FUNCTS:",sizeof("FUNCTS")) != 0 || feof(libfile))
+    {
+      fprintf(stderr,"Corrupt PICLIB file. Missing function header\n");
+      exit(1);
+    }
+
+  // setup subroutines (FUNCTS)
+  while(!feof(libfile))
+    {
+      fscanf(libfile,"%c",buffer);
+      if(*buffer == '-')
+	break;// no FUNCTS?!?
+      
+      if(*buffer == '<')
+	{
+	  open_tag = true;
+	  curr_subroutine = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+	  memset(curr_subroutine->name,0,FILENAME_MAX);
+	  name_pointer = curr_subroutine->name;
+	  curr_subroutine->index = index_counter++;
+	  curr_subroutine->next = NULL;
+	  curr_subroutine->label = 0;// this will be filled in after the subroutine's name
+	}
+      else if(*buffer == '>')
+	{
+	  if(retval->subroutines == NULL)
+	    retval->subroutines = curr_subroutine;
+	  else
+	    {
+	      curr_subroutine->next = retval->subroutines;
+	      retval->subroutines = curr_subroutine;
+	    }
+	  curr_subroutine = NULL;
+	  open_tag = false;
+	}
+      else if(open_tag)
+	{
+	  // Filling name
+	  *name_pointer = *buffer;
+	  name_pointer++;
+	}
+      else
+	{
+	  // this is part of the subroutine's address
+	  if(*buffer == ';')
+	    break;// end of FUNCT section
+	  if(*buffer > '9' || *buffer < '0')
+	    {
+	      fprintf(stderr,"Invalid subroutine address digit: \"%c\"",*buffer);
+	      free(retval);
+	      return NULL;
+	    }
+	  retval->subroutines->label *= 10;
+	  retval->subroutines->label += (*buffer - 0x30);
+	}
+    }// end of FUNCT loading while
+  
+  fread(buffer,strlen("STRINGS:"),sizeof(char),libfile);
+  if(strncmp(buffer,"STRINGS:",strlen("STRINGS:")) != 0)
+    {
+      fprintf(stderr,"Invalid piclib header");
+      free(retval);
+      return NULL;
+    }
+  while(!feof(libfile))
+    {
+      fscanf(libfile,"%c",buffer);
+      if(*buffer == '-')
+	break;// no strings
+      if(*buffer == ';')
+	break;// end of string section
+      if(*buffer > '9' || *buffer < '0')
+	{
+	  fprintf(stderr,"Invalid string address digit: \"%c\"\n",*buffer);
+	  free(retval);
+	  return NULL;
+	}	  
+      if(string_loc != -1)
+	string_loc *= 10;
+      string_loc += (*buffer - 0x30);
+    }
+  
+  // Code section
+  fread(buffer,strlen("CODE:"),sizeof(char),libfile);
+  if(strncmp(buffer,"CODE:",strlen("CODE:")) != 0)
+    {
+      fprintf(stderr, "Corrupt PICLIB file. Missing CODE tag\n");
+      free(retval);
+      return NULL;
+    }
+
+  return retval;
+    
+}
+
+
+
 
