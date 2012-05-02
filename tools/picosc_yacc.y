@@ -150,7 +150,7 @@ expr:
 
 %%
 
-void create_lib_header(FILE *binary_file, const struct compiled_code *curr_code)
+static void create_lib_header(FILE *binary_file, const struct compiled_code *curr_code, const struct compiled_code *the_strings)
 {
   const struct compile_code *head = curr_code;
   int word_counter = 0;
@@ -178,8 +178,10 @@ void create_lib_header(FILE *binary_file, const struct compiled_code *curr_code)
     fprintf(binary_file,"-");
   
   fprintf(binary_file,"STRINGS:");
-  // FILL THIS IN
-  fprintf(binary_file,"-");
+  if(the_strings == NULL)
+    fprintf(binary_file,"-");
+  else
+    fprintf(binary_file,"%d",word_counter);
   
 }
 
@@ -451,7 +453,7 @@ int main(int argc, char **argv)
   if(binary_file != NULL)
     {
       if(compile_only)
-	create_lib_header(binary_file,the_code);
+	create_lib_header(binary_file,the_code,the_strings);
       curr_code = the_code;
       while(curr_code != NULL)
 	{
@@ -465,6 +467,14 @@ int main(int argc, char **argv)
 	    }
 	  curr_code = curr_code->next;
 	}
+ 
+      curr_code = the_strings;
+      while(curr_code != NULL)
+	{
+	  fprintf(binary_file,"%c",(char)curr_code->val);
+	  curr_code = curr_code->next;
+	}
+ 
     }
 
   create_lst_file(lst_file, the_code, the_strings);
