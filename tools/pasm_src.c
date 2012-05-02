@@ -10,7 +10,7 @@
 #include <stdarg.h>
 
 extern FILE *assembly_file;
-
+const char PICLANG_LIB_MAGIC_NUMBERS[] = "PICLIB";
 int write_assembly(FILE *stream, const char *format, ...)
 {
   va_list va;

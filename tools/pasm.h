@@ -109,6 +109,8 @@ struct assembly_map
   int opcode, has_arg;
 };
 
+extern const char PICLANG_LIB_MAGIC_NUMBERS[];
+
 nodeType *opr(int oper, int nops, ...);
 nodeType *id(idNodeType var);// creates a non-constant variable
 nodeType *const_id(idNodeType var, bool is_const);// creates a variable which may be made either constant or non-constant
@@ -142,6 +144,7 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
 
 /**
  * Compiles code, but does not link.
+ *
  */
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables);
 

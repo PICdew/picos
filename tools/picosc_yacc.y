@@ -150,6 +150,39 @@ expr:
 
 %%
 
+void create_lib_header(FILE *binary_file, const struct compiled_code *curr_code)
+{
+  const struct compile_code *head = curr_code;
+  int word_counter = 0;
+  bool have_type = false;
+  if(binary_file == NULL || curr_code == NULL)
+    return;
+  
+  fprintf(binary_file,"%s",PICLANG_LIB_MAGIC_NUMBERS);
+  fprintf(binary_file,"FUNCTS:");
+  while(curr_code != NULL)
+    {
+      if(curr_code->type == typeLabel && (curr_code->val == PICLANG_LABEL))
+	{
+	  const struct subroutine_map *subroutine = lookup_subroutine(curr_code->label);
+	  if(subroutine != NULL)
+	    {
+	      fprintf(binary_file,"<%s>%d",subroutine->name,word_counter);
+	      have_type = true;
+	    }
+	}
+      curr_code = curr_code->next;
+      word_counter++;
+    }
+  if(!have_type)
+    fprintf(binary_file,"-");
+  
+  fprintf(binary_file,"STRINGS:");
+  // FILL THIS IN
+  fprintf(binary_file,"-");
+  
+}
+
 void load_rc(char *keyword, char *arg)
 {
   size_t len,idx;
@@ -417,13 +450,19 @@ int main(int argc, char **argv)
 
   if(binary_file != NULL)
     {
+      if(compile_only)
+	create_lib_header(binary_file,the_code);
       curr_code = the_code;
       while(curr_code != NULL)
 	{
 	  if(curr_code->type != typeStr)
-	    write_val_for_pic(binary_file,curr_code->val);
+	    {
+	      write_val_for_pic(binary_file,curr_code->val);
+	    }
 	  else
-	    fprintf(binary_file,"%c",(char)curr_code->val);
+	    {
+	      fprintf(binary_file,"%c",(char)curr_code->val);
+	    }
 	  curr_code = curr_code->next;
 	}
     }
