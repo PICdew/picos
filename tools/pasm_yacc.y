@@ -352,7 +352,7 @@ int main(int argc, char **argv)
       curr_code = the_code;
       while(curr_code != NULL)
 	{
-	  if(curr_code->type != typeStr)
+	  if(curr_code->type != typeStr && curr_code->type != typePad)
 	    write_val_for_pic(binary_file,curr_code->val);
 	  else
 	    fprintf(binary_file,"%c",(picos_size_t)curr_code->val);

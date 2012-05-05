@@ -22,7 +22,7 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
     return -1;
   for(;code != NULL;code = code->next)
     {
-      if(code->type == typePCB || code->type == typeStr)
+      if(code->type == typePCB || code->type == typeStr || code->type == typePad)
 	continue;
       if(code->type == typeLabel && (code->val == PICLANG_LABEL))
 	{
@@ -118,7 +118,7 @@ void create_lst_file(FILE *lst_file, const struct compiled_code *the_code, const
 	{
 	  if(curr_code->type == typePCB)
 	    continue;
-	  if(curr_code->type == typeStr)
+	  if(curr_code->type == typeStr || curr_code->type == typePad)
 	    {
 	      continue;
 	    }
@@ -140,7 +140,7 @@ void create_lst_file(FILE *lst_file, const struct compiled_code *the_code, const
 	      else if(curr_code->val == PICLANG_CALL)
 		{
 		  curr_code = curr_code->next;
-		  while(curr_code->next != NULL && curr_code->type == typeStr)
+		  while(curr_code->next != NULL && (curr_code->type == typeStr || curr_code->type == typePad))
 		    curr_code = curr_code->next;
 		  fprintf(lst_file,"call %hu",curr_code->val);
 		  code_counter++;
@@ -232,6 +232,16 @@ void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code)
     }
 }
 
+static picos_size_t lib_get_next_word(FILE *hex_file)
+{
+  picos_size_t retval = -1;
+
+  if(hex_file == NULL || feof(hex_file))
+    return retval;
+
+  fread(&retval,sizeof(picos_size_t),1,hex_file);
+  return retval;
+}
 
 struct piclib_object* piclib_load(FILE *libfile)
 {
@@ -242,6 +252,8 @@ struct piclib_object* piclib_load(FILE *libfile)
   int string_loc = -1, index_counter = 0;
   bool open_tag = false;
   struct subroutine_map *curr_subroutine = NULL;
+  struct compiled_code *code_end, *string_end;
+  picos_size_t code_word;
 
   if(libfile == NULL)
     {
@@ -342,8 +354,9 @@ struct piclib_object* piclib_load(FILE *libfile)
 	  free(retval);
 	  return NULL;
 	}	  
-      if(string_loc != -1)
-	string_loc *= 10;
+      if(string_loc == -1)
+	string_loc = 0;
+      string_loc *= 10;
       string_loc += (*buffer - 0x30);
     }
   
@@ -354,6 +367,22 @@ struct piclib_object* piclib_load(FILE *libfile)
       fprintf(stderr, "Corrupt PICLIB file. Missing CODE tag\n");
       free(retval);
       return NULL;
+    }
+
+  index_counter = 0;
+  string_end = code_end = NULL;
+  while(!feof(libfile))
+    {
+      code_word = lib_get_next_word(libfile);
+      if(feof(libfile))
+	break;
+
+      if(index_counter >= string_loc)
+	insert_compiled_code(typeStr, &retval->strings, &string_end , code_word, index_counter);
+      else
+	insert_compiled_code(typeCode, &retval->code, &code_end , code_word, index_counter);
+      
+      index_counter++;
     }
 
   return retval;

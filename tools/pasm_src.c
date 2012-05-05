@@ -143,7 +143,7 @@ size_t CountCode(struct compiled_code *the_code)
 {
   if(the_code == NULL)
     return 0;
-  if(the_code->type == typeStr)
+  if(the_code->type == typeStr || the_code->type == typePad)
     return sizeof(char) + CountCode(the_code->next);
   else
     return sizeof(picos_size_t) + CountCode(the_code->next);

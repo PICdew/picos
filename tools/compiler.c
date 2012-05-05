@@ -888,7 +888,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
       end_of_call_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
       end_of_call_stack = end_of_call_stack->next;
       end_of_call_stack->next = NULL;
-      end_of_call_stack->type = typeStr;
+      end_of_call_stack->type = typePad;
       end_of_call_stack->val = name[i%5];
     }
   start_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
@@ -908,7 +908,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 	      code_index = code_index->next;
 	      code_index->next = NULL;
 	      code_index->val = ((i-page_size->val)%2) ? 0xad : 0xde;
-	      code_index->type =typeStr;
+	      code_index->type =typePad;
 	    }
 	  code_index->next = next_op;
 	  i = 0;
@@ -927,7 +927,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
       code_index = code_index->next;
       code_index->next = NULL;
       code_index->val = ((i-page_size->val)%2) ? 0xad : 0xde;
-      code_index->type =typeStr;
+      code_index->type =typePad;
     }  
 
   // Attach strings
