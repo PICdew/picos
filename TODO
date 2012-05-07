@@ -1,4 +1,5 @@
-* Allow picosc and pasm to create compiled code segments, which be linked to programs, like libraries.
+* Added object code to executable
+** Need a way to account of location of each object's string section: Relocation table. Finish this.
 * Add initial byte offset to fs, to allow it to use multiple images on one disk.
 * Create a utility similar to fdisk that will read a disk and output information about all of the picfs images.
 * sleep may or may not work.

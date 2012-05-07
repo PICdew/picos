@@ -103,11 +103,25 @@ struct subroutine_map
   struct subroutine_map *next;
 };
 
+// relocation types
+enum {REL_STRING = 0,REL_VARIABLE,REL_LABEL};
+typedef  struct {
+    int addr;// address to be offset
+    int offset;// relocation offset. Note: may be negative
+    int type;// type of offset. See enum above
+  }relocation_t;
+struct relocation_map
+{
+  relocation_t relocation;
+  struct relocation_map *next;
+};
+
 struct piclib_object
 {
   struct compiled_code *code;
   struct compiled_code *strings;
   struct subroutine_map *subroutines;
+  struct relocation_map *relmap;
   int offset;
   char filename[FILENAME_MAX];
   struct piclib_object *next;
@@ -169,6 +183,11 @@ void pasm_build(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code
  * Loads a library file and creates a library struct
  */
 struct piclib_object* piclib_load(FILE *libfile);
+
+/**
+ * writes a piclang library object
+ */
+void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,const struct compiled_code *libstrings);
 
 void create_lst_file(FILE *lst_file, const struct compiled_code *code_to_lst, const struct compiled_code *strings_to_list);
 void create_lnk_file(FILE *lnk_file, const struct compiled_code *code_to_lst);

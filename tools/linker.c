@@ -1,5 +1,8 @@
 #include "pasm.h"
+
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 
 const struct subroutine_map* lookup_subroutine(int index)
 {
@@ -34,7 +37,7 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
   return -1;
 }
 
-int get_subroutine_addr(struct compiled_code *code_head, struct compiled_code *code)
+static int get_subroutine_addr(const struct compiled_code *code_head, const struct compiled_code *code)
 {
   const struct subroutine_map *subroutine = lookup_subroutine(code->label);
   if(subroutine == NULL || subroutine->label == -1)
@@ -111,7 +114,7 @@ void create_lst_file(FILE *lst_file, const struct compiled_code *the_code, const
   if(lst_file != NULL)
     {
       struct assembly_map* curr;
-      struct compiled_code *first_string = NULL;
+      const struct compiled_code *first_string = NULL;
       int code_counter = 0;
       curr_code = the_code;
       for(;curr_code != NULL;curr_code = curr_code->next)
@@ -241,6 +244,46 @@ static picos_size_t lib_get_next_word(FILE *hex_file)
 
   fread(&retval,sizeof(picos_size_t),1,hex_file);
   return retval;
+}
+
+static void insert_relmap_entry(struct relocation_map **map,int addr,int offset, int relocation_type)
+{
+  struct relocation_map *new_relocate = NULL;
+  if(map == NULL)
+    {
+      fprintf(stderr,"insert_relmap_entry: NULL pointer for map\n");
+      exit(1);
+    }
+  
+  new_relocate = (struct relocation_map *)malloc(sizeof(struct relocation_map));
+  if(new_relocate == NULL)
+    {
+      fprintf(stderr,"insert_relmap_entry: could not allocate memory for relocation map\n");
+      if(errno)
+	{
+	  fprintf(stderr,"Reason: %s\n",strerror(errno));
+	  exit(errno);
+	}
+      exit(errno);
+    }
+  
+  new_relocate->relocation.addr = addr;
+  new_relocate->relocation.offset = offset;
+  new_relocate->relocation.type = relocation_type;
+  new_relocate->next = NULL;
+
+  if(*map == NULL)
+    *map = new_relocate;
+  else
+    {
+      new_relocate->next = *map;
+      *map = new_relocate;
+    }
+}
+
+static void free_relmap(struct relocation_map *map)
+{
+  free(map);
 }
 
 struct piclib_object* piclib_load(FILE *libfile)
@@ -385,8 +428,113 @@ struct piclib_object* piclib_load(FILE *libfile)
       index_counter++;
     }
 
+  // relocation map section
+  fread(buffer,strlen(":"),sizeof(char),libfile);
+  if(strncmp(buffer,"CODE:",strlen("CODE:")) != 0)
+    {
+      fprintf(stderr, "Corrupt PICLIB file. Missing CODE tag\n");
+      free(retval);
+      return NULL;
+    }
+
   return retval;
     
+}
+
+static void create_lib_header(FILE *binary_file, const struct compiled_code *curr_code, const struct compiled_code *the_strings)
+{
+  const struct compiled_code *head = curr_code;
+  int word_counter = 0;
+  bool have_type = false;
+  if(binary_file == NULL || curr_code == NULL)
+    return;
+  
+  fprintf(binary_file,"%s",PICLANG_LIB_MAGIC_NUMBERS);
+  fprintf(binary_file,"FUNCTS:");
+  while(curr_code != NULL)
+    {
+      if(curr_code->type == typeLabel && (curr_code->val == PICLANG_LABEL))
+	{
+	  const struct subroutine_map *subroutine = lookup_subroutine(curr_code->label);
+	  if(subroutine != NULL)
+	    {
+	      fprintf(binary_file,"<%s>%d",subroutine->name,word_counter);
+	      have_type = true;
+	    }
+	}
+      curr_code = curr_code->next;
+      word_counter++;
+    }
+  if(!have_type)
+    fprintf(binary_file,"-");
+  
+  fprintf(binary_file,";STRINGS:");// ';' delimits section
+  if(the_strings == NULL)
+    fprintf(binary_file,"-");
+  else
+    fprintf(binary_file,"%d",word_counter);
+}
+
+void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,const struct compiled_code *libstrings)
+{
+  const struct compiled_code *curr_code;
+  struct relocation_map *relmap = NULL;// for relocation table
+  int word_counter = 0;
+  
+  if(binary_file == NULL)
+    return;
+  
+  create_lib_header(binary_file, libcode,libstrings);
+  
+  fprintf(binary_file,";CODE:");
+  curr_code = libcode;
+  while(curr_code != NULL)
+    {
+      if(curr_code->type != typeStr && curr_code->type != typePad)
+	{
+	  write_val_for_pic(binary_file,curr_code->val);
+	  switch(curr_code->val)
+	    {
+	    case PICLANG_PUSH: case PICLANG_POP:
+	      if(curr_code->next == NULL)
+		{
+		  fprintf(stderr,"write_piclib_obj: NULL pointer for next word of push/pop\n");
+		  exit(1);
+		}
+	      curr_code = curr_code->next;
+	      word_counter++;
+	      insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
+	      break;
+	    default:
+	      break;
+	    }
+	}
+      else
+	{
+	  fprintf(binary_file,"%c",(char)curr_code->val);
+	}
+
+      curr_code = curr_code->next;
+      word_counter++;
+    }
+ 
+  curr_code = libstrings;
+  while(curr_code != NULL)
+    {
+      fprintf(binary_file,"%c",(char)curr_code->val);
+      curr_code = curr_code->next;
+    }
+
+  fprintf(binary_file,";RELMAP:");
+  if(relmap == NULL)
+    fprintf(binary_file,"-");
+  while(relmap != NULL)
+    {
+      fwrite(&relmap->relocation,sizeof(relocation_t),1,binary_file);
+      relmap = relmap->next;
+    }
+  
+
 }
 
 
