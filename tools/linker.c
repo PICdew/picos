@@ -292,11 +292,13 @@ struct piclib_object* piclib_load(FILE *libfile)
   const size_t bufsiz = 1024;
   char buffer[bufsiz], *name_pointer;
   struct piclib_object *retval = NULL;
-  int string_loc = -1, index_counter = 0;
+  int string_loc = -1, index_counter = 0, num_relmaps;
   bool open_tag = false;
   struct subroutine_map *curr_subroutine = NULL;
   struct compiled_code *code_end, *string_end;
   picos_size_t code_word;
+  relocation_t relocation;
+  struct relocation_map *relmap
 
   if(libfile == NULL)
     {
@@ -429,13 +431,42 @@ struct piclib_object* piclib_load(FILE *libfile)
     }
 
   // relocation map section
-  fread(buffer,strlen(":"),sizeof(char),libfile);
-  if(strncmp(buffer,"CODE:",strlen("CODE:")) != 0)
+  fread(buffer,strlen("RELMAP:"),sizeof(char),libfile);
+  if(strncmp(buffer,"RELMAP:",strlen("RELMAP:")) != 0)
     {
-      fprintf(stderr, "Corrupt PICLIB file. Missing CODE tag\n");
+      fprintf(stderr, "Corrupt PICLIB file. Missing RELMAP tag\n");
       free(retval);
       return NULL;
     }
+  num_relmaps = 0;
+  fread(buffer,sizeof(char),1,libfile);
+  if(libfile != '-')
+    {
+      // have rel maps. load them.
+      while(*buffer != '=' && !feof(libfile))
+	{
+	  if(*buffer < '0' || *buffer > '9')
+	    {
+	      fprintf(stderr,"piclib_load: Invalid RELMAP size digit '%c'\n",*buffer);
+	      exit(1);
+	    }
+	  
+	  num_relmaps *= 10;
+	  num_relmaps += (*buffer - '0');
+	}
+    }
+  while(num_relmaps > 0)
+    {
+      fread(&relocation,sizeof(relocation_t),1,libfile);
+      if(feof(libfile))
+	{
+	  fprintf(stderr,"piclib_load: Incomplete RELMAP section. Expected %d more entries.\n",num_relmaps);
+	  exit(1);
+	}
+      FINISH LOADING MAPS
+      num_relmaps--;
+    }
+  
 
   return retval;
     
@@ -478,7 +509,7 @@ static void create_lib_header(FILE *binary_file, const struct compiled_code *cur
 void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,const struct compiled_code *libstrings)
 {
   const struct compiled_code *curr_code;
-  struct relocation_map *relmap = NULL;// for relocation table
+  struct relocation_map *relmap = NULL, *tmpmap;// for relocation table
   int word_counter = 0;
   
   if(binary_file == NULL)
@@ -528,12 +559,33 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
   fprintf(binary_file,";RELMAP:");
   if(relmap == NULL)
     fprintf(binary_file,"-");
-  while(relmap != NULL)
+  else
     {
-      fwrite(&relmap->relocation,sizeof(relocation_t),1,binary_file);
-      relmap = relmap->next;
+      int num_relmaps = 0;
+      tmpmap = relmap;
+      for(;tmpmap != NULL;tmpmap = tmpmap->next)
+	num_relmaps++;
+      fprintf(binary_file,"%d=",num_relmaps);
     }
+  tmpmap = relmap;
+  while(tmpmap != NULL)
+    {
+      fwrite(&tmpmap->relocation,sizeof(relocation_t),1,binary_file);
+      tmpmap = tmpmap->next;
+    }
+  tmpmap = (struct relocation_map *)malloc(sizeof(struct relocation_map));
+  memset(&tmpmap->relocation,0,sizeof(relocation_t));
+  fwrite(&tmpmap->relocation,sizeof(relocation_t),1,binary_file);
+  free(tmpmap);
   
+  // Free structs
+  tmpmap = relmap;
+  while(tmpmap != NULL)
+    {
+      relmap = tmpmap;
+      tmpmap = tmpmap->next;
+      free(relmap);
+    }
 
 }
 
