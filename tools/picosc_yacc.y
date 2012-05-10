@@ -377,7 +377,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error loading library.\n");
 		exit(1);
 	      }
-	    free(libobj);
+	    piclib_free(libobj);
 	    break;
 	  }
 	case OUTPUT_LIST:

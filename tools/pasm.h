@@ -107,7 +107,7 @@ struct subroutine_map
 enum {REL_STRING = 0,REL_VARIABLE,REL_LABEL};
 typedef  struct {
     int addr;// address to be offset
-    int offset;// relocation offset. Note: may be negative
+    int val;// relocation amount. This may be an offset or new value, depending on the relocation type.
     int type;// type of offset. See enum above
   }relocation_t;
 struct relocation_map
