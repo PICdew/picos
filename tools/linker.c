@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <stdarg.h>
 
 const struct subroutine_map* lookup_subroutine(int index)
 {
@@ -246,6 +247,16 @@ static picos_size_t lib_get_next_word(FILE *hex_file)
   return retval;
 }
 
+void reason_exit(char format, ...)
+{
+  va_list args;
+  va_start(args,format);
+  vfprintf(stderr,format,args);
+  va_end(args);
+  
+  exit(1);
+}
+
 static void insert_relmap_entry(struct relocation_map **map,int addr,int offset, int relocation_type)
 {
   struct relocation_map *new_relocate = NULL;
@@ -286,19 +297,36 @@ static void free_relmap(struct relocation_map *map)
   free(map);
 }
 
+static void piclib_load_strings(FILE *libfile, struct compiled_code **strings_ptr, size_t num_strings)
+{
+  char ch;
+  struct compiled_code *string_end = NULL;
+
+  if(libfile == NULL)
+    reason_error("piclib_load_strings: Null pointer for library file\n");
+
+  if(strings_ptr == NULL)
+    return;// assume this means to skip
+  
+  while(num_strings)
+    {
+      fread(&ch,sizeof(char),1,libfile);
+      if(feof(libfile))
+	reason_error("error: Broken piclib file in STRINGS section\n");
+      
+      insert_compiled_code(typeStr, strings_ptr, &string_end , ch, index_counter);
+    }
+  
+}
+
 struct piclib_object* piclib_load(FILE *libfile)
 {
   picos_size_t word;
   const size_t bufsiz = 1024;
+  const char block_name_format[] = "%1024s(%d):";
   char buffer[bufsiz], *name_pointer;
+  size_t section_size;
   struct piclib_object *retval = NULL;
-  int string_loc = -1, index_counter = 0, num_relmaps;
-  bool open_tag = false;
-  struct subroutine_map *curr_subroutine = NULL;
-  struct compiled_code *code_end, *string_end;
-  picos_size_t code_word;
-  relocation_t relocation;
-  struct relocation_map *relmap
 
   if(libfile == NULL)
     {
@@ -306,13 +334,41 @@ struct piclib_object* piclib_load(FILE *libfile)
       return NULL;
     }
 
+
+  // Check magic numbers
   fread(buffer,strlen(PICLANG_LIB_MAGIC_NUMBERS),sizeof(char),libfile);
   if(strncmp(buffer,PICLANG_LIB_MAGIC_NUMBERS,strlen(PICLANG_LIB_MAGIC_NUMBERS)) != 0)
     {
       fprintf(stderr,"piclib_load: File is not a PICLIB file\n");
       return NULL;
     }
+
+  retval = (struct piclib_object*)malloc(sizeof(struct piclib_object));
+  if(retval == NULL)
+    reason_exit("piclib_load: Could not allocate memory for piclib object.\n");
   
+  while(!feof(libfile)
+    {
+      if(fscanf(libfile,block_name_format,buffer,&section_size) == 0)
+	reason_exit("error: Invalid piclib block\n");
+
+      printf("Loading section: \"%s\" Size: %d\n",buffer,section_size);
+      if(strncmp(buffer,"STRINGS",strlen("STRINGS")) == 0)
+	piclib_load_strings(libfile,&retval->strings);
+      else if(strncmp(buffer,"SUBROUTINES",strlen("SUBROUTINES")) == 0)
+	 fseek(libfile,section_size*sizeof(char),SEEK_CUR);
+      else if(strncmp(buffer,"STRINGS",strlen("STRINGS")) == 0)
+	 fseek(libfile,section_size*sizeof(char),SEEK_CUR);
+      else if(strncmp(buffer,"STRINGS",strlen("STRINGS")) == 0)
+	 fseek(libfile,section_size*sizeof(char),SEEK_CUR);
+      else 
+	{
+	  fprintf(stderr,"Unknown section\n");
+	  exit(1);
+	}
+    }
+
+#if 0 // OLD!!!  
   // initialize struct
   retval = (struct piclib_object*)malloc(sizeof(struct piclib_object));
   retval->offset = 0;
@@ -440,7 +496,7 @@ struct piclib_object* piclib_load(FILE *libfile)
     }
   num_relmaps = 0;
   fread(buffer,sizeof(char),1,libfile);
-  if(libfile != '-')
+  if(*buffer != '-')
     {
       // have rel maps. load them.
       while(*buffer != '=' && !feof(libfile))
@@ -463,10 +519,22 @@ struct piclib_object* piclib_load(FILE *libfile)
 	  fprintf(stderr,"piclib_load: Incomplete RELMAP section. Expected %d more entries.\n",num_relmaps);
 	  exit(1);
 	}
-      FINISH LOADING MAPS
+      if(relmap == NULL)
+	{
+	  relmap = (struct relocation_map *)malloc(sizeof(struct relocation_map));
+	  relmap->next = NULL;
+	}
+      else
+	{
+	  struct relocation_map *tmpmap = (struct relocation_map *)malloc(sizeof(struct relocation_map));
+	  tmpmap->next = relmap;
+	  relmap = tmpmap;
+	}
+      relmap->relocation = relocation;
       num_relmaps--;
     }
-  
+
+#endif// OLD!!!  
 
   return retval;
     
@@ -477,33 +545,79 @@ static void create_lib_header(FILE *binary_file, const struct compiled_code *cur
   const struct compiled_code *head = curr_code;
   int word_counter = 0;
   bool have_type = false;
+  
+  fprintf(stderr,"create_lib_header: DEPRECATED!\n");
+  exit(1);
+
   if(binary_file == NULL || curr_code == NULL)
     return;
   
-  fprintf(binary_file,"%s",PICLANG_LIB_MAGIC_NUMBERS);
-  fprintf(binary_file,"FUNCTS:");
+}
+
+void piclib_write_subroutines(FILE *binary_file, const struct compiled_code *curr_code)
+{
+  size_t word_counter = 0;
+  const struct compiled_code *code_head = curr_code;
+
+  if(binary_file == NULL || curr_code == NULL)
+    return;
+
   while(curr_code != NULL)
     {
       if(curr_code->type == typeLabel && (curr_code->val == PICLANG_LABEL))
 	{
 	  const struct subroutine_map *subroutine = lookup_subroutine(curr_code->label);
 	  if(subroutine != NULL)
-	    {
-	      fprintf(binary_file,"<%s>%d",subroutine->name,word_counter);
-	      have_type = true;
-	    }
+	    word_counter++;
+	}
+      curr_code = curr_code->next;
+    }
+
+  fprintf(binary_file,"SUBROUTINES(%lu):",word_counter);
+  if(word_counter == 0)
+    return;
+	      
+  curr_code = code_head;
+  word_counter = 0;
+  while(curr_code != NULL)
+    {
+      if(curr_code->type == typeLabel && (curr_code->val == PICLANG_LABEL))
+	{
+	  const struct subroutine_map *subroutine = lookup_subroutine(curr_code->label);
+	  if(subroutine != NULL)
+	    fprintf(binary_file,"<%s>%d",subroutine->name,word_counter);
 	}
       curr_code = curr_code->next;
       word_counter++;
     }
-  if(!have_type)
-    fprintf(binary_file,"-");
+
+}
+
+void piclib_write_strings(FILE *binary_file, const struct compiled_code *curr_code)
+{
+  size_t word_counter = 0;
+  const struct compiled_code *code_head = curr_code;  
+
+  if(binary_file == NULL || curr_code == NULL)
+    return;
   
-  fprintf(binary_file,";STRINGS:");// ';' delimits section
-  if(the_strings == NULL)
-    fprintf(binary_file,"-");
-  else
-    fprintf(binary_file,"%d",word_counter);
+  while(curr_code != NULL)
+    {
+      if(curr_code->type == typeStr)
+	word_counter++;
+      curr_code = curr_code->next;
+    }
+
+  fprintf(binary_file,"STRINGS(%lu):",word_counter);
+  
+  curr_code = code_head;
+  while(curr_code)
+    {
+      if(curr_code->type == typeStr)
+	fprintf(binary_file,"%c",(char)curr_code->val);
+      curr_code = curr_code->next;
+    }
+
 }
 
 void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,const struct compiled_code *libstrings)
@@ -515,9 +629,17 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
   if(binary_file == NULL)
     return;
   
-  create_lib_header(binary_file, libcode,libstrings);
+  //create_lib_header(binary_file, libcode,libstrings);
+  fprintf(binary_file,"%s",PICLANG_LIB_MAGIC_NUMBERS);
+
+  // Subroutine map
+  piclib_write_subroutines(binary_file,libcode);
+
+  // Strings
+  piclib_write_strings(binary_file,libstrings);
   
-  fprintf(binary_file,";CODE:");
+  // Write Code section
+  fprintf(binary_file,"CODE(%lu):",CountCode(libcode));
   curr_code = libcode;
   while(curr_code != NULL)
     {
@@ -533,40 +655,25 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
 		  exit(1);
 		}
 	      curr_code = curr_code->next;
-	      word_counter++;
 	      insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
 	      break;
 	    default:
 	      break;
 	    }
 	}
-      else
-	{
-	  fprintf(binary_file,"%c",(char)curr_code->val);
-	}
 
       curr_code = curr_code->next;
+    }
+
+  tmpmap = relmap;
+  word_counter = 0;
+  while(tmpmap != NULL)
+    {
       word_counter++;
+      tmpmap = tmpmap->next;
     }
- 
-  curr_code = libstrings;
-  while(curr_code != NULL)
-    {
-      fprintf(binary_file,"%c",(char)curr_code->val);
-      curr_code = curr_code->next;
-    }
-
-  fprintf(binary_file,";RELMAP:");
-  if(relmap == NULL)
-    fprintf(binary_file,"-");
-  else
-    {
-      int num_relmaps = 0;
-      tmpmap = relmap;
-      for(;tmpmap != NULL;tmpmap = tmpmap->next)
-	num_relmaps++;
-      fprintf(binary_file,"%d=",num_relmaps);
-    }
+         
+  fprintf(binary_file,"RELMAP(%d):",word_counter);
   tmpmap = relmap;
   while(tmpmap != NULL)
     {

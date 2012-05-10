@@ -139,7 +139,7 @@ void FreeCode(struct compiled_code* code)
   free(code);
 }
 
-size_t CountCode(struct compiled_code *the_code)
+size_t CountCode(const struct compiled_code *the_code)
 {
   if(the_code == NULL)
     return 0;

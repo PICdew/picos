@@ -161,7 +161,7 @@ extern int write_assembly(FILE *stream, const char *format, ...);
 int lookup_label(const struct compiled_code* code, picos_size_t label);
 
 enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
-size_t CountCode(struct compiled_code *the_code);
+size_t CountCode(const struct compiled_code *the_code);
 void FreeCode(struct compiled_code* code);
 struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, picos_size_t piclang_bitmap);
 void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables);
