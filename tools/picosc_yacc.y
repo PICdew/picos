@@ -370,13 +370,16 @@ int main(int argc, char **argv)
 		  }
 		exit(1);
 	      }
-	    // FREE substricts of piclib_load's piclib_object!!!
 	    libobj = piclib_load(libfile);
 	    if(libobj == NULL)
 	      {
 		fprintf(stderr, "Error loading library.\n");
 		exit(1);
 	      }
+	    if(piclib_link(libobj,&the_code,&the_strings,&the_code_end,&the_strings_end) != 0)
+	    	reason_exit("Could not link library file \"%s\"\n",optarg);
+		
+
 	    piclib_free(libobj);
 	    break;
 	  }

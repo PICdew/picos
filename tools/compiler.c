@@ -981,7 +981,7 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_co
 
 void pasm_build(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables)
 {
-  extern void resolve_labels(struct compiled_code* code);
+//  extern void resolve_labels(struct compiled_code* code);
 
   pasm_compile(eeprom_file,hex_file, the_code, the_strings, piclang_bitmap, num_variables);
   *the_code = MakePCB(*the_code,the_strings,num_variables,*piclang_bitmap);

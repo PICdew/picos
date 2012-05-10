@@ -196,7 +196,7 @@ int FS_mksuperblock(FS_Block *block, struct fs_fuse_state *the_state)
   if(the_state->block_size < FS_SuperBlock_length || the_state->block_size < FS_INode_length)
     {
       size_t min_size = (FS_INode_length > FS_SuperBlock_length) ? FS_INode_length : FS_SuperBlock_length;
-      fprintf(stderr,"Block size must be at least %d bytes.\n",min_size);
+      fprintf(stderr,"Block size must be at least %lu bytes.\n",min_size);
       return -1;
     }
 
@@ -244,7 +244,7 @@ int FS_allocate(FS_Block **data,size_t num_blocks,size_t block_size)
   return 0;
 }
 
-static int FS_file_size(FS_Block *the_dir)
+static int FS_file_size(const FS_Block *the_dir)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   size_t datacount = 0, filesize = 0;
@@ -1099,7 +1099,7 @@ static int fs_inodedump_filler(const char *path, void *buf, fuse_fill_dir_t fill
   file_head = FS_getblock(sb, inode_index);
   while(file_head != NULL)
     {
-      sprintf(inodename,"%u",inode_index);
+      sprintf(inodename,"%lu",inode_index);
       filler(buf,inodename,NULL,0);
       data_ptr++;
       if(data_ptr >= number_of_pointers)

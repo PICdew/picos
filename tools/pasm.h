@@ -143,6 +143,8 @@ nodeType *const_id(idNodeType var, bool is_const);// creates a variable which ma
 nodeType *full_id(idNodeType var, bool is_const, int data_type);// data_type: see enum above.
 nodeType *con(int value);
 
+void reason_exit(const char *format, ...);
+
 struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 
@@ -183,6 +185,11 @@ void pasm_build(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code
  * Loads a library file and creates a library struct
  */
 struct piclib_object* piclib_load(FILE *libfile);
+
+/**
+ * Links a library object to the current code base
+ */
+int piclib_link(struct piclib_object *library, struct compiled_code **the_code_ptr, struct compiled_code **the_strings_ptr, struct compiled_code **code_end, struct compiled_code **strings_end);
 
 /**
  * writes a piclang library object

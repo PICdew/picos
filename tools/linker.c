@@ -629,6 +629,9 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
 	  write_val_for_pic(binary_file,curr_code->val);
 	  switch(curr_code->val)
 	    {
+		    case PICLANG_LABEL:
+			    insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
+			    break;
 	    case PICLANG_PUSH: case PICLANG_POP:
 	      if(curr_code->next == NULL)
 		{
@@ -686,6 +689,92 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
 
 }
 
+struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_word)
+{
 
+	if(code == NULL)
+		return NULL;
 
+	while(code != NULL)
+	{
+		if(nth_word == 0)
+			return code;
+
+		code = code->next;
+	}
+
+	return NULL;
+}
+
+int piclib_link(struct piclib_object *library, struct compiled_code **the_code_ptr, struct compiled_code **the_strings_ptr, struct compiled_code **code_end, struct compiled_code **strings_end)
+{
+	size_t library_offset;
+	picos_size_t label;
+	struct relocation_map *relmap = NULL;
+	struct compiled_code *curr_word = NULL;
+	struct subroutine_map *subs = NULL;
+	extern picos_size_t label_counter;
+
+	if(library == NULL || the_code_ptr == NULL || the_strings_ptr == NULL)
+	{
+		fprintf(stderr,"piclib_link: NULL pointer\n");
+		return -1;
+	}
+
+	library_offset = CountCode(*the_code_ptr);
+
+	relmap = library->relmap;
+	if(library->code != NULL){
+	while(relmap != NULL)
+	{
+		curr_word = piclib_get_word(library->code,relmap->relocation.addr);
+		if(curr_word == NULL)
+			reason_exit("error: Invalid relocation address %d\n",relmap->relocation.addr);
+
+		switch(relmap->relocation.type)
+		{
+			case REL_VARIABLE:
+				{
+					char name[FILENAME_MAX+4];
+					idNodeType *var;
+					snprintf(name,FILENAME_MAX+3,"%s_%03d",library->filename,relmap->relocation.val);
+					resolve_variable(name);
+					if(var == NULL)
+						reason_exit("error: Could not allocate variable for library file \"%s\"\"");
+					curr_word->val = var->i;
+					printf("Setting variable at %d in %d\n",relmap->relocation.addr,var->i);
+					curr_word->type = typeId;
+					break;
+				}
+			case REL_LABEL:
+				{
+					curr_word->type = typeLabel;
+					curr_word->val = PICLANG_LABEL;
+					break;
+				}
+			default:
+				break;
+		}
+		
+		relmap = relmap->next;
+	}
+	
+	curr_word = library->code;
+	label = library_offset;
+	while(curr_word != NULL)
+	{
+		insert_compiled_code(curr_word->type, the_code_ptr, code_end, curr_word->val, label++);
+		curr_word = curr_word->next;
+	}
+	}
+
+	subs = library->subroutines;
+	while(subs != NULL)
+	{
+		insert_subroutine(subs->name,label_counter++);
+		subs = subs->next;
+	}
+	
+	return 0;
+}
 

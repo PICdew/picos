@@ -106,7 +106,7 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	  switch(word)
 	    {
 	    case PICLANG_LABEL:case PASM_SUBROUTINE:
-	      fprintf(assembly_file,"L%03d:",(ftell(hex_file)-pcb->start_address*FS_BUFFER_SIZE-2) >> 1);
+	      fprintf(assembly_file,"L%03d:",(int)(ftell(hex_file)-pcb->start_address*FS_BUFFER_SIZE-2) >> 1);
 	      break;
 	    case PICLANG_CALL:case PICLANG_JMP:case PICLANG_JZ:
 	      fprintf(assembly_file,"\tcall");
