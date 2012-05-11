@@ -42,6 +42,8 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	continue;
       if(((word & 0xff) == 0xde) || ((word & 0xff) == 0xad))
 	{
+	  if(feof(hex_file))
+	    break;
 	  fseek(hex_file,-1,SEEK_CUR);
 	  continue;
 	}
