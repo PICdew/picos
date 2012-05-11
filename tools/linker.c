@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-static const char piclib_subroutine_format[] = "%s %d ";
+static const char piclib_subroutine_format[] = "%s %lu %lu ";
 static   const char block_name_format[] = "%s %d:";
 
 const struct subroutine_map* lookup_subroutine(int index)
@@ -199,7 +199,7 @@ static struct compiled_code* increment_word(const struct compiled_code *word, in
 {
   if(word == NULL)
     return NULL;
-  
+   
   if(counter != NULL)
     *counter += 1;
   return word->next;
@@ -237,26 +237,6 @@ void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code)
       for(;arg_counter<asmb->has_arg;arg_counter++)
 	curr_code = increment_word(curr_code,&word_counter);
     }
-}
-
-static picos_size_t lib_get_next_word(FILE *hex_file)
-{
-  picos_size_t retval = -1;
-
-  if(hex_file == NULL || feof(hex_file))
-    return retval;
-  fread(&retval,sizeof(picos_size_t),1,hex_file);
-  return retval;
-}
-
-void reason_exit(const char *format, ...)
-{
-  va_list args;
-  va_start(args,format);
-  vfprintf(stderr,format,args);
-  va_end(args);
-  
-  exit(1);
 }
 
 static void insert_relmap_entry(struct relocation_map **map,int addr,int offset, int relocation_type)
@@ -400,8 +380,7 @@ static void piclib_load_relmap(FILE *libfile, struct relocation_map **relmap_ptr
 
 static void piclib_load_code(FILE *libfile, struct compiled_code **code_ptr, size_t num_words)
 {
-  struct compiled_code *code_end;
-  picos_size_t code_word;
+  struct compiled_code *code_end, *code_word;
   int index_counter = 0;
 
   if(libfile == NULL)
@@ -410,14 +389,35 @@ static void piclib_load_code(FILE *libfile, struct compiled_code **code_ptr, siz
   if(code_ptr == NULL)
     return;// assume this means to skip
 
+  code_end = *code_ptr;
+  if(code_end != NULL)
+    {
+      while(code_end->next != NULL)
+	code_end = code_end->next;
+    }
+
   while(!feof(libfile) && num_words != 0)
   {
-	  code_word = lib_get_next_word(libfile);
-	  if(feof(libfile))
-		  reason_exit("error: broken CODE section of library file.\n");
-
-	  insert_compiled_code(typeCode, code_ptr, &code_end, code_word, index_counter++);
-	  num_words--;
+    code_word = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+    if(code_word == NULL)
+      reason_exit("piclib_load_code: could not allocate memory for struct compiled_code.\n");
+    
+    if(fread(code_word,sizeof(struct compiled_code),1,libfile) == 0)
+      reason_exit("error: Could not load CODE word\n");
+    code_word->next = NULL;
+    
+    if(code_end == NULL)
+      {
+	*code_ptr = code_word;
+	code_end = *code_ptr;
+      }
+    else
+      {
+	code_end->next = code_word;
+	code_end = code_word;
+      }
+    
+      num_words--;
   }
 
 
@@ -426,26 +426,28 @@ static void piclib_load_subroutines(FILE *libfile, struct subroutine_map **subro
 {
   char sub_name[FILENAME_MAX];
   struct subroutine_map *subs_end = NULL;
-  int sub_loc;
-  int sub_index;
+  //struct subroutine_map tmp;
+  size_t sub_label;
+  size_t sub_index;
   
   if(libfile == NULL)
     reason_exit("piclib_load_subroutines: Null pointer for library file\n");
 
   if(subroutines_ptr == NULL)
     return;// assume this means to skip
-  sub_index = 0;
+  
   while(num_subs)
     {
-      fscanf(libfile,piclib_subroutine_format,sub_name,&sub_loc);
+      fscanf(libfile,piclib_subroutine_format,sub_name,&sub_label, &sub_index);
       if(feof(libfile))
-	reason_exit("error: Broken piclib file in STRINGS section\n");
+	reason_exit("error: Broken piclib file in SUBROUTINES section\n");
      
       subs_end = *subroutines_ptr;
       *subroutines_ptr = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+      //(*subroutines_ptr) = tmp;
       strncpy((*subroutines_ptr)->name,sub_name,FILENAME_MAX);
-      (*subroutines_ptr)->index = sub_index++;
-      (*subroutines_ptr)->label = sub_loc;
+      (*subroutines_ptr)->label = sub_label;
+      (*subroutines_ptr)->index = sub_index;
       (*subroutines_ptr)->next = subs_end;
 
       num_subs--;
@@ -554,7 +556,7 @@ void piclib_write_subroutines(FILE *binary_file, const struct compiled_code *cur
 	{
 	  const struct subroutine_map *subroutine = lookup_subroutine(curr_code->label);
 	  if(subroutine != NULL)
-	    fprintf(binary_file,piclib_subroutine_format,subroutine->name,word_counter);
+	    fprintf(binary_file,piclib_subroutine_format,subroutine->name,subroutine->label, subroutine->index );
 	}
       curr_code = curr_code->next;
       word_counter++;
@@ -626,21 +628,23 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
     {
       if(curr_code->type != typeStr && curr_code->type != typePad)
 	{
-	  write_val_for_pic(binary_file,curr_code->val);
+	  //write_val_for_pic(binary_file,curr_code->val);
+	  fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
 	  switch(curr_code->val)
 	    {
 		    case PICLANG_LABEL:
-			    insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
-			    break;
+		      insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
+		      break;
 	    case PICLANG_PUSH: case PICLANG_POP:
 	      if(curr_code->next == NULL)
 		{
 		  fprintf(stderr,"write_piclib_obj: NULL pointer for next word of push/pop\n");
 		  exit(1);
 		}
-	      curr_code = curr_code->next; 
-	      write_val_for_pic(binary_file,curr_code->val);
-	      insert_relmap_entry(&relmap,word_counter++,curr_code->val,REL_VARIABLE);
+	      curr_code = curr_code->next; word_counter++;
+	      //write_val_for_pic(binary_file,curr_code->val);
+	      fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+	      insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
 	      break;
 	    case PICLANG_JMP: case PICLANG_JZ: case PICLANG_CALL:
 	      if(curr_code->next == NULL)
@@ -648,13 +652,15 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
 		  fprintf(stderr,"write_piclib_obj: NULL pointer for next word of jmp/jz/call\n");
 		  exit(1);
 		}
-	      curr_code = curr_code->next; 
-	      write_val_for_pic(binary_file,curr_code->val);
-	      insert_relmap_entry(&relmap,word_counter++,0,REL_LABEL);
+	      curr_code = curr_code->next; word_counter++;
+	      //write_val_for_pic(binary_file,curr_code->val);
+	      fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+	      insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
 	      break;
 	    default:
 	      break;
 	    }
+
 	}
 
       curr_code = curr_code->next;
@@ -691,7 +697,7 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
 
 struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_word)
 {
-
+  
 	if(code == NULL)
 		return NULL;
 
@@ -699,7 +705,7 @@ struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_wor
 	{
 		if(nth_word == 0)
 			return code;
-
+		nth_word--;
 		code = code->next;
 	}
 
@@ -708,7 +714,8 @@ struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_wor
 
 int piclib_link(struct piclib_object *library, struct compiled_code **the_code_ptr, struct compiled_code **the_strings_ptr, struct compiled_code **code_end, struct compiled_code **strings_end)
 {
-	size_t library_offset;
+  idNodeType* resolve_variable(const char *name);
+  size_t library_offset;
 	picos_size_t label;
 	struct relocation_map *relmap = NULL;
 	struct compiled_code *curr_word = NULL;
@@ -738,7 +745,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 					char name[FILENAME_MAX+4];
 					idNodeType *var;
 					snprintf(name,FILENAME_MAX+3,"%s_%03d",library->filename,relmap->relocation.val);
-					resolve_variable(name);
+					var = resolve_variable(name);
 					if(var == NULL)
 						reason_exit("error: Could not allocate variable for library file \"%s\"\"");
 					curr_word->val = var->i;
@@ -748,6 +755,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 				}
 			case REL_LABEL:
 				{
+					printf("Setting label at %d to %d\n",relmap->relocation.addr, curr_word->label + label_counter);
 					curr_word->type = typeLabel;
 					curr_word->val = PICLANG_LABEL;
 					break;

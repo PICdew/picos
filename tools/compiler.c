@@ -65,7 +65,7 @@ int ex(nodeType *p) {
 	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
 	write_assembly(assembly_file,"\tcall\t<%s>\n",subroutine->name);
 	insert_code(PICLANG_CALL);
-	insert_label(PASM_SUBROUTINE,subroutine->index);
+	insert_label(PASM_SUBROUTINE,subroutine->label);
 	break;
       }
     case PASM_LABEL: case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
@@ -342,7 +342,7 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tsignal %d, <%s>\n", p->opr.op[0]->con.value, subroutine->name);
 	insert_code(PICLANG_SIGNAL);
 	insert_code(p->opr.op[0]->con.value);
-	insert_label(PASM_SUBROUTINE,subroutine->index);
+	insert_label(PASM_SUBROUTINE,subroutine->label);
 	break;
       }
     case PICLANG_SLEEP:
