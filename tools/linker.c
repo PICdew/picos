@@ -716,7 +716,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 {
   idNodeType* resolve_variable(const char *name);
   size_t library_offset;
-	picos_size_t label;
+	picos_size_t label, label_offset;
 	struct relocation_map *relmap = NULL;
 	struct compiled_code *curr_word = NULL;
 	struct subroutine_map *subs = NULL;
@@ -755,12 +755,14 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 				}
 			case REL_LABEL:
 				{
-					printf("Setting label at %d to %d\n",relmap->relocation.addr, curr_word->label + label_counter);
+					curr_word->label += label_counter;
+					printf("Setting label(%d) at %d from %d to %d\n",curr_word->val,relmap->relocation.addr, curr_word->label - label_counter, curr_word->label);
 					curr_word->type = typeLabel;
 					curr_word->val = PICLANG_LABEL;
 					break;
 				}
 			default:
+				printf("Skipping relocation type %d\n",relmap->relocation.type);
 				break;
 		}
 		
@@ -771,15 +773,18 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	label = library_offset;
 	while(curr_word != NULL)
 	{
-		insert_compiled_code(curr_word->type, the_code_ptr, code_end, curr_word->val, label++);
+		insert_compiled_code(curr_word->type, the_code_ptr, code_end, curr_word->val, curr_word->label);
 		curr_word = curr_word->next;
 	}
 	}
 
 	subs = library->subroutines;
+	label_offset = label_counter;
 	while(subs != NULL)
 	{
-		insert_subroutine(subs->name,label_counter++);
+		printf("Inserting subroutine %s with index %lu and label %lu\n",subs->name,subs->index, subs->label);
+		insert_subroutine(subs->name,subs->index + label_offset);
+		label_counter++;
 		subs = subs->next;
 	}
 	

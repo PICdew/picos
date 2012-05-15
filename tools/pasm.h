@@ -153,7 +153,7 @@ void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct 
 #define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X,0)
 #define insert_label(X,Y) insert_compiled_code(typeLabel, &the_code,&the_code_end,X,Y)
 
-void insert_subroutine(const char *name, size_t label);
+int insert_subroutine(const char *name, size_t label);
 const struct subroutine_map* get_subroutine(const char *name);
 
 
