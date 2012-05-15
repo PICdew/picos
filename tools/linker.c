@@ -729,6 +729,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	}
 
 	library_offset = CountCode(*the_code_ptr);
+	label_offset = label_counter;
 
 	relmap = library->relmap;
 	if(library->code != NULL){
@@ -755,9 +756,11 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 				}
 			case REL_LABEL:
 				{
-					curr_word->label += label_counter;
-					printf("Setting label(%d) at %d from %d to %d\n",curr_word->val,relmap->relocation.addr, curr_word->label - label_counter, curr_word->label);
+					curr_word->label += label_offset;
+					printf("Setting label(%d) at %d from %d to %d\n",curr_word->val,relmap->relocation.addr, curr_word->label - label_offset, curr_word->label);
 					curr_word->type = typeLabel;
+					if(curr_word->val == PICLANG_LABEL)
+						label_counter++;
 					curr_word->val = PICLANG_LABEL;
 					break;
 				}
@@ -779,7 +782,6 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	}
 
 	subs = library->subroutines;
-	label_offset = label_counter;
 	while(subs != NULL)
 	{
 		printf("Inserting subroutine %s with index %lu and label %lu\n",subs->name,subs->index, subs->label);

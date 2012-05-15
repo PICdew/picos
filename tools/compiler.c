@@ -938,6 +938,8 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   
   // Find the location of the main function
   pc->val = lookup_label(the_code,((struct subroutine_map*) get_subroutine("main"))->label);
+  if(pc->val == (picos_size_t)-1)
+	reason_exit("error: Undefined \"main\" function.\n");
 
   while(the_code->next != NULL)
     the_code = the_code->next;
