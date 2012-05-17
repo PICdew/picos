@@ -599,7 +599,7 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
   
   if(binary_file == NULL)
     return;
-  
+ 
   //create_lib_header(binary_file, libcode,libstrings);
   fprintf(binary_file,"%s",PICLANG_LIB_MAGIC_NUMBERS);
 
@@ -734,6 +734,8 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	string_offset = CountCode(*the_strings_ptr);
 	label_offset = label_counter;
 
+	
+
 	relmap = library->relmap;
 	if(library->code != NULL){
 	while(relmap != NULL)
@@ -757,9 +759,14 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 					curr_word->type = typeId;
 					break;
 				}
-#if 0//needed?
 			case REL_LABEL:
 				{
+					curr_word->val += library_offset;
+					printf("Changing label address from %d to %d\n",curr_word->val-library_offset,curr_word->val);
+					if(curr_word->val == PICLANG_LABEL)
+						label_counter++;
+					break;
+#if 0//needed?
 					curr_word->label += label_offset;
 					printf("Setting label(%d) at %d from %d to %d\n",curr_word->val,relmap->relocation.addr, curr_word->label - label_offset, curr_word->label);
 					curr_word->type = typeLabel;
@@ -767,8 +774,8 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 						label_counter++;
 					curr_word->val = PICLANG_LABEL;
 					break;
-				}
 #endif
+				}
 			case REL_STRING:
 				curr_word->val += string_offset;
 				printf("Setting string pointer (%d) to %d\n",curr_word->val - string_offset,curr_word->val);
@@ -794,7 +801,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	while(subs != NULL)
 	{
 		printf("Inserting subroutine %s with index %lu and label %lu\n",subs->name,subs->index, subs->label);
-		insert_subroutine(subs->name,subs->index + label_offset);
+		insert_subroutine(subs->name,subs->label + label_offset);
 		label_counter++;
 		subs = subs->next;
 	}
