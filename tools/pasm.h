@@ -45,9 +45,18 @@ typedef enum { typeCon, typeId, typeOpr, typeStr, typeLabel, typeCode, typeSubro
 // Data types
 enum { data_int};
 
+// relocation types
+enum {REL_STRING = 0,REL_VARIABLE,REL_LABEL};
+typedef  struct {
+    int addr;// address to be offset
+    int val;// relocation amount. This may be an offset or new value, depending on the relocation type.
+    int type;// type of offset. See enum above
+  }relocation_t;
+
 /* constants */
 typedef struct {
     int value;                  /* value of constant */
+    int relocation_type; 	/* If constant is relocatable, this is the enum value. Otherwise, -1 */
 } conNodeType;
 
 /* identifiers */
@@ -92,6 +101,7 @@ struct compiled_code
   picos_size_t label;
   picos_size_t val;
   nodeEnum type;
+  int relocation_type;
   struct compiled_code *next;
 };
 
@@ -103,13 +113,6 @@ struct subroutine_map
   struct subroutine_map *next;
 };
 
-// relocation types
-enum {REL_STRING = 0,REL_VARIABLE,REL_LABEL};
-typedef  struct {
-    int addr;// address to be offset
-    int val;// relocation amount. This may be an offset or new value, depending on the relocation type.
-    int type;// type of offset. See enum above
-  }relocation_t;
 struct relocation_map
 {
   relocation_t relocation;
@@ -141,14 +144,18 @@ nodeType *opr(int oper, int nops, ...);
 nodeType *id(idNodeType var);// creates a non-constant variable
 nodeType *const_id(idNodeType var, bool is_const);// creates a variable which may be made either constant or non-constant
 nodeType *full_id(idNodeType var, bool is_const, int data_type);// data_type: see enum above.
-nodeType *con(int value);
+nodeType *con(int value);// Creates a constant that is not relocatable
+nodeType *full_con(int value, int relocation_type);
 
+/**
+ * Exits the program with status 1 and prints the supplied message to stderr
+ */
 void reason_exit(const char *format, ...);
 
 struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 
-void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label);
+struct compiled_code* insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label);
 #define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X,0)
 #define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X,0)
 #define insert_label(X,Y) insert_compiled_code(typeLabel, &the_code,&the_code_end,X,Y)

@@ -658,6 +658,8 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
 	      insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
 	      break;
 	    default:
+	      if(curr_code->relocation_type != -1)
+		      insert_relmap_entry(&relmap,word_counter,0,curr_code->relocation_type);
 	      break;
 	    }
 
@@ -716,7 +718,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 {
   idNodeType* resolve_variable(const char *name);
   size_t library_offset;
-	picos_size_t label, label_offset;
+	picos_size_t label, label_offset, string_offset;
 	struct relocation_map *relmap = NULL;
 	struct compiled_code *curr_word = NULL;
 	struct subroutine_map *subs = NULL;
@@ -729,6 +731,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	}
 
 	library_offset = CountCode(*the_code_ptr);
+	string_offset = CountCode(*the_strings_ptr);
 	label_offset = label_counter;
 
 	relmap = library->relmap;
@@ -754,6 +757,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 					curr_word->type = typeId;
 					break;
 				}
+#if 0//needed?
 			case REL_LABEL:
 				{
 					curr_word->label += label_offset;
@@ -764,6 +768,11 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 					curr_word->val = PICLANG_LABEL;
 					break;
 				}
+#endif
+			case REL_STRING:
+				curr_word->val += string_offset;
+				printf("Setting string pointer (%d) to %d\n",curr_word->val - string_offset,curr_word->val);
+				break;
 			default:
 				printf("Skipping relocation type %d\n",relmap->relocation.type);
 				break;
@@ -788,6 +797,14 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 		insert_subroutine(subs->name,subs->index + label_offset);
 		label_counter++;
 		subs = subs->next;
+	}
+
+	curr_word = library->strings;
+	while(curr_word != NULL)
+	{
+		insert_compiled_code(typeStr,the_strings_ptr,strings_end,curr_word->val,0);
+		printf("Inserted String (%d) %c\n",curr_word->val,curr_word->val);
+		curr_word = curr_word->next;
 	}
 	
 	return 0;

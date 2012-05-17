@@ -117,7 +117,7 @@ stmt_list:
 expr:
           INTEGER               { $$ = con($1); }
         | VARIABLE              { $$ = id($1); }
-        | STRING                { $$ = con(handle_string($1->str.string)); }
+        | STRING                { $$ = full_con(handle_string($1->str.string),REL_STRING); }
         | ARGC                  { $$ = opr(PICLANG_ARGC,0); }
         | ERRNO                  { $$ = opr(PICLANG_ERRNO,0); }
         | FIN                   { $$ = con(ARG_SIZE); }
@@ -461,13 +461,15 @@ int main(int argc, char **argv)
 		}
 	      curr_code = curr_code->next;
 	    }
- 
+
+#if 0 // deprecated 
 	  curr_code = the_strings;
 	  while(curr_code != NULL)
 	    {
 	      fprintf(binary_file,"%c",(char)curr_code->val);
 	      curr_code = curr_code->next;
 	    }
+#endif
 	}
  
     }

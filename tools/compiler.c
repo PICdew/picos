@@ -29,6 +29,7 @@ static void deal_with_arguments(oprNodeType *opr)
 
 int ex(nodeType *p) {
   extern FILE *assembly_file;
+  struct compiled_code *inserted_word = NULL; 
   int lbl1, lbl2;
   int previous_break_to_label = break_to_label;
   int previous_continue_to_label = continue_to_label;
@@ -37,9 +38,10 @@ int ex(nodeType *p) {
   if (!p) return 0;
   switch(p->type) {
   case typeCon:
-    write_assembly(assembly_file,"\tpushl\t0x%x\n", p->con.value); 
+    write_assembly(assembly_file,"\tpushl\t0x%x\n", p->con.value);
     insert_code(PICLANG_PUSHL);
-    insert_code(p->con.value);
+    inserted_word = insert_code(p->con.value);
+    inserted_word->relocation_type = p->con.relocation_type;
     break;
   case typeId:  
     {
@@ -562,7 +564,7 @@ int insert_subroutine(const char *name, size_t label)
 
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
 
-nodeType *con(int value) {
+nodeType *full_con(int value, int relocation_type) {
     nodeType *p;
     size_t nodeSize;
 
@@ -574,9 +576,12 @@ nodeType *con(int value) {
     /* copy information */
     p->type = typeCon;
     p->con.value = value;
+    p->con.relocation_type = relocation_type;
 
     return p;
 }
+
+nodeType *con(int value){ return full_con(value,-1);}
 
 int handle_string(const char *pStr)
 {

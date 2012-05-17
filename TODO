@@ -1,6 +1,5 @@
 * Added object code to executable
-** Figure out why label resolution fails for library files.
-** Patch in string section of library file. Then test A LOT.
+** Labels are being set to *their* address not the address to which they should point.
 * Add initial byte offset to fs, to allow it to use multiple images on one disk.
 * Create a utility similar to fdisk that will read a disk and output information about all of the picfs images.
 * sleep may or may not work.

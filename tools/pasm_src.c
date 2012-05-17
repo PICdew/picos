@@ -25,7 +25,7 @@ int write_assembly(FILE *stream, const char *format, ...)
   return retval;
 }
 
-void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label)
+struct compiled_code* insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label)
 {
   struct compiled_code *list = *ptrlist;
   struct compiled_code *list_end = *ptrlist_end;
@@ -37,8 +37,9 @@ void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct 
       list->val = val;
       list->label = label;
       list->type = type;
+      list->relocation_type = -1;
       list->next = NULL;
-      return;
+      return list;
     }
   
   list_end->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -47,6 +48,8 @@ void insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct 
   (*ptrlist_end)->next = NULL;
   (*ptrlist_end)->val = val;
   (*ptrlist_end)->type = type;
+  (*ptrlist_end)->relocation_type = -1;
+  return *ptrlist_end;
 }
 
 
