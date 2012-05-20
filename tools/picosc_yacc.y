@@ -14,21 +14,15 @@
 #include <errno.h>
 #include <unistd.h>
 
-struct compiled_code *the_code;
-struct compiled_code *the_code_end;
-struct compiled_code *the_strings;
-struct compiled_code *the_strings_end;
-struct subroutine_map *subroutines;
+extern picos_size_t label_counter;
+int break_to_label, continue_to_label, switch_end_label;
+struct subroutine_map *global_subroutines = NULL;
 
 extern struct assembly_map opcodes[];
 
 char **string_list;
 size_t num_strings;
 picos_size_t FS_BUFFER_SIZE;
-
-extern picos_size_t label_counter;
-int break_to_label, continue_to_label, switch_end_label;
-idNodeType *variable_list = NULL;
 
 /* prototypes */
 void freeNode(nodeType *p);
@@ -313,12 +307,8 @@ int main(int argc, char **argv)
   int compile_only = false;
   int opt_index;
   picos_size_t piclang_bitmap = 0;
-  struct compiled_code *curr_code = NULL;
 
   assembly_file = NULL;
-  the_code_end = the_code = NULL;
-  the_strings = the_strings = NULL;
-  string_list = NULL;num_strings = 0;
   variable_list = NULL;
   subroutines = NULL;
   break_to_label = -1;
@@ -425,7 +415,9 @@ int main(int argc, char **argv)
     }
   else
     printf("Welcome to the piclang compiler.\n");
-  
+ 
+  insert_subroutine("GLOBALS");// this stores global stuff
+ 
   yyparse();
 
   if(hex_file == stdout)
@@ -433,21 +425,22 @@ int main(int argc, char **argv)
   
   if(compile_only)
     {
-      pasm_compile(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
+      pasm_compile(eeprom_file,hex_file,&global_subroutines,&piclang_bitmap);
     }
   else
     {
-      pasm_build(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
+      pasm_build(eeprom_file,hex_file,&global_subroutines,&piclang_bitmap);
     }
 
   if(binary_file != NULL)
     {
       if(compile_only)
 	{
-	  write_piclib_obj(binary_file,the_code, the_strings);
+	  write_piclib_obj(binary_file,global_subroutines);
 	}
       else
 	{
+#if 0// re-write for subroutines
 	  curr_code = the_code;
 	  while(curr_code != NULL)
 	    {
@@ -470,14 +463,16 @@ int main(int argc, char **argv)
 	      curr_code = curr_code->next;
 	    }
 #endif
+#endif// re-write
 	}
  
     }
 
-  create_lst_file(lst_file, the_code, the_strings);
+  create_lst_file(lst_file, global_subroutines);
   
-  create_lnk_file(lnk_file, the_code);
+  create_lnk_file(lnk_file, global_subroutines); 
+
+  all_free_subroutines(global_subroutines);
   
-  FreeCode(the_code);
   return 0;
 }

@@ -42,16 +42,8 @@ const char FS_readme_filename[] = "/proc/README";
 const char FS_rawfile_name[] = "/proc/raw";
 const char FS_inodedump_filename[] = "/proc/inodes";
 
-struct compiled_code *the_code;
-struct compiled_code *the_code_end;
 picos_size_t FS_BUFFER_SIZE;
-int break_to_label, continue_to_label;
-idNodeType *variable_list = NULL;
-char **string_list;
-size_t num_strings;
-struct compiled_code *the_strings;
-struct compiled_code *the_strings_end;
-struct subroutine_map *subroutines;
+
 char yytext[256];int yylloc;
 
 static int fs_inodedump_filler(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi);

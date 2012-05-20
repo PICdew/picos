@@ -517,9 +517,7 @@ int ex(nodeType *p) {
   return 0;
 }
 
-
-static compiler_subroutine_counter = 0;
-int insert_subroutine(const char *name, size_t label)
+struct subroutine_map *insert_subroutine(const char *name)
 {
   
   if(subroutines == NULL)
@@ -537,16 +535,8 @@ int insert_subroutine(const char *name, size_t label)
 	      // already defined here. Check to see if the label is the same
 	      // If it is -1, then it was declared by not defined.
 	      // If not, this a multiple definition error
-	      if(tmp->label == -1)
-		tmp->label = label;
-	      else if(tmp->label != label)
-		{
-		  fprintf(stderr,"Multiple definitions of %s\n",name);
-		  exit(-1);
-		}
-	      
-	      
-	      return;
+		    fprintf(stderr,"Multiple definitions of %s\n",name);
+		    exit(-1); 
 	    }
 	  tmp = tmp->next;
 	}
@@ -557,11 +547,34 @@ int insert_subroutine(const char *name, size_t label)
       subroutines = tmp;
     }
   strcpy(subroutines->name,name);
-  subroutines->label = label;
-  subroutines->index = compiler_subroutine_counter++;
-  return subroutines->index;
+  subroutines->address = subroutines->size = -1;
+  subroutines->code = suborutines->strings = NULL;
+  subroutines->code_end = suborutines->strings_end = NULL;
+  subroutines->variables = NULL; 
+  return subroutines;
 }
 
+void free_subroutine(struct subroutine_map *subroutine)
+{
+	if(subroutine == NULL)
+		return;
+	free_code(subroutine->code); subroutine->code = (struct compiled_code *)0xdead;
+        free_code(suborutines->strings); subroutine->strings = (struct compiled_code *)0xdead;
+	free_variables(subroutine->variables);subroutine->variables = (idNodeType *)0xdead;
+	subroutine->next = (struct subroutine_map *)0xdead;
+}
+
+void all_free_subroutines(struct subroutine_map *subroutine)
+{
+	struct subroutine_map *next = NULL;
+	while(subroutine != NULL)
+	{
+		next = subroutine->next;
+		free_subroutine(subroutine);
+		subroutine = next;
+	}
+
+}
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
 
 nodeType *full_con(int value, int relocation_type) {

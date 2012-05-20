@@ -108,8 +108,9 @@ struct compiled_code
 struct subroutine_map
 {
   char name[FILENAME_MAX];// Human-readable name.
-  size_t label;// label of subroutine with code
-  size_t index;// unique id
+  int address, size;
+  struct_compiled_code *code, *code_end, *strings, *strings_end;
+  idNodeType *variables;
   struct subroutine_map *next;
 };
 
@@ -160,7 +161,26 @@ struct compiled_code* insert_compiled_code(nodeEnum type, struct compiled_code**
 #define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X,0)
 #define insert_label(X,Y) insert_compiled_code(typeLabel, &the_code,&the_code_end,X,Y)
 
-int insert_subroutine(const char *name, size_t label);
+/**
+  * Creates and inserts a subroutine into the global subroutine linked list
+  * Returns a pointer to the subroutine. If the subroutine already exists,
+  * and error is thrown
+  */
+struct subroutine_map* insert_subroutine(const char *name);
+
+/**
+  * Frees a subroutine's memory. Will recursively free all components of the 
+  * struct, but will not free it's "next" component. To free recursively,
+  * iterate through linked list.
+  */
+void free_subroutine(struct subroutine_map *subroutine);
+
+/**
+  * Recursively frees a subroutine linked list. Calls free_subroutine.
+  */
+void all_free_subroutines(struct subroutine_map *subroutine);
+
+  
 const struct subroutine_map* get_subroutine(const char *name);
 
 
@@ -181,12 +201,12 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
  * Compiles code, but does not link.
  *
  */
-void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables);
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map **the_subroutines, picos_size_t *piclang_bitmap);
 
 /**
  * Compiles and links the code.
  */
-void pasm_build(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables);
+void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map **the_subroutines, picos_size_t *piclang_bitmap);
 
 /**
  * Loads a library file and creates a library struct
@@ -201,7 +221,7 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 /**
  * writes a piclang library object
  */
-void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,const struct compiled_code *libstrings);
+void write_piclib_obj(FILE *binary_file,const struct subroutine_map *subroutines);
 
 void create_lst_file(FILE *lst_file, const struct compiled_code *code_to_lst, const struct compiled_code *strings_to_list);
 void create_lnk_file(FILE *lnk_file, const struct compiled_code *code_to_lst);

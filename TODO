@@ -1,7 +1,8 @@
+* Change libraries import only functions that are called by the main code.
+** Made the compiler/linker modular, centered around functions.
 * sleep may or may not work.
 * Add timer function to piclang.
 * Fix else if in picosc
 * Fix switch so that default does not *have* to go at the end of the switch.
 * Programs need a file table so that their files are closed when the program exits
 * ps function to list running processes
-* Change libraries import only functions that are called by the main code.
