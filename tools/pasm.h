@@ -96,6 +96,15 @@ typedef struct nodeTypeTag {
 
 extern int sym[26];
 
+struct subroutine_map
+{
+  char name[FILENAME_MAX];// Human-readable name.
+  int address, size;
+  struct compiled_code *code, *code_end, *strings, *strings_end;
+  idNodeType *variables;
+  struct subroutine_map *next;
+};
+
 struct compiled_code
 {
   picos_size_t label;
@@ -103,15 +112,6 @@ struct compiled_code
   nodeEnum type;
   int relocation_type;
   struct compiled_code *next;
-};
-
-struct subroutine_map
-{
-  char name[FILENAME_MAX];// Human-readable name.
-  int address, size;
-  struct_compiled_code *code, *code_end, *strings, *strings_end;
-  idNodeType *variables;
-  struct subroutine_map *next;
 };
 
 struct relocation_map
@@ -156,10 +156,22 @@ void reason_exit(const char *format, ...);
 struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 
-struct compiled_code* insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label);
-#define insert_string(X) insert_compiled_code(typeStr, &the_strings,&the_strings_end,X,0)
-#define insert_code(X) insert_compiled_code(typeCode, &the_code,&the_code_end,X,0)
-#define insert_label(X,Y) insert_compiled_code(typeLabel, &the_code,&the_code_end,X,Y)
+struct compiled_code* insert_compiled_code(nodeEnum type, struct subroutine_map *subroutine, picos_size_t val, picos_size_t label);
+#define insert_string(X) insert_compiled_code(typeStr, g_curr_subroutine,X,0)
+#define insert_code(X) insert_compiled_code(typeCode, g_curr_subroutine,X,0)
+#define insert_label(X,Y) insert_compiled_code(typeLabel, g_curr_subroutine,X,Y)
+
+/**
+  * Frees code's memory. Does not do so recursively through the list.
+  * See, free_all_code
+  */
+void free_code(struct compiled_code *code);
+
+/**
+  * Frees code memory, recursively through the linked list.
+  *
+  */
+void free_all_code(struct compiled_code *code_list);
 
 /**
   * Creates and inserts a subroutine into the global subroutine linked list
@@ -180,7 +192,8 @@ void free_subroutine(struct subroutine_map *subroutine);
   */
 void all_free_subroutines(struct subroutine_map *subroutine);
 
-  
+ void free_all_variables(idNodeType *variable);
+ 
 const struct subroutine_map* get_subroutine(const char *name);
 
 
@@ -201,12 +214,12 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
  * Compiles code, but does not link.
  *
  */
-void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map **the_subroutines, picos_size_t *piclang_bitmap);
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap);
 
 /**
  * Compiles and links the code.
  */
-void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map **the_subroutines, picos_size_t *piclang_bitmap);
+void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap);
 
 /**
  * Loads a library file and creates a library struct
@@ -216,15 +229,15 @@ struct piclib_object* piclib_load(FILE *libfile);
 /**
  * Links a library object to the current code base
  */
-int piclib_link(struct piclib_object *library, struct compiled_code **the_code_ptr, struct compiled_code **the_strings_ptr, struct compiled_code **code_end, struct compiled_code **strings_end);
+int piclib_link(struct piclib_object *library, struct subroutine_map *subroutines);
 
 /**
  * writes a piclang library object
  */
 void write_piclib_obj(FILE *binary_file,const struct subroutine_map *subroutines);
 
-void create_lst_file(FILE *lst_file, const struct compiled_code *code_to_lst, const struct compiled_code *strings_to_list);
-void create_lnk_file(FILE *lnk_file, const struct compiled_code *code_to_lst);
+void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines);
+void create_lnk_file(FILE *lnk_file, const struct subroutine_map *subroutines);
 
 #endif
 

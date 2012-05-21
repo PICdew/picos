@@ -343,9 +343,10 @@ int main(int argc, char **argv)
   
   yyparse();
 
+#if 0//FIX!
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
-  pasm_build(eeprom_file,hex_file,&the_code,the_strings,&piclang_bitmap,count_variables());
+  pasm_build(eeprom_file,hex_file,global_subroutines,&piclang_bitmap,count_variables());
 
   if(binary_file != NULL)
     {
@@ -438,7 +439,7 @@ int main(int argc, char **argv)
 	    fprintf(lst_file,"%c",first_string->val);
 	}
     }
-  
+#endif// FIX
   FreeCode(the_code);
   return 0;
 }

@@ -67,21 +67,21 @@ int ex(nodeType *p) {
 	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
 	write_assembly(assembly_file,"\tcall\t<%s>\n",subroutine->name);
 	insert_code(PICLANG_CALL);
-	insert_label(PASM_SUBROUTINE,subroutine->index);
+	insert_label(PASM_SUBROUTINE,subroutine->address);
 	break;
       }
     case PASM_LABEL: case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
       {
 	const char *subroutine_name = p->opr.op[0]->str.string;
-	const struct subroutine_map *subroutine = NULL;
+	struct subroutine_map *subroutine = NULL;
 	lbl1 = label_counter;	label_counter++;
-	insert_subroutine(subroutine_name,lbl1);
-	subroutine = get_subroutine(subroutine_name);
+	subroutine = insert_subroutine(subroutine_name);
 	if(subroutine == NULL)
 	  {
 	    fprintf(stderr,"Could not declare subroutine: %s\n",subroutine_name);
 	    exit(-1);
 	  }
+	subroutine->address = lbl1;
 	write_assembly(assembly_file,"%s:\n", subroutine->name);
 	insert_label(PICLANG_LABEL,lbl1);
 	deal_with_arguments(&p->opr);
@@ -226,7 +226,7 @@ int ex(nodeType *p) {
 	  write_assembly(assembly_file,"\tjz ");
 	else
 	  write_assembly(assembly_file,"\tjmp ");
-	write_assembly(assembly_file,"%s;%d\n",subroutine->name,subroutine->label);
+	write_assembly(assembly_file,"%s;%d\n",subroutine->name,subroutine->address);
 	break;
       }
     case PICLANG_PRINT:     
@@ -344,7 +344,7 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tsignal %d, <%s>\n", p->opr.op[0]->con.value, subroutine->name);
 	insert_code(PICLANG_SIGNAL);
 	insert_code(p->opr.op[0]->con.value);
-	insert_label(PASM_SUBROUTINE,subroutine->index);
+	insert_label(PASM_SUBROUTINE,subroutine->address);
 	break;
       }
     case PICLANG_SLEEP:
@@ -520,14 +520,14 @@ int ex(nodeType *p) {
 struct subroutine_map *insert_subroutine(const char *name)
 {
   
-  if(subroutines == NULL)
-    subroutines = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+  if(global_subroutines == NULL)
+    global_subroutines = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
   else
     {
       struct subroutine_map* tmp;
 
       // Search to see if this subroutine exists
-      tmp = subroutines;
+      tmp = global_subroutines;
       while(tmp != NULL)
 	{
 	  if(strcmp(tmp->name,name) == 0)
@@ -543,15 +543,15 @@ struct subroutine_map *insert_subroutine(const char *name)
       
       // Not found. Create it.
       tmp = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
-      tmp->next = subroutines;
-      subroutines = tmp;
+      tmp->next = global_subroutines;
+      global_subroutines = tmp;
     }
-  strcpy(subroutines->name,name);
-  subroutines->address = subroutines->size = -1;
-  subroutines->code = suborutines->strings = NULL;
-  subroutines->code_end = suborutines->strings_end = NULL;
-  subroutines->variables = NULL; 
-  return subroutines;
+  strcpy(global_subroutines->name,name);
+  global_subroutines->address = global_subroutines->size = -1;
+  global_subroutines->code = global_subroutines->strings = NULL;
+  global_subroutines->code_end = global_subroutines->strings_end = NULL;
+  global_subroutines->variables = NULL; 
+  return global_subroutines;
 }
 
 void free_subroutine(struct subroutine_map *subroutine)
@@ -559,8 +559,8 @@ void free_subroutine(struct subroutine_map *subroutine)
 	if(subroutine == NULL)
 		return;
 	free_code(subroutine->code); subroutine->code = (struct compiled_code *)0xdead;
-        free_code(suborutines->strings); subroutine->strings = (struct compiled_code *)0xdead;
-	free_variables(subroutine->variables);subroutine->variables = (idNodeType *)0xdead;
+        free_code(subroutine->strings); subroutine->strings = (struct compiled_code *)0xdead;
+	free_all_variables(subroutine->variables);subroutine->variables = (idNodeType *)0xdead;
 	subroutine->next = (struct subroutine_map *)0xdead;
 }
 
@@ -772,7 +772,12 @@ int resolve_string(const char *str, int *is_new)
 int count_variables()
 {
   int retval = 0;
-  const idNodeType *it = variable_list;
+  const idNodeType *it = NULL;
+
+  if(g_curr_subroutine == NULL)
+	return 0;
+
+  it = g_curr_subroutine->variables;
   while(it != NULL)
     {
       retval++;
@@ -781,23 +786,50 @@ int count_variables()
   return retval;
 }
 
+void free_variable(idNodeType *variable)
+{
+	if(variable == NULL)
+		return;
+	variable->next = (idNodeType*)0xdead;
+	free(variable);	
+}
+
+void free_all_variables(idNodeType *variable)
+{
+	idNodeType *tmp;
+	
+	while(variable != NULL)
+	{
+		tmp = variable->next;
+		free_variable(variable);
+		variable = tmp;
+	}
+}
+
 idNodeType* resolve_variable(const char *name)
 {
   int i;
-  idNodeType *curr_variable = variable_list;
+  idNodeType *curr_variable, **variable_list;
+
+  if(g_curr_subroutine == NULL)
+  {
+	  yyerror("internal error: g_curr_subroutine is not defined.\n");
+  }
+
+  curr_variable = g_curr_subroutine->variables;
   if(name == NULL)
     {
       yyerror("Invalid variable name: NULL POINTER\n");
       return NULL;
     }
 
-  if(variable_list == NULL)
+  if(g_curr_subroutine->variables == NULL)
     {
-      variable_list = (idNodeType*)malloc(sizeof(idNodeType));
-      variable_list->i = 0;
-      strcpy(variable_list->name,name);
-      variable_list->next = NULL;
-      return variable_list;
+      g_curr_subroutine->variables = (idNodeType*)malloc(sizeof(idNodeType));
+      g_curr_subroutine->variables->i = 0;
+      strcpy(g_curr_subroutine->variables->name,name);
+      g_curr_subroutine->variables->next = NULL;
+      return g_curr_subroutine->variables;
     }
   
   while(curr_variable != NULL)
@@ -811,8 +843,8 @@ idNodeType* resolve_variable(const char *name)
   curr_variable = (idNodeType*)malloc(sizeof(idNodeType));
   strcpy(curr_variable->name,name);
   curr_variable->i = count_variables();
-  curr_variable->next = variable_list;
-  variable_list = curr_variable;
+  curr_variable->next = g_curr_subroutine->variables;
+  g_curr_subroutine->variables = curr_variable;
 
   return curr_variable;
 }
@@ -825,12 +857,12 @@ const struct subroutine_map* get_subroutine(const char *name)
       fprintf(stderr,"NULL pointer for the subroutine name.\n");
       exit(-1);
     }
-  if(subroutines == NULL)
+  if(global_subroutines == NULL)
     {
-      insert_subroutine(name,(size_t)-1);
+      insert_subroutine(name);
     }
   
-  retval = subroutines;
+  retval = global_subroutines;
   while(retval != NULL)
     {
       if(strcmp(retval->name,name) == 0)
@@ -839,8 +871,7 @@ const struct subroutine_map* get_subroutine(const char *name)
     }
   
   // If here, the subroutine was not yet defined.
-  insert_subroutine(name,(size_t)-1);
-  return get_subroutine(name);
+  return insert_subroutine(name);
 }
 
 void set_pcb_type(struct compiled_code *the_pcb)
@@ -955,7 +986,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
 
   
   // Find the location of the main function
-  pc->val = lookup_label(the_code,((struct subroutine_map*) get_subroutine("main"))->label);
+  pc->val = lookup_label(the_code,((struct subroutine_map*) get_subroutine("main"))->address);
   if(pc->val == (picos_size_t)-1)
 	reason_exit("error: Undefined \"main\" function.\n");
 
@@ -994,19 +1025,23 @@ static void dump_code(FILE *eeprom_file,FILE *hex_file,struct compiled_code **th
 
 }
 
-void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables)
+void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
 {
-  resolve_labels(*the_code);
-  dump_code(eeprom_file,hex_file,the_code);
+  if(the_subroutines == NULL)
+	return;
+  resolve_labels(the_subroutines->code);
+  dump_code(eeprom_file,hex_file,&the_subroutines->code);
 }
 
-void pasm_build(FILE *eeprom_file,FILE *hex_file,struct compiled_code **the_code, struct compiled_code *the_strings, picos_size_t *piclang_bitmap, int num_variables)
-{
-//  extern void resolve_labels(struct compiled_code* code);
+void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
+{ 
+  int num_variables = count_variables(); // REPLACE WITH GLOBAL COUNT
+  if(the_subroutines == NULL)
+	return;
 
-  pasm_compile(eeprom_file,hex_file, the_code, the_strings, piclang_bitmap, num_variables);
-  *the_code = MakePCB(*the_code,the_strings,num_variables,*piclang_bitmap);
-  dump_code(eeprom_file,hex_file,the_code);
+  pasm_compile(eeprom_file,hex_file,the_subroutines, piclang_bitmap);
+  the_subroutines->code = MakePCB(the_subroutines->code,the_subroutines->strings,num_variables,*piclang_bitmap);
+  dump_code(eeprom_file,hex_file,&the_subroutines->code);
 }
 
 void preprocess(const char *keyword, nodeType *p)

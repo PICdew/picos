@@ -10,11 +10,12 @@ static   const char block_name_format[] = "%s %d:";
 
 const struct subroutine_map* lookup_subroutine(int index)
 {
+  extern struct subroutine_map *global_subroutines;
   extern struct subroutine_map *subroutines;
-  const struct subroutine_map *retval = subroutines;
+  const struct subroutine_map *retval = global_subroutines;
   while(retval != NULL)
     {
-      if(retval->index == index)
+      if(retval->address == index)
 	break;
       retval = retval->next;
     }
@@ -44,7 +45,7 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
 static int get_subroutine_addr(const struct compiled_code *code_head, const struct compiled_code *code)
 {
   const struct subroutine_map *subroutine = lookup_subroutine(code->label);
-  if(subroutine == NULL || subroutine->label == -1)
+  if(subroutine == NULL || subroutine->address == -1)
     {
       if(subroutine == NULL)
 	fprintf(stderr,"Undefined reference: #%d\n",code->label);
@@ -52,7 +53,7 @@ static int get_subroutine_addr(const struct compiled_code *code_head, const stru
 	fprintf(stderr,"Undefined reference: %s\n",subroutine->name);
       exit(-1);
     }
-  return lookup_label(code_head, subroutine->label);
+  return lookup_label(code_head, subroutine->address);
   
 }
 
@@ -112,9 +113,15 @@ void resolve_labels(struct compiled_code* code)
 }
 
 
-void create_lst_file(FILE *lst_file, const struct compiled_code *the_code, const struct compiled_code *the_strings)
+void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines)
 {
   const struct compiled_code *curr_code = NULL;
+  const struct compiled_code *the_code;
+  const struct compiled_code *the_strings;
+
+  fprintf(stderr,"lst file not yet (re)implemented\n");
+  return;
+
   if(lst_file != NULL)
     {
       struct assembly_map* curr;
@@ -205,11 +212,16 @@ static struct compiled_code* increment_word(const struct compiled_code *word, in
   return word->next;
 }
 
-void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code)
+void create_lnk_file(FILE *lnk_file, const struct subroutine_map *subroutines)
 {
+  const struct compiled_code *the_code;
   const struct compiled_code *curr_code = the_code;
   int word_counter = 0,arg_counter;
   struct assembly_map *asmb = NULL;
+
+  fprintf(stderr,"lnk file not yet (re)implemented\n");
+  return;
+
   if(lnk_file == NULL || curr_code == NULL)
     return;
   
@@ -319,7 +331,8 @@ void piclib_free(struct piclib_object *library)
 
 }
 
-static void piclib_load_strings(FILE *libfile, struct compiled_code **strings_ptr, size_t num_strings)
+#if 0//FIX!
+static void piclib_load_strings(FILE *libfile, struct subroutine_map *subroutine, size_t num_strings)
 {
   char ch;
   struct compiled_code *string_end = NULL;
@@ -714,7 +727,7 @@ struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_wor
 	return NULL;
 }
 
-int piclib_link(struct piclib_object *library, struct compiled_code **the_code_ptr, struct compiled_code **the_strings_ptr, struct compiled_code **code_end, struct compiled_code **strings_end)
+int piclib_link(struct piclib_object *library, struct subroutine_map *subroutines)
 {
   idNodeType* resolve_variable(const char *name);
   size_t library_offset;
@@ -723,6 +736,15 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	struct compiled_code *curr_word = NULL;
 	struct subroutine_map *subs = NULL;
 	extern picos_size_t label_counter;
+	struct compiled_code **the_code_ptr, **the_strings_ptr, **code_end, **strings_end;
+
+        if(subroutines == NULL)
+		return -1;
+
+	the_code_ptr = &subroutines->code;
+	the_strings_ptr = &subroutines->strings;
+	code_end = &subroutines->code_end;
+	strings_end = &subroutines->strings_end;
 
 	if(library == NULL || the_code_ptr == NULL || the_strings_ptr == NULL)
 	{
@@ -816,4 +838,6 @@ int piclib_link(struct piclib_object *library, struct compiled_code **the_code_p
 	
 	return 0;
 }
+
+#endif //FIX
 

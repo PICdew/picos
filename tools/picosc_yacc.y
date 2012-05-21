@@ -16,7 +16,7 @@
 
 extern picos_size_t label_counter;
 int break_to_label, continue_to_label, switch_end_label;
-struct subroutine_map *global_subroutines = NULL;
+struct subroutine_map *global_subroutines = NULL, *g_curr_subroutine = NULL;
 
 extern struct assembly_map opcodes[];
 
@@ -307,10 +307,9 @@ int main(int argc, char **argv)
   int compile_only = false;
   int opt_index;
   picos_size_t piclang_bitmap = 0;
+  struct compiled_code *curr_code = NULL;
 
   assembly_file = NULL;
-  variable_list = NULL;
-  subroutines = NULL;
   break_to_label = -1;
   continue_to_label = -1;
   switch_end_label = -1;
@@ -350,6 +349,9 @@ int main(int argc, char **argv)
 	  {
 	    FILE *libfile = fopen(optarg,"rb");
 	    struct piclib_object* libobj = NULL;
+	    fprintf(stderr,"piclib not yet reimplemented\n");
+	    exit(1);
+#if 0//FIX!
 	    if(libfile == NULL)
 	      {
 		fprintf(stderr,"Could not open library file \"%s\"\n",optarg);
@@ -366,11 +368,12 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error loading library.\n");
 		exit(1);
 	      }
-	    if(piclib_link(libobj,&the_code,&the_strings,&the_code_end,&the_strings_end) != 0)
+	    if(piclib_link(libobj,global_subroutines) != 0)
 	    	reason_exit("Could not link library file \"%s\"\n",optarg);
 		
 
 	    piclib_free(libobj);
+#endif//FIX
 	    break;
 	  }
 	case OUTPUT_LIST:
@@ -416,7 +419,8 @@ int main(int argc, char **argv)
   else
     printf("Welcome to the piclang compiler.\n");
  
-  insert_subroutine("GLOBALS");// this stores global stuff
+  global_subroutines = insert_subroutine("GLOBALS");// this stores global stuff
+  g_curr_subroutine = global_subroutines;
  
   yyparse();
 
@@ -425,23 +429,22 @@ int main(int argc, char **argv)
   
   if(compile_only)
     {
-      pasm_compile(eeprom_file,hex_file,&global_subroutines,&piclang_bitmap);
+      pasm_compile(eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
     }
   else
     {
-      pasm_build(eeprom_file,hex_file,&global_subroutines,&piclang_bitmap);
+      pasm_build(eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
     }
 
   if(binary_file != NULL)
     {
       if(compile_only)
 	{
-	  write_piclib_obj(binary_file,global_subroutines);
+	  fprintf(stderr,"piclib not yet reimplemented\n");//write_piclib_obj(binary_file,global_subroutines);
 	}
       else
 	{
-#if 0// re-write for subroutines
-	  curr_code = the_code;
+	  curr_code = global_subroutines->code;
 	  while(curr_code != NULL)
 	    {
 	      if(curr_code->type != typeStr && curr_code->type != typePad)
@@ -463,7 +466,6 @@ int main(int argc, char **argv)
 	      curr_code = curr_code->next;
 	    }
 #endif
-#endif// re-write
 	}
  
     }

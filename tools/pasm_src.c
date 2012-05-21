@@ -25,10 +25,55 @@ int write_assembly(FILE *stream, const char *format, ...)
   return retval;
 }
 
-struct compiled_code* insert_compiled_code(nodeEnum type, struct compiled_code** ptrlist, struct compiled_code** ptrlist_end, picos_size_t val, picos_size_t label)
+void free_all_code(struct compiled_code *code_list)
 {
-  struct compiled_code *list = *ptrlist;
-  struct compiled_code *list_end = *ptrlist_end;
+	struct compiled_code *tmp;
+
+	while(code_list != NULL)
+	{
+		tmp = code_list->next;
+		free(code_list);
+		code_list = tmp;
+	}
+	
+}
+
+void free_code(struct compiled_code *code)
+{
+	if(code == NULL)
+		return;
+
+  	 code->next = (struct compiled_code*)0xdead;
+	free(code);
+}
+
+struct compiled_code* insert_compiled_code(nodeEnum type, struct subroutine_map *subroutine, picos_size_t val, picos_size_t label)
+{
+  struct compiled_code **ptrlist,**ptrlist_end;
+  struct compiled_code *list,*list_end;
+
+  if(subroutine == NULL)
+  {
+	  fprintf(stderr,"insert_compiled_code: NULL pointer for subroutine object.\n");
+	  exit(1);
+  }
+
+  switch(type)
+  {
+	  case typeStr:
+		  list = subroutine->strings;
+		  list_end = subroutine->strings_end;
+		  ptrlist = &subroutine->strings;
+		  ptrlist_end = &subroutine->strings_end;
+		  break;
+	  default: 
+		  list = subroutine->code;
+		  list_end = subroutine->code_end;
+		  ptrlist = &subroutine->code;
+		  ptrlist_end = &subroutine->code_end;
+		  break;
+  }
+   
   if(list == NULL)
     {
       *ptrlist = (struct compiled_code*)malloc(sizeof(struct compiled_code));
