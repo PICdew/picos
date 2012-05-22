@@ -44,7 +44,8 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
 
 static int get_subroutine_addr(const struct compiled_code *code_head, const struct compiled_code *code)
 {
-  const struct subroutine_map *subroutine = lookup_subroutine(code->label);
+#if 0// Old Deprecated.
+const struct subroutine_map *subroutine = lookup_subroutine(code->label);
   if(subroutine == NULL || subroutine->address == -1)
     {
       if(subroutine == NULL)
@@ -54,7 +55,20 @@ static int get_subroutine_addr(const struct compiled_code *code_head, const stru
       exit(-1);
     }
   return lookup_label(code_head, subroutine->address);
-  
+#endif
+
+ const struct subroutine_map *subroutine = (struct subroutine_map*)code->target; 
+ if(subroutine == NULL || subroutine->address == -1)
+ {
+	if(subroutine == NULL)
+		fprintf(stderr,"Undefined reference: #%d\n",code->label);
+	else
+	        fprintf(stderr,"Undefined reference: %s\n",subroutine->name);
+	        exit(1);
+ }
+
+ return subroutine->address;
+
 }
 
 void resolve_labels(struct compiled_code* code)

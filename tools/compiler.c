@@ -64,10 +64,11 @@ int ex(nodeType *p) {
       break;
     case PICLANG_CALL:
       {
-	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
+	struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
 	write_assembly(assembly_file,"\tcall\t<%s>\n",subroutine->name);
 	insert_code(PICLANG_CALL);
-	insert_label(PASM_SUBROUTINE,subroutine->address);
+	inserted_word = insert_label(PASM_SUBROUTINE,subroutine->address);
+	inserted_word->target = subroutine;
 	break;
       }
     case PASM_LABEL: case PASM_DEFINE:// KEEP RETURN AFTER DEFINE
@@ -76,7 +77,7 @@ int ex(nodeType *p) {
 	struct subroutine_map *subroutine = NULL;
 	struct subroutine_map *globals = NULL;
 	lbl1 = label_counter;	label_counter++;
-	subroutine = insert_subroutine(subroutine_name);
+	subroutine = get_subroutine(subroutine_name);
 	if(subroutine == NULL)
 	  {
 	    fprintf(stderr,"Could not declare subroutine: %s\n",subroutine_name);
@@ -859,7 +860,7 @@ idNodeType* resolve_variable(const char *name)
 
 struct subroutine_map* get_subroutine(const char *name)
 {
-  const struct subroutine_map *retval = NULL;
+  struct subroutine_map *retval = NULL;
   if(name == NULL)
     {
       fprintf(stderr,"NULL pointer for the subroutine name.\n");
@@ -890,11 +891,13 @@ void set_pcb_type(struct compiled_code *the_pcb)
   set_pcb_type(the_pcb->next);
 }
 
-struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, picos_size_t piclang_bitmap)
+struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memory, picos_size_t piclang_bitmap)
 {
-  int i, pad_size;
+  int i, pad_size, total_code_size;
   static const char name[] = "David";
-
+  struct subroutine_map *curr_subroutine;
+  struct compiled_code *the_code = NULL;
+  struct compiled_code *the_strings = NULL;
   struct compiled_code *magic_number = NULL, *first_byte = NULL, *code_index = NULL;
   struct compiled_code *page_size = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *bitmap = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -910,7 +913,7 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   struct compiled_code *stack, *end_of_stack;
   struct compiled_code *call_stack, *end_of_call_stack;
 
-  if(the_code == NULL)
+  if(subroutines == NULL)
     {
       fprintf(stderr,"No code to compile!\n");
       exit(-1);
@@ -937,10 +940,19 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
   end_of_stack->next = call_stack;
   end_of_call_stack->next = NULL;// temporary to count PCB's size and set PCB code types
 
+  // Need code size
+  curr_subroutine = subroutines;
+  total_code_size = 0;
+  while(curr_subroutine != NULL)
+  {
+	  total_code_size += CountCode(curr_subroutine->code);
+	  curr_subroutine = curr_subroutine->next;
+  }
+
   // Pad block with zeros
   set_pcb_type(first_byte);
   i = 0;
-  pad_size = FS_BUFFER_SIZE - (CountCode(first_byte) + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t))%FS_BUFFER_SIZE;
+  pad_size = FS_BUFFER_SIZE - (total_code_size + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t))%FS_BUFFER_SIZE;
   for(;i<pad_size;i++)
     {
       end_of_call_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -949,34 +961,66 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
       end_of_call_stack->type = typePad;
       end_of_call_stack->val = name[i%5];
     }
-  start_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
+  start_address->val = (total_code_size+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
 
   // Pad pages to fit into blocks
   page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t));
-  code_index = the_code;// verified to not be null above
   i = sizeof(picos_size_t);
-  while(code_index->next != NULL){
-    if(i == page_size->val)
+  curr_subroutine = subroutines;
+  code_index = the_code;
+  for(;curr_subroutine != NULL;curr_subroutine = curr_subroutine->next)
+  {
+
+		struct compiled_code *place_holder = curr_subroutine->code;
+	if(curr_subroutine->code == NULL)
+	      continue;	
+	if(code_index == NULL)
 	{
-	  // End of page, pad buffer.
-	  struct compiled_code *next_op = code_index->next;
-	  for(;i<FS_BUFFER_SIZE;i++)
-	    {
-	      code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-	      code_index = code_index->next;
-	      code_index->next = NULL;
-	      code_index->val = ((i-page_size->val)%2) ? 0xad : 0xde;
-	      code_index->type =typePad;
-	    }
-	  code_index->next = next_op;
-	  i = 0;
-	  continue;
+		the_code = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+		code_index = the_code;
 	}
-    code_index = code_index->next;
-    i += sizeof(picos_size_t);
-    if(code_index == NULL)
-      break;
-  }
+	else
+	{
+		code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+		code_index = code_index->next;
+	}
+
+	*code_index = *place_holder;
+	place_holder = place_holder->next;
+	while(place_holder != NULL)
+	{
+		code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+		code_index = code_index->next;
+		*code_index = *place_holder;
+		place_holder = place_holder->next;
+	}
+	
+	
+	code_index = curr_subroutine->code;
+        while(code_index->next != NULL)
+	{
+    		if(i == page_size->val)
+		{
+	  		// End of page, pad buffer.
+	  		struct compiled_code *next_op = code_index->next;
+	  		for(;i<FS_BUFFER_SIZE;i++)
+	    		{
+	      			code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+	  	        	code_index = code_index->next;
+	      			code_index->next = NULL;
+	      			code_index->val = ((i-page_size->val)%2) ? 0xad : 0xde;
+	      			code_index->type =typePad;
+	    		}
+	  		code_index->next = next_op;
+	  		i = 0;
+	  		continue;
+		}
+    		code_index = code_index->next;
+    		i += sizeof(picos_size_t);
+    		if(code_index == NULL)
+      			break;
+  	}
+  }//subroutine loop
   
   // Pad last block
   for(;i<FS_BUFFER_SIZE;i++)
@@ -988,20 +1032,33 @@ struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_co
       code_index->type =typePad;
     }  
 
-  // Attach strings
-  end_of_call_stack->next = the_code;
-  string_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
-
   
   // Find the location of the main function
-  pc->val = lookup_label(the_code,((struct subroutine_map*) get_subroutine("main"))->address);
+  pc->val = ((struct subroutine_map*) get_subroutine("main"))->address;
   if(pc->val == (picos_size_t)-1)
 	reason_exit("error: Undefined \"main\" function.\n");
 
-  while(the_code->next != NULL)
-    the_code = the_code->next;
-  if(the_strings != NULL)
-    the_code->next = the_strings;
+  // Attach code 
+  end_of_call_stack->next = the_code;
+  string_address->val = (total_code_size+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
+
+  // Attach strings
+  curr_subroutine = subroutines;
+  while(curr_subroutine != NULL)
+  {
+	const struct compiled_code *curr_string = curr_subroutine->strings;
+  	while(the_code->next != NULL)
+    		the_code = the_code->next;
+	while(curr_string != NULL)
+	{
+		the_code->next = (struct compiled_code *)malloc(sizeof(struct compiled_code));
+		*the_code->next = *curr_string;
+		the_code = the_code->next;
+		curr_string = curr_string->next;
+	}
+	curr_subroutine = curr_subroutine->next;
+  }
+
   
   // Magic number to identify the executable
   i = PCB_MAGIC_NUMBER_OFFSET - 1;
@@ -1035,21 +1092,40 @@ static void dump_code(FILE *eeprom_file,FILE *hex_file,struct compiled_code **th
 
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
 {
+  struct subroutine_map *curr_sub;
+  int start_address = 0;
   if(the_subroutines == NULL)
 	return;
-  resolve_labels(the_subroutines->code);
-  dump_code(eeprom_file,hex_file,&the_subroutines->code);
+  
+  curr_sub = the_subroutines;
+  while(curr_sub != NULL)
+  {
+	curr_sub->address = start_address;
+	curr_sub->size = CountCode(curr_sub->code);
+	start_address += curr_sub->size;
+	curr_sub = curr_sub->next;
+  }
+
+  curr_sub = the_subroutines;
+  while(curr_sub != NULL)
+  {
+	  resolve_labels(curr_sub->code);
+	  curr_sub = curr_sub->next;
+  }
+
 }
 
 void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
 { 
   int num_variables = count_variables(); // REPLACE WITH GLOBAL COUNT
+  struct compiled_code *the_code = NULL;
   if(the_subroutines == NULL)
 	return;
 
   pasm_compile(eeprom_file,hex_file,the_subroutines, piclang_bitmap);
-  the_subroutines->code = MakePCB(the_subroutines->code,the_subroutines->strings,num_variables,*piclang_bitmap);
-  dump_code(eeprom_file,hex_file,&the_subroutines->code);
+  the_code = MakePCB(the_subroutines,num_variables,*piclang_bitmap);
+  dump_code(eeprom_file,hex_file,&the_code);
+  free_all_code(the_code);
 }
 
 void preprocess(const char *keyword, nodeType *p)
