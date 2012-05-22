@@ -82,6 +82,7 @@ struct compiled_code* insert_compiled_code(nodeEnum type, struct subroutine_map 
       list->val = val;
       list->label = label;
       list->type = type;
+      list->target = NULL;
       list->relocation_type = -1;
       list->next = NULL;
       return list;
@@ -93,6 +94,7 @@ struct compiled_code* insert_compiled_code(nodeEnum type, struct subroutine_map 
   (*ptrlist_end)->next = NULL;
   (*ptrlist_end)->val = val;
   (*ptrlist_end)->type = type;
+  (*ptrlist_end)->target = NULL;
   (*ptrlist_end)->relocation_type = -1;
   return *ptrlist_end;
 }

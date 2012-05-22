@@ -111,6 +111,7 @@ struct compiled_code
   picos_size_t val;
   nodeEnum type;
   int relocation_type;
+  void *target;
   struct compiled_code *next;
 };
 
@@ -194,7 +195,7 @@ void all_free_subroutines(struct subroutine_map *subroutine);
 
  void free_all_variables(idNodeType *variable);
  
-const struct subroutine_map* get_subroutine(const char *name);
+struct subroutine_map* get_subroutine(const char *name);
 
 
 void _attach_label(struct compiled_code *ptrlist_end, picos_size_t label);

@@ -1,5 +1,5 @@
 * Change libraries import only functions that are called by the main code.
-** Made the compiler/linker modular, centered around functions.
+** Test linking between subroutines
 * sleep may or may not work.
 * Add timer function to piclang.
 * Fix else if in picosc

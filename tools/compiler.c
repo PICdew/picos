@@ -74,6 +74,7 @@ int ex(nodeType *p) {
       {
 	const char *subroutine_name = p->opr.op[0]->str.string;
 	struct subroutine_map *subroutine = NULL;
+	struct subroutine_map *globals = NULL;
 	lbl1 = label_counter;	label_counter++;
 	subroutine = insert_subroutine(subroutine_name);
 	if(subroutine == NULL)
@@ -81,6 +82,13 @@ int ex(nodeType *p) {
 	    fprintf(stderr,"Could not declare subroutine: %s\n",subroutine_name);
 	    exit(-1);
 	  }
+	g_curr_subroutine = subroutine;
+	globals = get_subroutine("GLOBALS");
+	if(globals != NULL)
+	{
+		subroutine->strings = globals->strings;
+		globals->strings = NULL;
+	}
 	subroutine->address = lbl1;
 	write_assembly(assembly_file,"%s:\n", subroutine->name);
 	insert_label(PICLANG_LABEL,lbl1);
@@ -849,7 +857,7 @@ idNodeType* resolve_variable(const char *name)
   return curr_variable;
 }
 
-const struct subroutine_map* get_subroutine(const char *name)
+struct subroutine_map* get_subroutine(const char *name)
 {
   const struct subroutine_map *retval = NULL;
   if(name == NULL)
