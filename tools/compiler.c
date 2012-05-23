@@ -778,21 +778,34 @@ int resolve_string(const char *str, int *is_new)
   return retval;
 }
 
-int count_variables()
+int count_variables(const idNodeType *variable_list)
 {
   int retval = 0;
   const idNodeType *it = NULL;
 
-  if(g_curr_subroutine == NULL)
+  if(variable_list == NULL)
 	return 0;
 
-  it = g_curr_subroutine->variables;
+  it = variable_list;
   while(it != NULL)
     {
       retval++;
       it = it->next;
     }
   return retval;
+}
+
+int count_all_variables()
+{
+  struct subroutine_map *curr_sub = global_subroutines;
+  int num_variables = 0;
+
+  while(curr_sub != NULL)
+  {
+	num_variables += count_variables(curr_sub->variables);
+	curr_sub = curr_sub->next;
+  }
+  return num_variables;
 }
 
 void free_variable(idNodeType *variable)
@@ -851,7 +864,7 @@ idNodeType* resolve_variable(const char *name)
   // At this point, the variable does not exist.
   curr_variable = (idNodeType*)malloc(sizeof(idNodeType));
   strcpy(curr_variable->name,name);
-  curr_variable->i = count_variables();
+  curr_variable->i = count_all_variables();
   curr_variable->next = g_curr_subroutine->variables;
   g_curr_subroutine->variables = curr_variable;
 
@@ -993,16 +1006,10 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
 		code_index = code_index->next;
 		*code_index = *place_holder;
 		place_holder = place_holder->next;
-	}
 	
-	
-	code_index = curr_subroutine->code;
-        while(code_index->next != NULL)
-	{
-    		if(i == page_size->val)
+		if(i == page_size->val)
 		{
 	  		// End of page, pad buffer.
-	  		struct compiled_code *next_op = code_index->next;
 	  		for(;i<FS_BUFFER_SIZE;i++)
 	    		{
 	      			code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -1011,14 +1018,10 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
 	      			code_index->val = ((i-page_size->val)%2) ? 0xad : 0xde;
 	      			code_index->type =typePad;
 	    		}
-	  		code_index->next = next_op;
 	  		i = 0;
 	  		continue;
 		}
-    		code_index = code_index->next;
     		i += sizeof(picos_size_t);
-    		if(code_index == NULL)
-      			break;
   	}
   }//subroutine loop
   
@@ -1115,17 +1118,40 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
 
 }
 
-void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
+struct compiled_code* pasm_build(FILE *binary_file,FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
 { 
-  int num_variables = count_variables(); // REPLACE WITH GLOBAL COUNT
-  struct compiled_code *the_code = NULL;
+  int num_variables = 0;
+  struct compiled_code *the_code = NULL, *curr_code;
+  struct subroutine_map *curr_sub = NULL;
   if(the_subroutines == NULL)
 	return;
+
+  // count variables. It would be nice if some variable could share memory
+  // if they are never needed at the same time, i.e. during recursive calls.
+  num_variables = count_all_variables();
 
   pasm_compile(eeprom_file,hex_file,the_subroutines, piclang_bitmap);
   the_code = MakePCB(the_subroutines,num_variables,*piclang_bitmap);
   dump_code(eeprom_file,hex_file,&the_code);
-  free_all_code(the_code);
+  
+  if(binary_file != NULL)
+    {
+	curr_code = the_code;
+	  while(curr_code != NULL)
+	    {
+	      if(curr_code->type != typeStr && curr_code->type != typePad)
+		{
+		  write_val_for_pic(binary_file,curr_code->val);
+		}
+	      else
+		{
+		  fprintf(binary_file,"%c",(char)curr_code->val);
+		}
+	      curr_code = curr_code->next;
+	    }
+   }
+
+  return the_code;
 }
 
 void preprocess(const char *keyword, nodeType *p)

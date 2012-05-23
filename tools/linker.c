@@ -127,27 +127,32 @@ void resolve_labels(struct compiled_code* code)
 }
 
 
-void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines)
+void create_lst_file(FILE *lst_file, const struct compiled_code *the_code)
 {
   const struct compiled_code *curr_code = NULL;
-  const struct compiled_code *the_code;
   const struct compiled_code *the_strings;
 
-  fprintf(stderr,"lst file not yet (re)implemented\n");
-  return;
 
   if(lst_file != NULL)
     {
       struct assembly_map* curr;
-      const struct compiled_code *first_string = NULL;
       int code_counter = 0;
+      bool have_strings = false;
       curr_code = the_code;
       for(;curr_code != NULL;curr_code = curr_code->next)
 	{
 	  if(curr_code->type == typePCB)
 	    continue;
-	  if(curr_code->type == typeStr || curr_code->type == typePad)
+	  if(curr_code->type == typePad)
+	    continue;
+	  if(curr_code->type == typeStr) 
 	    {
+		    if(!have_strings)
+		    {
+			    fprintf(lst_file,"Strings:\n");
+			    have_strings = true;
+		    }
+	      fprintf(lst_file,"%c",curr_code->val);
 	      continue;
 	    }
 	  curr = opcode2assembly(curr_code->val);
@@ -196,23 +201,8 @@ void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines)
 	    }
 	  fprintf(lst_file,"\n");
 	}
-      // print strings
-      first_string = the_strings;
-      if(first_string != NULL)
-	fprintf(lst_file,"Strings:\n\"");
-      for(;first_string != NULL;first_string = first_string->next)
-	{
-	  if(first_string->val == 0)
-	    {
-	      fprintf(lst_file,"\"\n");
-	      if(first_string->next != NULL)
-		fprintf(lst_file,"\"");
-	    }
-	  else if(first_string->val == '"')
-	    fprintf(lst_file,"\"%c",first_string->val);
-	  else
-	    fprintf(lst_file,"%c",first_string->val);
-	}
+      fprintf(lst_file,"\n");
+      fflush(lst_file);
     }
 }
 
@@ -226,15 +216,11 @@ static struct compiled_code* increment_word(const struct compiled_code *word, in
   return word->next;
 }
 
-void create_lnk_file(FILE *lnk_file, const struct subroutine_map *subroutines)
+void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code)
 {
-  const struct compiled_code *the_code;
   const struct compiled_code *curr_code = the_code;
   int word_counter = 0,arg_counter;
   struct assembly_map *asmb = NULL;
-
-  fprintf(stderr,"lnk file not yet (re)implemented\n");
-  return;
 
   if(lnk_file == NULL || curr_code == NULL)
     return;

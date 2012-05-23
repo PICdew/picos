@@ -220,7 +220,7 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
 /**
  * Compiles and links the code.
  */
-void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap);
+struct compiled_code* pasm_build(FILE *binary_file,FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap);
 
 /**
  * Loads a library file and creates a library struct
@@ -237,8 +237,8 @@ int piclib_link(struct piclib_object *library, struct subroutine_map *subroutine
  */
 void write_piclib_obj(FILE *binary_file,const struct subroutine_map *subroutines);
 
-void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines);
-void create_lnk_file(FILE *lnk_file, const struct subroutine_map *subroutines);
+void create_lst_file(FILE *lst_file, const struct compiled_code *the_code);
+void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code);
 
 #endif
 
