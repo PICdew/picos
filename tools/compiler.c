@@ -1103,6 +1103,10 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
 	// Calculate the location of each subroutine in memory
 	curr_sub->address = start_address;
 	curr_sub->size = CountCode(curr_sub->code)/sizeof(picos_size_t);
+	if(curr_sub->code == NULL || curr_sub->size == 0)
+	{
+		reason_exit("Undefined subroutine: %s\n",curr_sub->name);
+	}
 	start_address += curr_sub->size;
 	curr_sub = curr_sub->next;
   }
