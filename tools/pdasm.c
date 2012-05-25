@@ -118,6 +118,18 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	    case PICLANG_RETURN:
 	      fprintf(assembly_file,"\treturn");
 	      break;
+	    case PICLANG_ARGC:
+	      fprintf(assembly_file,"\targc");
+	      break;
+	    case PICLANG_ARGV:
+	      fprintf(assembly_file,"\targv");
+	      break;
+	    case PICLANG_ERRNO:
+	      fprintf(assembly_file,"\terrno");
+	      break;
+	    case PICLANG_DEREF:
+	      fprintf(assembly_file,"\tderef");
+	      break;
 	    case 0xdead:case 0xadde:
 	      continue;
 	      break;
