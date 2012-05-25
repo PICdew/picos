@@ -71,15 +71,23 @@ const struct subroutine_map *subroutine = lookup_subroutine(code->label);
 
 }
 
-void resolve_labels(struct compiled_code* code)
+void resolve_labels(struct compiled_code* code, int address_offset, int variable_offset)
 {
   const struct compiled_code* code_head = code;
-  int label_addr, subroutine_label;
+  int label_addr, subroutine_label, arg_counter;
   if(code == NULL)
     return;
   
   for(;code != NULL;code = code->next)
     {
+	    if(code->type == typeId)
+	    {
+		    fprintf(stderr,"HAVE LABEL!!!\n");
+		    code->val += variable_offset;
+		    continue;
+	    }
+
+	    // Type is typeCode
       switch(code->val)
 	{
 	case PICLANG_JMP:case PICLANG_JZ:case PICLANG_CALL:// change labels to addresses
@@ -100,7 +108,7 @@ void resolve_labels(struct compiled_code* code)
 		  fprintf(stderr,"Could not resolve label %d\n",code->next->label);
 		  return;
 		}
-	      code->next->val = (picos_size_t)label_addr;
+	      code->next->val = (picos_size_t)label_addr + address_offset;
 	      code = code->next;
 	      continue;
 	    }
@@ -113,7 +121,7 @@ void resolve_labels(struct compiled_code* code)
 		label_addr = get_subroutine_addr(code_head, code->next->next);
 	      else
 		label_addr = lookup_label(code_head, code->next->next->label);
-	      code->next->next->val = (picos_size_t)label_addr;
+	      code->next->next->val = (picos_size_t)label_addr + address_offset;
 	      code = code->next->next;
 	      continue;
 	    }
@@ -121,9 +129,23 @@ void resolve_labels(struct compiled_code* code)
 	default:
 	  break;
 	}
-      if((opcode2assembly(code->val))->has_arg)
+      
+      arg_counter = 0;
+      for(;arg_counter < (opcode2assembly(code->val))->has_arg;arg_counter++)
+      {
 	code = code->next;
-    }
+	if(code == NULL)
+		break;
+	if(code->type == typeId)
+	    {
+		    fprintf(stderr,"HAVE LABEL!!!\n");
+		    code->val += variable_offset;
+		    continue;
+	    }
+      }
+      if(code == NULL)
+	      break;// code could become null in arg_counter loop
+    }// end code for loop
 }
 
 

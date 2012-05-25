@@ -49,7 +49,8 @@ int ex(nodeType *p) {
       picos_size_t id = (var == NULL)? -1 : var->i;
       write_assembly(assembly_file,"\tpush\t%s\n", p->id.name);
       insert_code(PICLANG_PUSH);
-      insert_code(id);
+      inserted_word = insert_code(id);
+      inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
       break;
     }
   case typeOpr:
@@ -194,7 +195,8 @@ int ex(nodeType *p) {
 	  }
 	write_assembly(assembly_file,"\tpop _switch_expr\n");// pop expression into variable
 	insert_code(PICLANG_POP);
-	insert_code(var->i);
+	inserted_word = insert_code(var->i);
+	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
 
 	ex(p->opr.op[1]);// go through cases
 
@@ -216,7 +218,8 @@ int ex(nodeType *p) {
 	  }
 	write_assembly(assembly_file,"\tpush _switch_expr\n");
 	insert_code(PICLANG_PUSH);
-	insert_code(var->i);// push switch expression
+	inserted_word = insert_code(var->i);// push switch expression
+	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
 	write_assembly(assembly_file,"\tcompeq\n");// compare
 	insert_code(PICLANG_COMPEQ);
 	write_assembly(assembly_file,"\tjz L%03d\n",next_case);
@@ -328,7 +331,8 @@ int ex(nodeType *p) {
 	  }
 	write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
 	insert_code(PICLANG_POP);
-	insert_code(var->i);
+	inserted_word = insert_code(var->i);
+	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
 	break;
       }
     case PICLANG_UMINUS:
@@ -338,7 +342,7 @@ int ex(nodeType *p) {
       break;
     case PICLANG_SIGNAL:
       {
-	const struct subroutine_map *subroutine = NULL;
+	struct subroutine_map *subroutine = NULL;
 	if(p->opr.nops != 2)
 	  {
 	    fprintf(stderr,"Invalid number of arguments to signal()\nNeeded 2, got %d\n",p->opr.nops);
@@ -353,7 +357,8 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tsignal %d, <%s>\n", p->opr.op[0]->con.value, subroutine->name);
 	insert_code(PICLANG_SIGNAL);
 	insert_code(p->opr.op[0]->con.value);
-	insert_label(PASM_SUBROUTINE,subroutine->address);
+	inserted_word = insert_label(PASM_SUBROUTINE,subroutine->address);
+	inserted_word->target = subroutine;
 	break;
       }
     case PICLANG_SLEEP:
@@ -643,7 +648,7 @@ nodeType *full_id(idNodeType variable_node, bool is_const, int data_type) {
         yyerror("out of memory");
 
     /* copy information */
-    p->type = typeId;
+    p->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
     p->id.i = variable_node.i;
     strncpy(p->id.name, variable_node.name,FILENAME_MAX);
     p->id.next = NULL;
@@ -906,7 +911,7 @@ void set_pcb_type(struct compiled_code *the_pcb)
 
 struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memory, picos_size_t piclang_bitmap)
 {
-  int i, pad_size, total_code_size;
+  int i, pad_size;
   static const char name[] = "David";
   struct subroutine_map *curr_subroutine;
   struct compiled_code *the_code = NULL;
@@ -953,19 +958,10 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
   end_of_stack->next = call_stack;
   end_of_call_stack->next = NULL;// temporary to count PCB's size and set PCB code types
 
-  // Need code size
-  curr_subroutine = subroutines;
-  total_code_size = 0;
-  while(curr_subroutine != NULL)
-  {
-	  total_code_size += CountCode(curr_subroutine->code);
-	  curr_subroutine = curr_subroutine->next;
-  }
-
   // Pad block with zeros
   set_pcb_type(first_byte);
   i = 0;
-  pad_size = FS_BUFFER_SIZE - (total_code_size + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t))%FS_BUFFER_SIZE;
+  pad_size = FS_BUFFER_SIZE - (CountCode(first_byte) + PCB_MAGIC_NUMBER_OFFSET*sizeof(picos_size_t))%FS_BUFFER_SIZE;
   for(;i<pad_size;i++)
     {
       end_of_call_stack->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -974,7 +970,7 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
       end_of_call_stack->type = typePad;
       end_of_call_stack->val = name[i%5];
     }
-  start_address->val = (total_code_size+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
+  start_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
 
   // Pad pages to fit into blocks
   page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t));
@@ -1000,6 +996,7 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
 
 	*code_index = *place_holder;
 	place_holder = place_holder->next;
+	i += sizeof(picos_size_t);
 	while(place_holder != NULL)
 	{
 		code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
@@ -1043,7 +1040,7 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
 
   // Attach code 
   end_of_call_stack->next = the_code;
-  string_address->val = (total_code_size+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
+  string_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
 
   // Attach strings
   curr_subroutine = subroutines;
@@ -1096,15 +1093,16 @@ static void dump_code(FILE *eeprom_file,FILE *hex_file,struct compiled_code **th
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
 {
   struct subroutine_map *curr_sub;
-  int start_address = 0;
+  int start_address = 0, variable_address = 0;
   if(the_subroutines == NULL)
 	return;
   
   curr_sub = the_subroutines;
   while(curr_sub != NULL)
   {
+	// Calculate the location of each subroutine in memory
 	curr_sub->address = start_address;
-	curr_sub->size = CountCode(curr_sub->code);
+	curr_sub->size = CountCode(curr_sub->code)/sizeof(picos_size_t);
 	start_address += curr_sub->size;
 	curr_sub = curr_sub->next;
   }
@@ -1112,7 +1110,10 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
   curr_sub = the_subroutines;
   while(curr_sub != NULL)
   {
-	  resolve_labels(curr_sub->code);
+	  // Calculation location of each variable in memory
+	  // update pointers to variables and subroutines
+	  resolve_labels(curr_sub->code, curr_sub->address, variable_address);
+	  variable_address += count_variables(curr_sub->variables);
 	  curr_sub = curr_sub->next;
   }
 
