@@ -1,9 +1,6 @@
-def <init>
-{
-  const buffer_size = 255;
-  const FNF = 12;
-  const filename = argv[1];
-}
+const buffer_size = 255;
+const FNF = 12;
+const filename = argv[1];
 
 def <error_out>
 {
@@ -35,8 +32,6 @@ def <stat_this>
 
 def <main>
 {
-  call <init>;
-
   if(argc > 1)
     {
       clear();
@@ -44,7 +39,8 @@ def <main>
       exit();
     }
 
-  readdir(0);drop();
+  readdir(0);
+  drop();
   idx = 0;
   while(idx < buffer_size)
     {

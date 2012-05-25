@@ -82,8 +82,13 @@ void resolve_labels(struct compiled_code* code, int address_offset, int variable
     {
 	    if(code->type == typeId)
 	    {
-		    fprintf(stderr,"HAVE LABEL!!!\n");
-		    code->val += variable_offset;
+		    if(!code->is_static)
+		    {
+			    code->val += variable_offset;
+		    }
+		    else
+		    	fprintf(stderr,"HAVE static val %d!!!\n",code->val);
+
 		    continue;
 	    }
 
@@ -138,8 +143,8 @@ void resolve_labels(struct compiled_code* code, int address_offset, int variable
 		break;
 	if(code->type == typeId)
 	    {
-		    fprintf(stderr,"HAVE LABEL!!!\n");
-		    code->val += variable_offset;
+		    if(!code->is_static)
+			    code->val += variable_offset;
 		    continue;
 	    }
       }

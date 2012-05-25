@@ -47,10 +47,13 @@ int ex(nodeType *p) {
     {
       idNodeType *var = resolve_variable(p->id.name);
       picos_size_t id = (var == NULL)? -1 : var->i;
+      int is_static = (var == NULL)? false : var->is_static;
       write_assembly(assembly_file,"\tpush\t%s\n", p->id.name);
       insert_code(PICLANG_PUSH);
       inserted_word = insert_code(id);
-      inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
+      inserted_word->type = typeId;
+      inserted_word->is_static = is_static;
+      fprintf(stderr,"Assigned typeId!!!\n");
       break;
     }
   case typeOpr:
@@ -197,7 +200,7 @@ int ex(nodeType *p) {
 	insert_code(PICLANG_POP);
 	inserted_word = insert_code(var->i);
 	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
-
+	inserted_word->is_static = var->is_static;
 	ex(p->opr.op[1]);// go through cases
 
 	write_assembly(assembly_file,"L%03d:\n", break_to_label);// this is the end of the switch
@@ -220,6 +223,7 @@ int ex(nodeType *p) {
 	insert_code(PICLANG_PUSH);
 	inserted_word = insert_code(var->i);// push switch expression
 	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
+	inserted_word->is_static = var->is_static;
 	write_assembly(assembly_file,"\tcompeq\n");// compare
 	insert_code(PICLANG_COMPEQ);
 	write_assembly(assembly_file,"\tjz L%03d\n",next_case);
@@ -332,6 +336,7 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tpop\t%s\n", p->opr.op[0]->id.name);
 	insert_code(PICLANG_POP);
 	inserted_word = insert_code(var->i);
+	inserted_word->is_static = var->is_static;
 	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
 	break;
       }
@@ -565,6 +570,7 @@ struct subroutine_map *insert_subroutine(const char *name)
   global_subroutines->code = global_subroutines->strings = NULL;
   global_subroutines->code_end = global_subroutines->strings_end = NULL;
   global_subroutines->variables = NULL; 
+  global_subroutines->variable_address = -1;
   return global_subroutines;
 }
 
@@ -833,6 +839,24 @@ void free_all_variables(idNodeType *variable)
 	}
 }
 
+idNodeType* resolve_variable_subroutine(const char *name, struct subroutine_map *subroutine)
+{
+    idNodeType *curr_variable;
+
+    if(subroutine== NULL)
+	    return NULL;
+
+    curr_variable = subroutine->variables;
+    while(curr_variable != NULL)
+    {
+      if(strcmp(curr_variable->name,name) == 0)
+	return curr_variable;
+      curr_variable = curr_variable->next;
+    }
+
+    return NULL;
+}
+
 idNodeType* resolve_variable(const char *name)
 {
   int i;
@@ -843,6 +867,19 @@ idNodeType* resolve_variable(const char *name)
 	  yyerror("internal error: g_curr_subroutine is not defined.\n");
   }
 
+  // lookup variables in global scope
+  if(global_subroutines_GLOBALS != NULL)
+  {
+	  curr_variable = resolve_variable_subroutine(name,global_subroutines_GLOBALS);
+	  if(curr_variable != NULL)
+		  return curr_variable;
+  }
+
+  // lookup variable in local scope 
+  curr_variable = resolve_variable_subroutine(name,g_curr_subroutine);
+  if(curr_variable != NULL)
+	  return curr_variable;
+
   curr_variable = g_curr_subroutine->variables;
   if(name == NULL)
     {
@@ -850,28 +887,25 @@ idNodeType* resolve_variable(const char *name)
       return NULL;
     }
 
+  // This is the subroutine's first variable. Create the linked
+  // list
   if(g_curr_subroutine->variables == NULL)
     {
       g_curr_subroutine->variables = (idNodeType*)malloc(sizeof(idNodeType));
       g_curr_subroutine->variables->i = 0;
       strcpy(g_curr_subroutine->variables->name,name);
       g_curr_subroutine->variables->next = NULL;
+      g_curr_subroutine->variables->is_static = (int)(g_curr_subroutine == global_subroutines_GLOBALS);
       return g_curr_subroutine->variables;
     }
   
-  while(curr_variable != NULL)
-    {
-      if(strcmp(curr_variable->name,name) == 0)
-	return curr_variable;
-      curr_variable = curr_variable->next;
-    }
-
   // At this point, the variable does not exist.
   curr_variable = (idNodeType*)malloc(sizeof(idNodeType));
   strcpy(curr_variable->name,name);
   curr_variable->i = count_all_variables();
   curr_variable->next = g_curr_subroutine->variables;
   g_curr_subroutine->variables = curr_variable;
+  curr_variable->is_static = (int)(g_curr_subroutine == global_subroutines_GLOBALS);
 
   return curr_variable;
 }
@@ -1047,7 +1081,7 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
   while(curr_subroutine != NULL)
   {
 	const struct compiled_code *curr_string = curr_subroutine->strings;
-  	while(the_code->next != NULL)
+	while(the_code->next != NULL)
     		the_code = the_code->next;
 	while(curr_string != NULL)
 	{
@@ -1097,18 +1131,60 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
   if(the_subroutines == NULL)
 	return;
   
-  curr_sub = the_subroutines;
-  while(curr_sub != NULL)
+  if(global_subroutines_GLOBALS != NULL)
   {
+	 curr_sub = global_subroutines_GLOBALS;
+	curr_sub->address = start_address;
+	curr_sub->variable_address = variable_address;
+	curr_sub->size = CountCode(curr_sub->code)/sizeof(picos_size_t);
+	if(curr_sub->code != NULL)
+	{
+		// global variables should be static
+		struct compiled_code *to_be_static = curr_sub->code;
+		for(;to_be_static != NULL;to_be_static = to_be_static->next)
+		{
+			if(to_be_static->type = typeId)
+				to_be_static->is_static = true;
+			// If there is global CODE. Run it before main.
+			if(to_be_static->next ==NULL)
+			{
+				struct compiled_code *inserted_word;
+				struct subroutine_map *main_sub = get_subroutine("main");
+				if(main_sub == NULL)
+					reason_exit("Undefined main function\n");
+				inserted_word = insert_compiled_code(typeCode,global_subroutines_GLOBALS,PICLANG_JMP,0);
+				if(inserted_word == NULL)
+					reason_exit("Could not allocate memory for GLOBALS jump\n");
+				inserted_word = insert_compiled_code(typeCode,global_subroutines_GLOBALS,PASM_SUBROUTINE,main_sub->address);
+				if(inserted_word == NULL)
+					reason_exit("Could not allocate memory for GLOBALS jump\n");
+				inserted_word->target = main_sub;
+				break;
+
+			}
+		}
+	}
+	start_address += curr_sub->size; 
+	variable_address += count_variables(curr_sub->variables);
+
+  }
+
+  curr_sub = the_subroutines;
+  for(;curr_sub != NULL;curr_sub = curr_sub->next)
+  {
+	  // GLOBALS is always first.
+	  if(curr_sub == global_subroutines_GLOBALS)
+		  continue;
 	// Calculate the location of each subroutine in memory
 	curr_sub->address = start_address;
+	curr_sub->variable_address = variable_address;
 	curr_sub->size = CountCode(curr_sub->code)/sizeof(picos_size_t);
 	if(curr_sub->code == NULL || curr_sub->size == 0)
 	{
 		reason_exit("Undefined subroutine: %s\n",curr_sub->name);
 	}
 	start_address += curr_sub->size;
-	curr_sub = curr_sub->next;
+	variable_address += count_variables(curr_sub->variables);
   }
 
   curr_sub = the_subroutines;
@@ -1116,8 +1192,7 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
   {
 	  // Calculation location of each variable in memory
 	  // update pointers to variables and subroutines
-	  resolve_labels(curr_sub->code, curr_sub->address, variable_address);
-	  variable_address += count_variables(curr_sub->variables);
+	  resolve_labels(curr_sub->code, curr_sub->address, curr_sub->variable_address);
 	  curr_sub = curr_sub->next;
   }
 

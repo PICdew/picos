@@ -65,6 +65,7 @@ typedef struct idNodeType_NODE {
   char name[FILENAME_MAX];// variable name used in program
   int type;// Type of variable. See data types enum above
   bool constant;
+  bool is_static;
   struct idNodeType_NODE *next;
 } idNodeType;
 
@@ -102,6 +103,7 @@ struct subroutine_map
   int address, size;
   struct compiled_code *code, *code_end, *strings, *strings_end;
   idNodeType *variables;
+  int variable_address;// location of variables is memory (which will be a continguous block)
   struct subroutine_map *next;
 };
 
@@ -111,6 +113,7 @@ struct compiled_code
   picos_size_t val;
   nodeEnum type;
   int relocation_type;
+  int is_static;// boolean to determine if the variable should be static
   void *target;
   struct compiled_code *next;
 };
