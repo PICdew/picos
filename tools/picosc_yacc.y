@@ -17,7 +17,7 @@
 extern picos_size_t label_counter;
 int break_to_label, continue_to_label, switch_end_label;
 struct subroutine_map *global_subroutines = NULL, *g_curr_subroutine = NULL;
-
+struct subroutine_map *global_subroutines_GLOBALS;
 extern struct assembly_map opcodes[];
 
 char **string_list;
@@ -29,7 +29,7 @@ void freeNode(nodeType *p);
 int ex(nodeType *p);
 int yylex(void);
  FILE *assembly_file;
- FILE *lst_file;
+ FILE *lst_file = NULL;
 void yyerror(char *s);
  int resolve_string(const char *str, int *is_new);
  int resolve_variable(const char *name);// Looks up a variable and retrieves its page memory index. If the variable does not yet exist, it will be added to the list.
@@ -307,7 +307,7 @@ int main(int argc, char **argv)
   int compile_only = false;
   int opt_index;
   picos_size_t piclang_bitmap = 0;
-  struct compiled_code *curr_code = NULL;
+  struct compiled_code *curr_code = NULL, *finished_code = NULL;
 
   assembly_file = NULL;
   break_to_label = -1;
@@ -421,6 +421,7 @@ int main(int argc, char **argv)
  
   global_subroutines = insert_subroutine("GLOBALS");// this stores global stuff
   g_curr_subroutine = global_subroutines;
+  global_subroutines_GLOBALS = global_subroutines;
  
   yyparse();
 
@@ -433,30 +434,15 @@ int main(int argc, char **argv)
     }
   else
     {
-      pasm_build(eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
+      finished_code = pasm_build(binary_file,eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
     }
 
-  if(binary_file != NULL)
-    {
-      if(compile_only)
-	{
-	  fprintf(stderr,"piclib not yet reimplemented\n");//write_piclib_obj(binary_file,global_subroutines);
-	}
-      else
-	{
-	  curr_code = global_subroutines->code;
-	  while(curr_code != NULL)
-	    {
-	      if(curr_code->type != typeStr && curr_code->type != typePad)
-		{
-		  write_val_for_pic(binary_file,curr_code->val);
-		}
-	      else
-		{
-		  fprintf(binary_file,"%c",(char)curr_code->val);
-		}
-	      curr_code = curr_code->next;
-	    }
+  if(compile_only)
+  {
+  	fprintf(stderr,"piclib not yet reimplemented\n");//write_piclib_obj(binary_file,global_subroutines);
+  }
+ 
+	  
 
 #if 0 // deprecated 
 	  curr_code = the_strings;
@@ -466,15 +452,16 @@ int main(int argc, char **argv)
 	      curr_code = curr_code->next;
 	    }
 #endif
-	}
+	
  
-    }
+    
 
-  create_lst_file(lst_file, global_subroutines);
+  create_lst_file(lst_file, finished_code);
   
-  create_lnk_file(lnk_file, global_subroutines); 
+  create_lnk_file(lnk_file, finished_code); 
 
   all_free_subroutines(global_subroutines);
-  
+  free_all_code(finished_code);
+
   return 0;
 }

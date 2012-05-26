@@ -65,6 +65,7 @@ typedef struct idNodeType_NODE {
   char name[FILENAME_MAX];// variable name used in program
   int type;// Type of variable. See data types enum above
   bool constant;
+  bool is_static;
   struct idNodeType_NODE *next;
 } idNodeType;
 
@@ -102,6 +103,7 @@ struct subroutine_map
   int address, size;
   struct compiled_code *code, *code_end, *strings, *strings_end;
   idNodeType *variables;
+  int variable_address;// location of variables is memory (which will be a continguous block)
   struct subroutine_map *next;
 };
 
@@ -111,6 +113,7 @@ struct compiled_code
   picos_size_t val;
   nodeEnum type;
   int relocation_type;
+  int is_static;// boolean to determine if the variable should be static
   void *target;
   struct compiled_code *next;
 };
@@ -206,7 +209,7 @@ int lookup_label(const struct compiled_code* code, picos_size_t label);
 enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
 size_t CountCode(const struct compiled_code *the_code);
 void FreeCode(struct compiled_code* code);
-struct compiled_code* MakePCB(struct compiled_code *the_code, struct compiled_code *the_strings, int total_memory, picos_size_t piclang_bitmap);
+struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memory, picos_size_t piclang_bitmap);
 void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables);
 void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type);
 #define COMPILE_MAX_WIDTH 8//max width
@@ -220,7 +223,7 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
 /**
  * Compiles and links the code.
  */
-void pasm_build(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap);
+struct compiled_code* pasm_build(FILE *binary_file,FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap);
 
 /**
  * Loads a library file and creates a library struct
@@ -237,8 +240,8 @@ int piclib_link(struct piclib_object *library, struct subroutine_map *subroutine
  */
 void write_piclib_obj(FILE *binary_file,const struct subroutine_map *subroutines);
 
-void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines);
-void create_lnk_file(FILE *lnk_file, const struct subroutine_map *subroutines);
+void create_lst_file(FILE *lst_file, const struct compiled_code *the_code);
+void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code);
 
 #endif
 

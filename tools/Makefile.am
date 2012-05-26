@@ -1,4 +1,4 @@
-bin_PROGRAMS = picosc pasm pdasm fs picdisk
+bin_PROGRAMS = picosc pdasm picdisk
 
 AM_YFLAGS = -d 
 picosc_CFLAGS =  -DNOT_FOR_PIC -I../

@@ -118,6 +118,18 @@ void dump_data(FILE *hex_file, FILE *assembly_file,PCB *pcb)
 	    case PICLANG_RETURN:
 	      fprintf(assembly_file,"\treturn");
 	      break;
+	    case PICLANG_ARGC:
+	      fprintf(assembly_file,"\targc");
+	      break;
+	    case PICLANG_ARGV:
+	      fprintf(assembly_file,"\targv");
+	      break;
+	    case PICLANG_ERRNO:
+	      fprintf(assembly_file,"\terrno");
+	      break;
+	    case PICLANG_DEREF:
+	      fprintf(assembly_file,"\tderef");
+	      break;
 	    case 0xdead:case 0xadde:
 	      continue;
 	      break;
@@ -262,13 +274,14 @@ void check_load_rc()
 }
 
 
-static const char short_options[] = "a:b:h";
+static const char short_options[] = "a:b:hp";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
 	       {"asm", 1,NULL, 'a'},
 	       {"block_size",1,NULL,'b'},
+	       {"pcb",0,NULL,'p'},
                {0, 0, 0, 0}
              };
 
@@ -287,11 +300,34 @@ void print_help()
   printf("--block_size,- <file> :\t Sets the block size of the binary.\n");
 }
 
+void fwrite_pcb(FILE *output,PCB *pcb)
+{
+	if(output == NULL)
+	       output = stdout;
+	if(pcb == NULL)
+	{
+		fprintf(stderr,"fwrite_pcb: NULL pointer for pcb\n");
+		return;
+	}
+
+	fprintf(output,"Page Size: %d\n",pcb->page_size);
+  	fprintf(output,"Bitmap: 0x%x\n",pcb->bitmap);
+  	fprintf(output,"Number of Pages: %d\n",pcb->num_pages);
+  	fprintf(output,"Initial Program Counter: %d\n",pcb->pc);
+  	fprintf(output,"Starting page of data: %d\n",pcb->start_address);
+  	fprintf(output,"Starting page of strings: %d\n",pcb->string_address);
+
+	fflush(output);
+
+
+}
+
 int main(int argc, char **argv) 
 {
   FILE *hex_file = stdin, *assembly_file = stdout;
   char opt;
   int opt_index;
+  bool dump_pcb = false;
   picos_size_t block_size;
   PCB pcb;
 
@@ -320,6 +356,9 @@ int main(int argc, char **argv)
 	case 'h':
 	  print_help();
 	  return 0;
+	case 'p':
+	  dump_pcb = true;
+	  break;
 	default:
 	  fprintf(stderr,"ERROR - Unknown flag %c\n",opt);
 	  print_help();
@@ -344,6 +383,12 @@ int main(int argc, char **argv)
       fprintf(stderr,"Incomplete binary. Error loading PCB.\n");
       exit(-1);
     }
+
+  if(dump_pcb)
+  {
+	fwrite_pcb(stdout,&pcb);
+	return 0;	
+  }
 
   fseek(hex_file,pcb.start_address*FS_BUFFER_SIZE,SEEK_SET);
   if(feof(hex_file))

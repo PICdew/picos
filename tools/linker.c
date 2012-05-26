@@ -44,7 +44,8 @@ int lookup_label(const struct compiled_code* code, picos_size_t label)
 
 static int get_subroutine_addr(const struct compiled_code *code_head, const struct compiled_code *code)
 {
-  const struct subroutine_map *subroutine = lookup_subroutine(code->label);
+#if 0// Old Deprecated.
+const struct subroutine_map *subroutine = lookup_subroutine(code->label);
   if(subroutine == NULL || subroutine->address == -1)
     {
       if(subroutine == NULL)
@@ -54,18 +55,44 @@ static int get_subroutine_addr(const struct compiled_code *code_head, const stru
       exit(-1);
     }
   return lookup_label(code_head, subroutine->address);
-  
+#endif
+
+ const struct subroutine_map *subroutine = (struct subroutine_map*)code->target; 
+ if(subroutine == NULL || subroutine->address == -1)
+ {
+	if(subroutine == NULL)
+		fprintf(stderr,"Undefined reference: #%d\n",code->label);
+	else
+	        fprintf(stderr,"Undefined reference: %s\n",subroutine->name);
+	        exit(1);
+ }
+
+ return subroutine->address;
+
 }
 
-void resolve_labels(struct compiled_code* code)
+void resolve_labels(struct compiled_code* code, int address_offset, int variable_offset)
 {
   const struct compiled_code* code_head = code;
-  int label_addr, subroutine_label;
+  int label_addr, subroutine_label, arg_counter;
   if(code == NULL)
     return;
   
   for(;code != NULL;code = code->next)
     {
+	    if(code->type == typeId)
+	    {
+		    if(!code->is_static)
+		    {
+			    code->val += variable_offset;
+		    }
+		    else
+		    	fprintf(stderr,"HAVE static val %d!!!\n",code->val);
+
+		    continue;
+	    }
+
+	    // Type is typeCode
       switch(code->val)
 	{
 	case PICLANG_JMP:case PICLANG_JZ:case PICLANG_CALL:// change labels to addresses
@@ -86,7 +113,7 @@ void resolve_labels(struct compiled_code* code)
 		  fprintf(stderr,"Could not resolve label %d\n",code->next->label);
 		  return;
 		}
-	      code->next->val = (picos_size_t)label_addr;
+	      code->next->val = (picos_size_t)label_addr + address_offset;
 	      code = code->next;
 	      continue;
 	    }
@@ -99,7 +126,7 @@ void resolve_labels(struct compiled_code* code)
 		label_addr = get_subroutine_addr(code_head, code->next->next);
 	      else
 		label_addr = lookup_label(code_head, code->next->next->label);
-	      code->next->next->val = (picos_size_t)label_addr;
+	      code->next->next->val = (picos_size_t)label_addr + address_offset;
 	      code = code->next->next;
 	      continue;
 	    }
@@ -107,33 +134,52 @@ void resolve_labels(struct compiled_code* code)
 	default:
 	  break;
 	}
-      if((opcode2assembly(code->val))->has_arg)
+      
+      arg_counter = 0;
+      for(;arg_counter < (opcode2assembly(code->val))->has_arg;arg_counter++)
+      {
 	code = code->next;
-    }
+	if(code == NULL)
+		break;
+	if(code->type == typeId)
+	    {
+		    if(!code->is_static)
+			    code->val += variable_offset;
+		    continue;
+	    }
+      }
+      if(code == NULL)
+	      break;// code could become null in arg_counter loop
+    }// end code for loop
 }
 
 
-void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines)
+void create_lst_file(FILE *lst_file, const struct compiled_code *the_code)
 {
   const struct compiled_code *curr_code = NULL;
-  const struct compiled_code *the_code;
   const struct compiled_code *the_strings;
 
-  fprintf(stderr,"lst file not yet (re)implemented\n");
-  return;
 
   if(lst_file != NULL)
     {
       struct assembly_map* curr;
-      const struct compiled_code *first_string = NULL;
       int code_counter = 0;
+      bool have_strings = false;
       curr_code = the_code;
       for(;curr_code != NULL;curr_code = curr_code->next)
 	{
 	  if(curr_code->type == typePCB)
 	    continue;
-	  if(curr_code->type == typeStr || curr_code->type == typePad)
+	  if(curr_code->type == typePad)
+	    continue;
+	  if(curr_code->type == typeStr) 
 	    {
+		    if(!have_strings)
+		    {
+			    fprintf(lst_file,"Strings:\n");
+			    have_strings = true;
+		    }
+	      fprintf(lst_file,"%c",curr_code->val);
 	      continue;
 	    }
 	  curr = opcode2assembly(curr_code->val);
@@ -182,23 +228,8 @@ void create_lst_file(FILE *lst_file, const struct subroutine_map *subroutines)
 	    }
 	  fprintf(lst_file,"\n");
 	}
-      // print strings
-      first_string = the_strings;
-      if(first_string != NULL)
-	fprintf(lst_file,"Strings:\n\"");
-      for(;first_string != NULL;first_string = first_string->next)
-	{
-	  if(first_string->val == 0)
-	    {
-	      fprintf(lst_file,"\"\n");
-	      if(first_string->next != NULL)
-		fprintf(lst_file,"\"");
-	    }
-	  else if(first_string->val == '"')
-	    fprintf(lst_file,"\"%c",first_string->val);
-	  else
-	    fprintf(lst_file,"%c",first_string->val);
-	}
+      fprintf(lst_file,"\n");
+      fflush(lst_file);
     }
 }
 
@@ -212,15 +243,11 @@ static struct compiled_code* increment_word(const struct compiled_code *word, in
   return word->next;
 }
 
-void create_lnk_file(FILE *lnk_file, const struct subroutine_map *subroutines)
+void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code)
 {
-  const struct compiled_code *the_code;
   const struct compiled_code *curr_code = the_code;
   int word_counter = 0,arg_counter;
   struct assembly_map *asmb = NULL;
-
-  fprintf(stderr,"lnk file not yet (re)implemented\n");
-  return;
 
   if(lnk_file == NULL || curr_code == NULL)
     return;
