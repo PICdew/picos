@@ -1,8 +1,10 @@
 def <update_display>
 {
   clear();
+  prompt = pop();
+  val = pop();
   sprint(prompt);
-  putd(get_val);
+  putd(val);
 }
     
 /**
@@ -21,6 +23,8 @@ def <get_val>
   max_digits = max_digits - 1;
   while(max_digits != 0)
     {
+	    push(get_val);
+	    push(prompt);
       call <update_display>;
       tmp = getch();
       if(tmp == 0xa)
@@ -35,6 +39,8 @@ def <get_val>
 	}
       max_digits = max_digits-1;
     }
+  push(get_val);
+  push(prompt);
   call <update_display>;
   getch();
   push(get_val);

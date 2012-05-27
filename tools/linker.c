@@ -86,9 +86,6 @@ void resolve_labels(struct compiled_code* code, int address_offset, int variable
 		    {
 			    code->val += variable_offset;
 		    }
-		    else
-		    	fprintf(stderr,"HAVE static val %d!!!\n",code->val);
-
 		    continue;
 	    }
 
@@ -113,7 +110,10 @@ void resolve_labels(struct compiled_code* code, int address_offset, int variable
 		  fprintf(stderr,"Could not resolve label %d\n",code->next->label);
 		  return;
 		}
-	      code->next->val = (picos_size_t)label_addr + address_offset;
+	      if(code->next->val == PASM_SUBROUTINE)
+		      code->next->val = (picos_size_t)label_addr;
+	      else
+		      code->next->val = (picos_size_t)label_addr + address_offset;
 	      code = code->next;
 	      continue;
 	    }
@@ -274,7 +274,12 @@ void create_lnk_file(FILE *lnk_file, const struct compiled_code *the_code)
 	  break;
 	}
       for(;arg_counter<asmb->has_arg;arg_counter++)
+      {
 	curr_code = increment_word(curr_code,&word_counter);
+	if(curr_code->type == typeId)
+		fprintf(lnk_file,"Variable 0x%x\n",curr_code->val);
+      }
+
     }
 }
 

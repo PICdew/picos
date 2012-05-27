@@ -53,7 +53,6 @@ int ex(nodeType *p) {
       inserted_word = insert_code(id);
       inserted_word->type = typeId;
       inserted_word->is_static = is_static;
-      fprintf(stderr,"Assigned typeId!!!\n");
       break;
     }
   case typeOpr:
@@ -199,7 +198,7 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tpop _switch_expr\n");// pop expression into variable
 	insert_code(PICLANG_POP);
 	inserted_word = insert_code(var->i);
-	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
+	inserted_word->type = typeId;
 	inserted_word->is_static = var->is_static;
 	ex(p->opr.op[1]);// go through cases
 
@@ -222,7 +221,7 @@ int ex(nodeType *p) {
 	write_assembly(assembly_file,"\tpush _switch_expr\n");
 	insert_code(PICLANG_PUSH);
 	inserted_word = insert_code(var->i);// push switch expression
-	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
+	inserted_word->type = typeId;
 	inserted_word->is_static = var->is_static;
 	write_assembly(assembly_file,"\tcompeq\n");// compare
 	insert_code(PICLANG_COMPEQ);
@@ -337,7 +336,7 @@ int ex(nodeType *p) {
 	insert_code(PICLANG_POP);
 	inserted_word = insert_code(var->i);
 	inserted_word->is_static = var->is_static;
-	inserted_word->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
+	inserted_word->type = typeId;
 	break;
       }
     case PICLANG_UMINUS:
@@ -654,7 +653,7 @@ nodeType *full_id(idNodeType variable_node, bool is_const, int data_type) {
         yyerror("out of memory");
 
     /* copy information */
-    p->type = typeId;fprintf(stderr,"Assigned typeId!!!\n");
+    p->type = typeId;
     p->id.i = variable_node.i;
     strncpy(p->id.name, variable_node.name,FILENAME_MAX);
     p->id.next = NULL;
@@ -902,7 +901,7 @@ idNodeType* resolve_variable(const char *name)
   // At this point, the variable does not exist.
   curr_variable = (idNodeType*)malloc(sizeof(idNodeType));
   strcpy(curr_variable->name,name);
-  curr_variable->i = count_all_variables();
+  curr_variable->i = count_variables(g_curr_subroutine->variables);
   curr_variable->next = g_curr_subroutine->variables;
   g_curr_subroutine->variables = curr_variable;
   curr_variable->is_static = (int)(g_curr_subroutine == global_subroutines_GLOBALS);
@@ -943,6 +942,57 @@ void set_pcb_type(struct compiled_code *the_pcb)
   set_pcb_type(the_pcb->next);
 }
 
+static void connect_code(struct compiled_code **the_code_ptr, struct compiled_code **code_index_ptr, struct compiled_code *place_holder, int *i, int page_size)
+{
+	struct compiled_code *the_code = NULL, *code_index = NULL;
+	if(code_index_ptr == NULL || the_code_ptr == NULL || i == NULL)
+		reason_exit("connect_code: Null pointer\n");
+	if(place_holder == NULL)
+		return;
+	
+	code_index = *code_index_ptr;
+	the_code = *the_code_ptr;
+
+	if(code_index == NULL)
+	{
+		*the_code_ptr = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+		code_index = *the_code_ptr;
+	}
+	else
+	{
+		code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+		code_index = code_index->next;
+	}
+
+	*code_index = *place_holder;
+	place_holder = place_holder->next;
+	*i += sizeof(picos_size_t);
+	while(place_holder != NULL)
+	{
+		code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+		code_index = code_index->next;
+		*code_index = *place_holder;
+		place_holder = place_holder->next;
+	
+    		*i += sizeof(picos_size_t);
+		if(*i == page_size)
+		{
+	  		// End of page, pad buffer.
+	  		for(;*i<FS_BUFFER_SIZE;*i+=1)
+	    		{
+	      			code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
+	  	        	code_index = code_index->next;
+	      			code_index->next = NULL;
+	      			code_index->val = ((*i-page_size)%2) ? 0xad : 0xde;
+	      			code_index->type =typePad;
+	    		}
+	  		*i = 0;
+	  		continue;
+		}
+  	}
+	*code_index_ptr = code_index;
+}
+
 struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memory, picos_size_t piclang_bitmap)
 {
   int i, pad_size;
@@ -964,6 +1014,7 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
   struct compiled_code *string_address = (struct compiled_code*)malloc(sizeof(struct compiled_code));
   struct compiled_code *stack, *end_of_stack;
   struct compiled_code *call_stack, *end_of_call_stack;
+  bool wrote_globals = false;
 
   if(subroutines == NULL)
     {
@@ -1008,52 +1059,19 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
 
   // Pad pages to fit into blocks
   page_size->val = FS_BUFFER_SIZE - (FS_BUFFER_SIZE%sizeof(picos_size_t));
-  i = sizeof(picos_size_t);
-  curr_subroutine = subroutines;
+  i = 0;//sizeof(picos_size_t);
   code_index = the_code;
+  curr_subroutine = subroutines;
+  if(global_subroutines_GLOBALS != NULL && global_subroutines_GLOBALS->code != NULL)
+	  connect_code(&the_code,&code_index,global_subroutines_GLOBALS->code,&i,page_size->val);
   for(;curr_subroutine != NULL;curr_subroutine = curr_subroutine->next)
   {
 
 		struct compiled_code *place_holder = curr_subroutine->code;
-	if(curr_subroutine->code == NULL)
-	      continue;	
-	if(code_index == NULL)
-	{
-		the_code = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-		code_index = the_code;
-	}
-	else
-	{
-		code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-		code_index = code_index->next;
-	}
-
-	*code_index = *place_holder;
-	place_holder = place_holder->next;
-	i += sizeof(picos_size_t);
-	while(place_holder != NULL)
-	{
-		code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-		code_index = code_index->next;
-		*code_index = *place_holder;
-		place_holder = place_holder->next;
+		if(global_subroutines_GLOBALS == curr_subroutine)
+			continue;
+	connect_code(&the_code,&code_index,curr_subroutine->code,&i,page_size->val);
 	
-		if(i == page_size->val)
-		{
-	  		// End of page, pad buffer.
-	  		for(;i<FS_BUFFER_SIZE;i++)
-	    		{
-	      			code_index->next = (struct compiled_code*)malloc(sizeof(struct compiled_code));
-	  	        	code_index = code_index->next;
-	      			code_index->next = NULL;
-	      			code_index->val = ((i-page_size->val)%2) ? 0xad : 0xde;
-	      			code_index->type =typePad;
-	    		}
-	  		i = 0;
-	  		continue;
-		}
-    		i += sizeof(picos_size_t);
-  	}
   }//subroutine loop
   
   // Pad last block
@@ -1068,7 +1086,10 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
 
   
   // Find the location of the main function
-  pc->val = ((struct subroutine_map*) get_subroutine("main"))->address;
+  if(global_subroutines_GLOBALS != NULL && global_subroutines_GLOBALS->code != NULL)
+	  pc->val = ((struct subroutine_map*) get_subroutine("GLOBALS"))->address;
+  else
+	  pc->val = ((struct subroutine_map*) get_subroutine("main"))->address;
   if(pc->val == (picos_size_t)-1)
 	reason_exit("error: Undefined \"main\" function.\n");
 
@@ -1136,7 +1157,6 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
 	 curr_sub = global_subroutines_GLOBALS;
 	curr_sub->address = start_address;
 	curr_sub->variable_address = variable_address;
-	curr_sub->size = CountCode(curr_sub->code)/sizeof(picos_size_t);
 	if(curr_sub->code != NULL)
 	{
 		// global variables should be static
@@ -1164,6 +1184,7 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
 			}
 		}
 	}
+	curr_sub->size = CountCode(curr_sub->code)/sizeof(picos_size_t);
 	start_address += curr_sub->size; 
 	variable_address += count_variables(curr_sub->variables);
 

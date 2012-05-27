@@ -1,5 +1,5 @@
 * Change libraries import only functions that are called by the main code.
-** Make sure 1.) program starts with global code and 2.) global code then jumps to main subroutine.
+** Test programs (esp those that deal with raw file)
 * Add downloader to write programs to RAM to be executed.
 * sleep may or may not work.
 * Add timer function to piclang.
