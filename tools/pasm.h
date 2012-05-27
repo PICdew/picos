@@ -104,6 +104,7 @@ struct subroutine_map
   struct compiled_code *code, *code_end, *strings, *strings_end;
   idNodeType *variables;
   int variable_address;// location of variables is memory (which will be a continguous block)
+  int string_address;// location of strings is code 
   struct subroutine_map *next;
 };
 
@@ -161,7 +162,7 @@ struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 
 struct compiled_code* insert_compiled_code(nodeEnum type, struct subroutine_map *subroutine, picos_size_t val, picos_size_t label);
-#define insert_string(X) insert_compiled_code(typeStr, g_curr_subroutine,X,0)
+#define insert_string(X) insert_compiled_code(typeStr, string_handler,X,0)
 #define insert_code(X) insert_compiled_code(typeCode, g_curr_subroutine,X,0)
 #define insert_label(X,Y) insert_compiled_code(typeLabel, g_curr_subroutine,X,Y)
 

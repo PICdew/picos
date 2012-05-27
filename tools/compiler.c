@@ -88,11 +88,13 @@ int ex(nodeType *p) {
 	  }
 	g_curr_subroutine = subroutine;
 	globals = get_subroutine("GLOBALS");
+#if 0
 	if(globals != NULL)
 	{
 		subroutine->strings = globals->strings;
 		globals->strings = NULL;
 	}
+#endif
 	subroutine->address = lbl1;
 	write_assembly(assembly_file,"%s:\n", subroutine->name);
 	insert_label(PICLANG_LABEL,lbl1);
@@ -114,6 +116,13 @@ int ex(nodeType *p) {
 	deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\treturn\n");
       insert_code(PICLANG_RETURN);
+      if(p->opr.oper == PASM_DEFINE)
+      {
+	      if(g_curr_subroutine == NULL || string_handler == NULL)
+		      reason_exit("ex: NULL pointer for string trade off\n");
+	      g_curr_subroutine->strings = string_handler->strings;
+	      string_handler->strings = NULL;
+      }
       break;
     case PASM_CONTINUE:
       if(continue_to_label < 0)
@@ -1113,7 +1122,16 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
 	}
 	curr_subroutine = curr_subroutine->next;
   }
-
+#if 0
+  connect_code(&the_code,&code_index,global_subroutines_GLOBALS->strings,&i,page_size->val);
+  curr_subroutine = subroutines;
+  while(curr_subroutine != NULL)
+  { 
+	  if(curr_subroutine != global_subroutines_GLOBALS)
+		  connect_code(&the_code,&code_index,curr_subroutine->strings,&i,page_size->val);
+	  curr_subroutine = curr_subroutine->next;
+  }
+#endif
   
   // Magic number to identify the executable
   i = PCB_MAGIC_NUMBER_OFFSET - 1;
@@ -1148,7 +1166,7 @@ static void dump_code(FILE *eeprom_file,FILE *hex_file,struct compiled_code **th
 void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_subroutines, picos_size_t *piclang_bitmap)
 {
   struct subroutine_map *curr_sub;
-  int start_address = 0, variable_address = 0;
+  int start_address = 0, variable_address = 0, string_address = 0;
   if(the_subroutines == NULL)
 	return;
   
@@ -1193,7 +1211,10 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
   curr_sub = the_subroutines;
   for(;curr_sub != NULL;curr_sub = curr_sub->next)
   {
-	  // GLOBALS is always first.
+	curr_sub->string_address = string_address;
+	string_address += CountCode(curr_sub->strings);
+
+	  // GLOBALS is always first, except for strings.
 	  if(curr_sub == global_subroutines_GLOBALS)
 		  continue;
 	// Calculate the location of each subroutine in memory
@@ -1213,7 +1234,7 @@ void pasm_compile(FILE *eeprom_file,FILE *hex_file,struct subroutine_map *the_su
   {
 	  // Calculation location of each variable in memory
 	  // update pointers to variables and subroutines
-	  resolve_labels(curr_sub->code, curr_sub->address, curr_sub->variable_address);
+	  resolve_labels(curr_sub->code, curr_sub->address, curr_sub->variable_address, curr_sub->string_address);
 	  curr_sub = curr_sub->next;
   }
 

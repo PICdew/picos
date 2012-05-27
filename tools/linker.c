@@ -71,7 +71,7 @@ const struct subroutine_map *subroutine = lookup_subroutine(code->label);
 
 }
 
-void resolve_labels(struct compiled_code* code, int address_offset, int variable_offset)
+void resolve_labels(struct compiled_code* code, int address_offset, int variable_offset, int string_offset)
 {
   const struct compiled_code* code_head = code;
   int label_addr, subroutine_label, arg_counter;
@@ -86,6 +86,13 @@ void resolve_labels(struct compiled_code* code, int address_offset, int variable
 		    {
 			    code->val += variable_offset;
 		    }
+		    continue;
+	    }
+
+	    if(code->relocation_type == REL_STRING)
+	    {
+		    if(!code->is_static)
+			    code->val += string_offset;
 		    continue;
 	    }
 

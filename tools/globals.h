@@ -4,7 +4,7 @@
 #include "pasm.h"
 
 // Globals :-/
-extern struct subroutine_map *global_subroutines, *g_curr_subroutine;
+extern struct subroutine_map *global_subroutines, *g_curr_subroutine, *string_handler;
 extern struct subroutine_map *global_subroutines_GLOBALS;// this will contain global variables and strings.
 extern int break_to_label, continue_to_label;
 extern idNodeType *variable_list;// Variable table

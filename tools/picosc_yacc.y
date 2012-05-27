@@ -16,7 +16,7 @@
 
 extern picos_size_t label_counter;
 int break_to_label, continue_to_label, switch_end_label;
-struct subroutine_map *global_subroutines = NULL, *g_curr_subroutine = NULL;
+struct subroutine_map *global_subroutines = NULL, *g_curr_subroutine = NULL, *string_handler;
 struct subroutine_map *global_subroutines_GLOBALS;
 extern struct assembly_map opcodes[];
 
@@ -422,6 +422,10 @@ int main(int argc, char **argv)
   global_subroutines = insert_subroutine("GLOBALS");// this stores global stuff
   g_curr_subroutine = global_subroutines;
   global_subroutines_GLOBALS = global_subroutines;
+
+  string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
+  if(string_handler == NULL)
+	reason_exit("Could not allocate memory for string_handler\n");
  
   yyparse();
 
