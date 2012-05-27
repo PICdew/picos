@@ -2,8 +2,6 @@
  * This program reads input and stores it in the mounted filesystem's raw file.
  */
 
-def <init>
-{
   const ESC = 0x1b;
   const COLS = 8;
   const ROWS = 2;
@@ -11,7 +9,6 @@ def <init>
   x = 0;
   y = 0;
   a = 0;
-}
 
 def <fsprint>
 {
@@ -130,7 +127,6 @@ def <main>
 {
   signal(SIGINT,<sig_action>);
   lock();
-  call <init>;
   if(argc > 1)
     {
       call <write_filename>;
