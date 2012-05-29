@@ -78,7 +78,6 @@ int ex(nodeType *p) {
       {
 	const char *subroutine_name = p->opr.op[0]->str.string;
 	struct subroutine_map *subroutine = NULL;
-	struct subroutine_map *globals = NULL;
 	lbl1 = label_counter;	label_counter++;
 	subroutine = get_subroutine(subroutine_name);
 	if(subroutine == NULL)
@@ -87,14 +86,6 @@ int ex(nodeType *p) {
 	    exit(-1);
 	  }
 	g_curr_subroutine = subroutine;
-	globals = get_subroutine("GLOBALS");
-#if 0
-	if(globals != NULL)
-	{
-		subroutine->strings = globals->strings;
-		globals->strings = NULL;
-	}
-#endif
 	subroutine->address = lbl1;
 	write_assembly(assembly_file,"%s:\n", subroutine->name);
 	insert_label(PICLANG_LABEL,lbl1);
@@ -116,13 +107,6 @@ int ex(nodeType *p) {
 	deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\treturn\n");
       insert_code(PICLANG_RETURN);
-      if(p->opr.oper == PASM_DEFINE)
-      {
-	      if(g_curr_subroutine == NULL || string_handler == NULL)
-		      reason_exit("ex: NULL pointer for string trade off\n");
-	      g_curr_subroutine->strings = string_handler->strings;
-	      string_handler->strings = NULL;
-      }
       break;
     case PASM_CONTINUE:
       if(continue_to_label < 0)
@@ -631,6 +615,7 @@ int handle_string(const char *pStr)
   if(pStr != NULL)
     {
       int is_new = true;
+printf("Handled string \"%s\" ",pStr);
       retval = resolve_string(pStr,&is_new) + PICLANG_STRING_OFFSET;// when referencing strings, arguments will go first.
       if(is_new)
 	{
@@ -649,6 +634,7 @@ int handle_string(const char *pStr)
     {
       yyerror("Invalid string");
     }
+  printf("at %d\n",retval);
   return retval;
 }
 
@@ -1107,7 +1093,8 @@ struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memo
   string_address->val = (CountCode(first_byte)+PCB_MAGIC_NUMBER_OFFSET)/FS_BUFFER_SIZE + 1;
 
   // Attach strings
-  curr_subroutine = subroutines;
+  //curr_subroutine = subroutines;
+  curr_subroutine = string_handler;
   while(curr_subroutine != NULL)
   {
 	const struct compiled_code *curr_string = curr_subroutine->strings;
