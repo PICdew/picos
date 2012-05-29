@@ -566,27 +566,7 @@ struct subroutine_map *insert_subroutine(const char *name)
   return global_subroutines;
 }
 
-void free_subroutine(struct subroutine_map *subroutine)
-{
-	if(subroutine == NULL)
-		return;
-	free_code(subroutine->code); subroutine->code = (struct compiled_code *)0xdead;
-        free_code(subroutine->strings); subroutine->strings = (struct compiled_code *)0xdead;
-	free_all_variables(subroutine->variables);subroutine->variables = (idNodeType *)0xdead;
-	subroutine->next = (struct subroutine_map *)0xdead;
-}
 
-void all_free_subroutines(struct subroutine_map *subroutine)
-{
-	struct subroutine_map *next = NULL;
-	while(subroutine != NULL)
-	{
-		next = subroutine->next;
-		free_subroutine(subroutine);
-		subroutine = next;
-	}
-
-}
 #define SIZEOF_NODETYPE ((char *)&p->con - (char *)p)
 
 nodeType *full_con(int value, int relocation_type) {
@@ -811,26 +791,6 @@ int count_all_variables()
 	curr_sub = curr_sub->next;
   }
   return num_variables;
-}
-
-void free_variable(idNodeType *variable)
-{
-	if(variable == NULL)
-		return;
-	variable->next = (idNodeType*)0xdead;
-	free(variable);	
-}
-
-void free_all_variables(idNodeType *variable)
-{
-	idNodeType *tmp;
-	
-	while(variable != NULL)
-	{
-		tmp = variable->next;
-		free_variable(variable);
-		variable = tmp;
-	}
 }
 
 idNodeType* resolve_variable_subroutine(const char *name, struct subroutine_map *subroutine)

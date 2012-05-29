@@ -32,7 +32,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = picosc$(EXEEXT) pdasm$(EXEEXT) picdisk$(EXEEXT)
+bin_PROGRAMS = picosc$(EXEEXT) pdasm$(EXEEXT) picdisk$(EXEEXT) \
+	fs$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -51,6 +52,12 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
+am_fs_OBJECTS = fs-fs.$(OBJEXT) fs-pasm_src.$(OBJEXT) \
+	fs-utils.$(OBJEXT)
+fs_OBJECTS = $(am_fs_OBJECTS)
+fs_DEPENDENCIES =
+fs_LINK = $(CCLD) $(fs_CFLAGS) $(CFLAGS) $(fs_LDFLAGS) $(LDFLAGS) -o \
+	$@
 am_pdasm_OBJECTS = pdasm-pdasm.$(OBJEXT) pdasm-pasm_src.$(OBJEXT)
 pdasm_OBJECTS = $(am_pdasm_OBJECTS)
 pdasm_LDADD = $(LDADD)
@@ -81,8 +88,10 @@ LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 LEXCOMPILE = $(LEX) $(LFLAGS) $(AM_LFLAGS)
 YLWRAP = $(top_srcdir)/ylwrap
 YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS)
-SOURCES = $(pdasm_SOURCES) $(picdisk_SOURCES) $(picosc_SOURCES)
-DIST_SOURCES = $(pdasm_SOURCES) $(picdisk_SOURCES) $(picosc_SOURCES)
+SOURCES = $(fs_SOURCES) $(pdasm_SOURCES) $(picdisk_SOURCES) \
+	$(picosc_SOURCES)
+DIST_SOURCES = $(fs_SOURCES) $(pdasm_SOURCES) $(picdisk_SOURCES) \
+	$(picosc_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -302,6 +311,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+fs$(EXEEXT): $(fs_OBJECTS) $(fs_DEPENDENCIES) 
+	@rm -f fs$(EXEEXT)
+	$(fs_LINK) $(fs_OBJECTS) $(fs_LDADD) $(LIBS)
 pdasm$(EXEEXT): $(pdasm_OBJECTS) $(pdasm_DEPENDENCIES) 
 	@rm -f pdasm$(EXEEXT)
 	$(pdasm_LINK) $(pdasm_OBJECTS) $(pdasm_LDADD) $(LIBS)
@@ -323,6 +335,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-fs.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-pasm_src.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-pdasm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picdisk-picdisk.Po@am__quote@
@@ -348,6 +363,48 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+fs-fs.o: fs.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -MT fs-fs.o -MD -MP -MF $(DEPDIR)/fs-fs.Tpo -c -o fs-fs.o `test -f 'fs.c' || echo '$(srcdir)/'`fs.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fs-fs.Tpo $(DEPDIR)/fs-fs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fs.c' object='fs-fs.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -c -o fs-fs.o `test -f 'fs.c' || echo '$(srcdir)/'`fs.c
+
+fs-fs.obj: fs.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -MT fs-fs.obj -MD -MP -MF $(DEPDIR)/fs-fs.Tpo -c -o fs-fs.obj `if test -f 'fs.c'; then $(CYGPATH_W) 'fs.c'; else $(CYGPATH_W) '$(srcdir)/fs.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fs-fs.Tpo $(DEPDIR)/fs-fs.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fs.c' object='fs-fs.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -c -o fs-fs.obj `if test -f 'fs.c'; then $(CYGPATH_W) 'fs.c'; else $(CYGPATH_W) '$(srcdir)/fs.c'; fi`
+
+fs-pasm_src.o: pasm_src.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -MT fs-pasm_src.o -MD -MP -MF $(DEPDIR)/fs-pasm_src.Tpo -c -o fs-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fs-pasm_src.Tpo $(DEPDIR)/fs-pasm_src.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='fs-pasm_src.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -c -o fs-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c
+
+fs-pasm_src.obj: pasm_src.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -MT fs-pasm_src.obj -MD -MP -MF $(DEPDIR)/fs-pasm_src.Tpo -c -o fs-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fs-pasm_src.Tpo $(DEPDIR)/fs-pasm_src.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='fs-pasm_src.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -c -o fs-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
+
+fs-utils.o: ../utils.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -MT fs-utils.o -MD -MP -MF $(DEPDIR)/fs-utils.Tpo -c -o fs-utils.o `test -f '../utils.c' || echo '$(srcdir)/'`../utils.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fs-utils.Tpo $(DEPDIR)/fs-utils.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../utils.c' object='fs-utils.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -c -o fs-utils.o `test -f '../utils.c' || echo '$(srcdir)/'`../utils.c
+
+fs-utils.obj: ../utils.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -MT fs-utils.obj -MD -MP -MF $(DEPDIR)/fs-utils.Tpo -c -o fs-utils.obj `if test -f '../utils.c'; then $(CYGPATH_W) '../utils.c'; else $(CYGPATH_W) '$(srcdir)/../utils.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/fs-utils.Tpo $(DEPDIR)/fs-utils.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../utils.c' object='fs-utils.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -c -o fs-utils.obj `if test -f '../utils.c'; then $(CYGPATH_W) '../utils.c'; else $(CYGPATH_W) '$(srcdir)/../utils.c'; fi`
 
 pdasm-pdasm.o: pdasm.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdasm_CFLAGS) $(CFLAGS) -MT pdasm-pdasm.o -MD -MP -MF $(DEPDIR)/pdasm-pdasm.Tpo -c -o pdasm-pdasm.o `test -f 'pdasm.c' || echo '$(srcdir)/'`pdasm.c

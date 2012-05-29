@@ -1,4 +1,4 @@
-bin_PROGRAMS = picosc pdasm picdisk
+bin_PROGRAMS = picosc pdasm picdisk fs
 
 AM_YFLAGS = -d 
 BUILT_SOURCES = picosc_yacc.h

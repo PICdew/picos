@@ -47,6 +47,48 @@ void free_code(struct compiled_code *code)
 	free(code);
 }
 
+void free_subroutine(struct subroutine_map *subroutine)
+{
+	if(subroutine == NULL)
+		return;
+	free_code(subroutine->code); subroutine->code = (struct compiled_code *)0xdead;
+        free_code(subroutine->strings); subroutine->strings = (struct compiled_code *)0xdead;
+	free_all_variables(subroutine->variables);subroutine->variables = (idNodeType *)0xdead;
+	subroutine->next = (struct subroutine_map *)0xdead;
+}
+
+void all_free_subroutines(struct subroutine_map *subroutine)
+{
+	struct subroutine_map *next = NULL;
+	while(subroutine != NULL)
+	{
+		next = subroutine->next;
+		free_subroutine(subroutine);
+		subroutine = next;
+	}
+
+}
+
+void free_variable(idNodeType *variable)
+{
+	if(variable == NULL)
+		return;
+	variable->next = (idNodeType*)0xdead;
+	free(variable);	
+}
+
+void free_all_variables(idNodeType *variable)
+{
+	idNodeType *tmp;
+	
+	while(variable != NULL)
+	{
+		tmp = variable->next;
+		free_variable(variable);
+		variable = tmp;
+	}
+}
+
 struct compiled_code* insert_compiled_code(nodeEnum type, struct subroutine_map *subroutine, picos_size_t val, picos_size_t label)
 {
   struct compiled_code **ptrlist,**ptrlist_end;

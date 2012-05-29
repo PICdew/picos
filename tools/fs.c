@@ -112,7 +112,7 @@ static int FS_is_virtual(const char *path)
 static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
 {
   char hex_buffer[45];
-  struct compiled_code *code = NULL, *code_end = NULL;
+  struct subroutine_map *code_block;
   int len = 0;
   size_t num_bytes,curr_byte = 0;
   if(sb == NULL)
@@ -122,12 +122,20 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
   
   num_bytes = sb[FS_SuperBlock_block_size]*sb[FS_SuperBlock_num_blocks];
   
+  code_block = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
+  if(code_block == NULL)
+  {
+	log_msg("FS_compile: Could not allocate memory for code block.\n");
+	return 0;
+  }
+  code_block->next = NULL;
+
   for(;curr_byte < num_bytes;curr_byte++)
-    insert_compiled_code(typeCode,&code,&code_end,sb[curr_byte],0);
+    insert_compiled_code(typeCode,code_block,sb[curr_byte],0);
   
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));
-  FPrintCode(eeprom_file,code,0,hex_buffer,0x4200,0,type);
-  FreeCode(code);
+  FPrintCode(eeprom_file,code_block->code,0,hex_buffer,0x4200,0,type);
+  free_subroutine(code_block);code_block = NULL;
 
   if(eeprom_file != FS_PRIVATE_DATA->logfile)
     {
@@ -1110,7 +1118,7 @@ static int fs_inodedump_filler(const char *path, void *buf, fuse_fill_dir_t fill
   return 0;
 }
 
-static int FS_read_inodedump_file(const char *path, char *buf, size_t size)
+static int FS_read_inodedump_file(const char *the_path, char *buf, size_t size)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = sb;
@@ -1119,9 +1127,12 @@ static int FS_read_inodedump_file(const char *path, char *buf, size_t size)
   char *token = NULL, *token_saver = NULL;
   int have_inode = false;
   size_t number_of_pointers;
+  char path[FILENAME_MAX];
 
-  if(path == NULL)
+  if(the_path == NULL)
     return -1;
+ 
+  strncpy(path,the_path,FILENAME_MAX); 
 
   log_msg("fs_read_inodedump_file (%s)\n",path);
   number_of_pointers = sb[FS_SuperBlock_block_size] - FS_INode_pointers;
