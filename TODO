@@ -1,7 +1,5 @@
+* Updated library functions for changes to using subroutine_map
 * Change libraries import only functions that are called by the main code.
-** Strings do not get connected to the correct subroutine_map. Fix that.
-** Test programs (esp those that deal with raw file)
-* Add downloader to write programs to RAM to be executed.
 * sleep may or may not work.
 * Add timer function to piclang.
 * Fix else if in picosc
