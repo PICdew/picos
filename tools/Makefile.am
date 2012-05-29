@@ -1,10 +1,12 @@
 bin_PROGRAMS = picosc pdasm picdisk
 
 AM_YFLAGS = -d 
+BUILT_SOURCES = picosc_yacc.h
 picosc_CFLAGS =  -DNOT_FOR_PIC -I../
-picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c
+picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c
 picosc_LDADD = -lm
 picosc_LDFLAGS = 
+	
 
 pasm_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../
 pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c
