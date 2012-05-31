@@ -576,7 +576,9 @@ static void create_lib_header(FILE *binary_file, const struct compiled_code *cur
     return;
   
 }
+#endif
 
+#if 0// OLD
 void piclib_write_subroutines(FILE *binary_file, const struct compiled_code *curr_code)
 {
   int word_counter = 0;
@@ -642,26 +644,54 @@ void piclib_write_strings(FILE *binary_file, const struct compiled_code *curr_co
     }
 
 }
+#endif //OLD
 
-void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,const struct compiled_code *libstrings)
+
+void piclib_write_subroutines(FILE *binary_file,const struct subroutine_map *subroutine)
 {
-  const struct compiled_code *curr_code;
-  struct relocation_map *relmap = NULL, *tmpmap;// for relocation table
-  int word_counter = 0;
-  
-  if(binary_file == NULL)
+    if(binary_file == NULL || subroutine == NULL)
+        return;
+
+    fprintf(binary_file,"\nBegin Subroutine\n");
+    fprintf(binary_file,"NAME: %s\n",subroutine->name);
+    fprintf(binary_file,"VARIABLES: %d\n",count_variables(subroutine->variables));
+    fprintf(binary_file,"STRINGS: %lu\n",CountCode(subroutine->strings));
+    fprintf(binary_file,"CODE: %lu\n",CountCode(subroutine->code));
+    piclib_write_code(binary_file,subroutine->code);
+    fprintf(binary_file,"End Subroutine\n");
+    fflush(binary_file);
+}
+
+void write_piclib_obj(FILE *binary_file,const struct subroutine_map *subroutines)
+{
+  const struct subroutine_map *subroutine;
+  if(binary_file == NULL || subroutines == NULL)
     return;
  
   //create_lib_header(binary_file, libcode,libstrings);
   fprintf(binary_file,"%s",PICLANG_LIB_MAGIC_NUMBERS);
 
-  // Subroutine map
-  piclib_write_subroutines(binary_file,libcode);
+  // Subroutine maps
+  subroutine = subroutines;
+  while(subroutine != NULL)
+  {
+      piclib_write_subroutines(binary_file,subroutine);
+      subroutine = subroutine->next;
+  }
 
   // Strings
-  piclib_write_strings(binary_file,libstrings);
+  //piclib_write_strings(binary_file,libstrings);
 
- 
+}
+
+void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
+{
+  int word_counter = 0;
+  const struct compiled_code *curr_code;
+  struct relocation_map *relmap = NULL, *tmpmap;
+   if(binary_file == NULL || libcode == NULL)
+      return;
+
   // Write Code section
   word_counter = 0;
   curr_code = libcode;
@@ -673,7 +703,7 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
 	  }
 	  curr_code = curr_code->next;
   }
-  fprintf(binary_file,block_name_format,"CODE",word_counter);
+  fprintf(binary_file,"--- Begin Code ---\n");
   curr_code = libcode;
   word_counter = 0;
   while(curr_code != NULL)
@@ -721,6 +751,7 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
       word_counter++;
     }
  
+#if 0// NEED?
   tmpmap = relmap;
   word_counter = 0;
   while(tmpmap != NULL)
@@ -737,6 +768,7 @@ void write_piclib_obj(FILE *binary_file,const struct compiled_code *libcode,cons
       tmpmap = tmpmap->next;
     }
    fprintf(binary_file,"%c",0);
+#endif
 
    // Free structs
   tmpmap = relmap;
@@ -766,6 +798,7 @@ struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_wor
 	return NULL;
 }
 
+#if 0 // FIX ME
 int piclib_link(struct piclib_object *library, struct subroutine_map *subroutines)
 {
   idNodeType* resolve_variable(const char *name);

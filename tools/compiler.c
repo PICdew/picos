@@ -595,7 +595,6 @@ int handle_string(const char *pStr)
   if(pStr != NULL)
     {
       int is_new = true;
-printf("Handled string \"%s\" ",pStr);
       retval = resolve_string(pStr,&is_new) + PICLANG_STRING_OFFSET;// when referencing strings, arguments will go first.
       if(is_new)
 	{
@@ -614,7 +613,6 @@ printf("Handled string \"%s\" ",pStr);
     {
       yyerror("Invalid string");
     }
-  printf("at %d\n",retval);
   return retval;
 }
 

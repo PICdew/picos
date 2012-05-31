@@ -435,30 +435,12 @@ int main(int argc, char **argv)
   if(compile_only)
     {
       pasm_compile(eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
+      write_piclib_obj(binary_file,global_subroutines);
     }
   else
     {
       finished_code = pasm_build(binary_file,eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
     }
-
-  if(compile_only)
-  {
-  	fprintf(stderr,"piclib not yet reimplemented\n");//write_piclib_obj(binary_file,global_subroutines);
-  }
- 
-	  
-
-#if 0 // deprecated 
-	  curr_code = the_strings;
-	  while(curr_code != NULL)
-	    {
-	      fprintf(binary_file,"%c",(char)curr_code->val);
-	      curr_code = curr_code->next;
-	    }
-#endif
-	
- 
-    
 
   create_lst_file(lst_file, finished_code);
   

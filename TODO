@@ -2,6 +2,7 @@
 ** Strings do not get connected to the correct subroutine_map. Fix that.
 ** Test programs (esp those that deal with raw file)
 * Add downloader to write programs to RAM to be executed.
+* Add data types to compiler (not necessarily runtime)
 * sleep may or may not work.
 * Add timer function to piclang.
 * Fix else if in picosc

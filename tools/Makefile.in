@@ -72,7 +72,7 @@ am_picosc_OBJECTS = picosc-compiler.$(OBJEXT) \
 	picosc-picosc_lex.$(OBJEXT) picosc-picosc_yacc.$(OBJEXT) \
 	picosc-pasm_src.$(OBJEXT) picosc-linker.$(OBJEXT) \
 	picosc-utils.$(OBJEXT) picosc-arg.$(OBJEXT) \
-	picosc-picfs_error.$(OBJEXT)
+	picosc-picfs_error.$(OBJEXT) picosc-base64.$(OBJEXT)
 picosc_OBJECTS = $(am_picosc_OBJECTS)
 picosc_DEPENDENCIES =
 picosc_LINK = $(CCLD) $(picosc_CFLAGS) $(CFLAGS) $(picosc_LDFLAGS) \
@@ -203,7 +203,7 @@ top_srcdir = @top_srcdir@
 AM_YFLAGS = -d 
 BUILT_SOURCES = picosc_yacc.h
 picosc_CFLAGS = -DNOT_FOR_PIC -I../
-picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c
+picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c base64.c
 picosc_LDADD = -lm
 picosc_LDFLAGS = 
 pasm_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../
@@ -342,6 +342,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-pdasm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picdisk-picdisk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-arg.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-compiler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-linker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-pasm_src.Po@am__quote@
@@ -559,6 +560,20 @@ picosc-picfs_error.obj: ../picfs_error.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../picfs_error.c' object='picosc-picfs_error.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-picfs_error.obj `if test -f '../picfs_error.c'; then $(CYGPATH_W) '../picfs_error.c'; else $(CYGPATH_W) '$(srcdir)/../picfs_error.c'; fi`
+
+picosc-base64.o: base64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-base64.o -MD -MP -MF $(DEPDIR)/picosc-base64.Tpo -c -o picosc-base64.o `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-base64.Tpo $(DEPDIR)/picosc-base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='base64.c' object='picosc-base64.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-base64.o `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
+
+picosc-base64.obj: base64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-base64.obj -MD -MP -MF $(DEPDIR)/picosc-base64.Tpo -c -o picosc-base64.obj `if test -f 'base64.c'; then $(CYGPATH_W) 'base64.c'; else $(CYGPATH_W) '$(srcdir)/base64.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-base64.Tpo $(DEPDIR)/picosc-base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='base64.c' object='picosc-base64.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-base64.obj `if test -f 'base64.c'; then $(CYGPATH_W) 'base64.c'; else $(CYGPATH_W) '$(srcdir)/base64.c'; fi`
 
 .l.c:
 	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)
