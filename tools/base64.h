@@ -1,3 +1,7 @@
+#ifndef BASE64_H
+#define BASE64_H 1
+
+#include <stdio.h>
 
 typedef long crc24;
 
@@ -13,4 +17,5 @@ struct base64_stream
 
 };
 
+#endif //BASE_H
 
