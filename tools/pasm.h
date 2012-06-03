@@ -158,6 +158,14 @@ nodeType *full_con(int value, int relocation_type);
  */
 void reason_exit(const char *format, ...);
 
+/**
+  * Check for condition. If condition is true, nothing happens. If condition is false, the provided
+  * error message is displayed, using vargs, and the program exits. If errno is set, that exit value
+  * is returned and the result of strerror is displayed. Otherwise, the exit value is 1.
+  */
+void full_assert(int condition,const char *format,...);
+
+
 struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
 

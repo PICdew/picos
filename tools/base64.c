@@ -5,18 +5,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-void full_assert(int condition,const char *format,...)
-{
-    va_list args;
-    if(condition)
-        return;
-    va_start(args,format);
-    vfprintf(stderr,format,args);
-    va_end(args);
-
-    exit(1);
-}
-
 #define CRC24_INIT 0xB704CEL
 #define CRC24_POLY 0x1864CFBL
 

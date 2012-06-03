@@ -1,4 +1,5 @@
 #include "pasm.h"
+#include "base64.h"
 
 #include <stdlib.h>
 #include <errno.h>
@@ -649,6 +650,7 @@ void piclib_write_strings(FILE *binary_file, const struct compiled_code *curr_co
 
 void piclib_write_subroutines(FILE *binary_file,const struct subroutine_map *subroutine)
 {
+    void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode);
     if(binary_file == NULL || subroutine == NULL)
         return;
 
@@ -689,10 +691,15 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
   int word_counter = 0;
   const struct compiled_code *curr_code;
   struct relocation_map *relmap = NULL, *tmpmap;
+  struct base64_stream *encoder;
+  FILE *debug = fopen("debug.o","w");
    if(binary_file == NULL || libcode == NULL)
       return;
 
   // Write Code section
+   encoder = (struct base64_stream *)malloc(sizeof(struct base64_stream));
+   full_assert(encoder != NULL,"piclib_write_code: Could not allocate memory for base64 stream.");
+   base64_init(encoder,binary_file);
   word_counter = 0;
   curr_code = libcode;
   while(curr_code != NULL)
@@ -711,7 +718,9 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
       if(curr_code->type != typeStr && curr_code->type != typePad)
 	{
 	  //write_val_for_pic(binary_file,curr_code->val);
-	  fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+	  //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+            fwrite(curr_code,sizeof(struct compiled_code),1,debug);
+          base64_encode(encoder,curr_code,sizeof(struct compiled_code));
 	  switch(curr_code->val)
 	    {
 		    case PICLANG_LABEL:
@@ -725,8 +734,10 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 		}
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
-	      fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-	      insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
+	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+            fwrite(curr_code,sizeof(struct compiled_code),1,debug);
+	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
+              insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
 	      break;
 	    case PICLANG_JMP: case PICLANG_JZ: case PICLANG_CALL:
 	      if(curr_code->next == NULL)
@@ -736,8 +747,10 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 		}
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
-	      fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-	      insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
+	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+            fwrite(curr_code,sizeof(struct compiled_code),1,debug);
+	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
+              insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
 	      break;
 	    default:
 	      if(curr_code->relocation_type != -1)
@@ -770,6 +783,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
    fprintf(binary_file,"%c",0);
 #endif
 
+
    // Free structs
   tmpmap = relmap;
   while(tmpmap != NULL)
@@ -779,6 +793,14 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
       free(relmap);
     }
 
+  base64_flush(encoder);
+  base64_close(encoder);
+  free(encoder);
+
+  fflush(debug);
+  fclose(debug);
+  fprintf(binary_file,"\n--- End Code ---\n");
+  fflush(binary_file);
 }
 
 struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_word)
