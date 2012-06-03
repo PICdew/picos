@@ -692,7 +692,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
   const struct compiled_code *curr_code;
   struct relocation_map *relmap = NULL, *tmpmap;
   struct base64_stream *encoder;
-  FILE *debug = fopen("debug.o","w");
+  FILE *debug_file = fopen("debug.o","a+");
    if(binary_file == NULL || libcode == NULL)
       return;
 
@@ -719,7 +719,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	{
 	  //write_val_for_pic(binary_file,curr_code->val);
 	  //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-            fwrite(curr_code,sizeof(struct compiled_code),1,debug);
+            fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
           base64_encode(encoder,curr_code,sizeof(struct compiled_code));
 	  switch(curr_code->val)
 	    {
@@ -735,7 +735,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
 	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-            fwrite(curr_code,sizeof(struct compiled_code),1,debug);
+            fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
 	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
               insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
 	      break;
@@ -748,7 +748,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
 	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-            fwrite(curr_code,sizeof(struct compiled_code),1,debug);
+            fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
 	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
               insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
 	      break;
@@ -797,8 +797,9 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
   base64_close(encoder);
   free(encoder);
 
-  fflush(debug);
-  fclose(debug);
+  fflush(debug_file);
+  if(debug_file != stdout)
+     fclose(debug_file);
   fprintf(binary_file,"\n--- End Code ---\n");
   fflush(binary_file);
 }
