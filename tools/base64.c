@@ -59,6 +59,7 @@ int base64_encode_buffer(struct base64_stream *encoder)
 void base64_encode(struct base64_stream *encoder, void *data, size_t size)
 {
     FILE *output;
+	char amount_to_buffer;
 
     if(encoder == NULL || data == NULL)
         return;
@@ -71,9 +72,8 @@ void base64_encode(struct base64_stream *encoder, void *data, size_t size)
     for(;size > 0;size-=3)
     {
         full_assert(encoder->bytes_in_buffer < 3,"Internal Error: bytes_in_buffer should never exceed 3. It equals %d\n",encoder->bytes_in_buffer);
-        memset(encoder->buffer,0,3*sizeof(char));
-        memset(encoder->outblock,0,4*sizeof(char));
-       memcpy(&encoder->buffer[encoder->bytes_in_buffer],data,((size > 3)? 3 : size));
+		amount_to_buffer = ((size > 3)? 3 : size) - encoder->bytes_in_buffer;
+       memcpy(&encoder->buffer[encoder->bytes_in_buffer],data,amount_to_buffer);
 
        encoder->bytes_in_buffer = (size >= 3)? 0 : size;
        if(encoder->bytes_in_buffer == 0)
@@ -82,7 +82,9 @@ void base64_encode(struct base64_stream *encoder, void *data, size_t size)
           base64_crc_octets(encoder,encoder->buffer,3);
           fprintf(output,"%c%c%c%c",encoder->outblock[0],encoder->outblock[1],encoder->outblock[2],encoder->outblock[3]);
           fflush(output);
-          data += 3;
+          data += amount_to_buffer;
+           memset(encoder->buffer,0,3*sizeof(char));
+           memset(encoder->outblock,0,4*sizeof(char));
        }
        else
            break;
