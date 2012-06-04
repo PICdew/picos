@@ -1,6 +1,5 @@
 * Change libraries import only functions that are called by the main code.
-** Strings do not get connected to the correct subroutine_map. Fix that.
-** Test programs (esp those that deal with raw file)
+** Add base64 decode function
 * Add downloader to write programs to RAM to be executed.
 * Add data types to compiler (not necessarily runtime)
 * sleep may or may not work.
