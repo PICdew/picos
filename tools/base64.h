@@ -2,6 +2,7 @@
 #define BASE64_H 1
 
 #include <stdio.h>
+#include <stdbool.h>
 
 typedef long crc24;
 
@@ -14,7 +15,7 @@ struct base64_stream
     char buffer[3];
     char outblock[4];
     size_t bytes_in_buffer; 
-
+    bool encode;// true if encoding, false if decoding
 };
 
 #endif //BASE_H
