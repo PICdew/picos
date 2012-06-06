@@ -65,6 +65,8 @@ char base64_decode_byte(char byte)
         return 62;
     if(byte == '/')
         return 63;
+    if(byte == '=')
+        return 64;
 
     reason_exit("base64_decode_byte: Invalid base64 character '%c'\n",byte);
 }
@@ -83,9 +85,20 @@ int base64_decode_buffer(struct base64_stream *encoder)
     buffer[0] |= (tmp & 0x30) >> 4;
     buffer[1] = (tmp & 0x0f) << 4;
     tmp = base64_decode_byte(outblock[2]);
+    if(tmp == 64)
+    {
+        buffer[1] = buffer[2] = 0;
+        return 0;
+    }
     buffer[1] |= (tmp & 0x3c) >> 2;
     buffer[2] = (tmp & 0x3) << 6;
-    buffer[2] |= base64_decode_byte(outblock[3]);
+    tmp = base64_decode_byte(outblock[3]);
+    if(tmp == 64)
+    {
+        buffer[2] = 0;
+        return 0;
+    }
+    buffer[2] |= tmp;
 
     return 0;
 } 
@@ -102,7 +115,7 @@ void base64_decode(struct base64_stream *encoder, void *data, size_t size)
 
     output = encoder->output;
     encoder->encode = false;
-    for(;size > 0;size-=3)
+    for(;size > 0;size-=4)
     {
         full_assert(encoder->bytes_in_buffer < 4,"Internal Error: bytes_in_buffer should never exceed 4. It equals %d\n",encoder->bytes_in_buffer);
         amount_to_buffer = ((size > 4)? 4 : size) - encoder->bytes_in_buffer;
@@ -230,9 +243,26 @@ int main(int argc, char **argv)
     struct base64_stream encoder;
 
     base64_init(&encoder,stdout);
+
+    if(argc == 1)
+        return 0;
+
+    if(strcmp(argv[counter],"-e") == 0)
+    {
+        counter++;
+    }
+    else if(strcmp(argv[counter],"-d") == 0)
+    {
+        encoder.encode = false;
+        counter++;
+    }
+   
     for(;counter < argc;counter++)
     { 
-        base64_decode(&encoder,argv[counter],strlen(argv[counter]));
+        if(encoder.encode)
+            base64_encode(&encoder,argv[counter],strlen(argv[counter]));
+        else
+            base64_decode(&encoder,argv[counter],strlen(argv[counter]));
         fflush(stdout);
     }
 
