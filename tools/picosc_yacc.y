@@ -413,8 +413,9 @@ int main(int argc, char **argv)
     {
       FILE *input = fopen(argv[optind++],"r");
       extern FILE *yyin;
-      if(input != NULL)
-	yyin = input;
+      if(input == NULL)
+        reason_exit("Could not open file \"%s\" for reading.\n",argv[optind-1]);        
+      yyin = input;
     }
   else
     printf("Welcome to the piclang compiler.\n");
