@@ -1,4 +1,5 @@
 #include "pasm.h"
+#include "globals.h"
 #include "base64.h"
 
 #include <stdlib.h>
@@ -618,6 +619,7 @@ void piclib_write_subroutines(FILE *binary_file, const struct compiled_code *cur
     }
 
 }
+#endif //OLD
 
 void piclib_write_strings(FILE *binary_file, const struct compiled_code *curr_code)
 {
@@ -634,18 +636,19 @@ void piclib_write_strings(FILE *binary_file, const struct compiled_code *curr_co
       curr_code = curr_code->next;
     }
 
-  fprintf(binary_file,block_name_format,"STRINGS",word_counter);
+  fprintf(binary_file,"--- Begin Strings ---\n");
   
   curr_code = code_head;
-  while(curr_code)
+  while(curr_code != NULL)
     {
       if(curr_code->type == typeStr)
 	fprintf(binary_file,"%c",(char)curr_code->val);
       curr_code = curr_code->next;
     }
 
+  fprintf(binary_file,"\n--- End Strings ---\n");
+
 }
-#endif //OLD
 
 
 void piclib_write_subroutines(FILE *binary_file,const struct subroutine_map *subroutine)
@@ -660,6 +663,10 @@ void piclib_write_subroutines(FILE *binary_file,const struct subroutine_map *sub
     fprintf(binary_file,"STRINGS: %lu\n",CountCode(subroutine->strings));
     fprintf(binary_file,"CODE: %lu\n",CountCode(subroutine->code));
     piclib_write_code(binary_file,subroutine->code);
+    
+    if(subroutine == global_subroutines_GLOBALS && string_handler != NULL)
+            piclib_write_strings(binary_file,string_handler->strings);
+    
     fprintf(binary_file,"End Subroutine\n");
     fflush(binary_file);
 }
