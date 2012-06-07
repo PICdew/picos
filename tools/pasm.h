@@ -217,10 +217,9 @@ int lookup_label(const struct compiled_code* code, picos_size_t label);
 
 enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
 size_t CountCode(const struct compiled_code *the_code);
-void FreeCode(struct compiled_code* code);
 struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memory, picos_size_t piclang_bitmap);
 void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables);
-void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type);
+void FPrintCode(FILE *hex_file, const struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type);
 #define COMPILE_MAX_WIDTH 8//max width
 
 /**

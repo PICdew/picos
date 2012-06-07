@@ -41,11 +41,10 @@ void free_all_code(struct compiled_code *code_list)
 
 void free_code(struct compiled_code *code)
 {
-	if(code == NULL)
-		return;
-
-  	 code->next = (struct compiled_code*)0xdead;
-	free(code);
+  if(code == NULL)
+    return;
+  free_code(code->next);
+  free(code);
 }
 
 void free_subroutine(struct subroutine_map *subroutine)
@@ -175,9 +174,9 @@ void create_stack(struct compiled_code **pstack, struct compiled_code **pstack_e
   *pstack_end = end_of_stack;
 }
 
-void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type)
+void FPrintCode(FILE *hex_file, const struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type)
 {
-  if(code == NULL)
+  if(code == NULL || buffer == NULL || hex_file == NULL)
     return;
 
   switch(print_type)
@@ -224,14 +223,6 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
     
   
   FPrintCode(hex_file,code->next,col,buffer,start_address,checksum,print_type);
-}
-
-void FreeCode(struct compiled_code* code)
-{
-  if(code == NULL)
-    return;
-  FreeCode(code->next);
-  free(code);
 }
 
 size_t CountCode(const struct compiled_code *the_code)

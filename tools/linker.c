@@ -697,9 +697,9 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
       return;
 
   // Write Code section
-   encoder = (struct base64_stream *)malloc(sizeof(struct base64_stream));
-   full_assert(encoder != NULL,"piclib_write_code: Could not allocate memory for base64 stream.");
-   base64_init(encoder,binary_file);
+  encoder = (struct base64_stream *)malloc(sizeof(struct base64_stream));
+  full_assert(encoder != NULL,"piclib_write_code: Could not allocate memory for base64 stream.");
+  base64_init(encoder,binary_file);
   word_counter = 0;
   curr_code = libcode;
   while(curr_code != NULL)
@@ -711,6 +711,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	  curr_code = curr_code->next;
   }
   fprintf(binary_file,"--- Begin Code ---\n");
+  fflush(binary_file);
   curr_code = libcode;
   word_counter = 0;
   while(curr_code != NULL)
@@ -719,7 +720,6 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	{
 	  //write_val_for_pic(binary_file,curr_code->val);
 	  //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-            fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
           base64_encode(encoder,curr_code,sizeof(struct compiled_code));
 	  switch(curr_code->val)
 	    {
@@ -735,7 +735,6 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
 	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-            fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
 	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
               insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
 	      break;
@@ -748,7 +747,6 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
 	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
-            fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
 	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
               insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
 	      break;
