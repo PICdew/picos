@@ -8,7 +8,7 @@
 #include <stdarg.h>
 
 static const char piclib_subroutine_format[] = "%s %lu %lu ";
-static   const char block_name_format[] = "%s %d:";
+static   const char block_name_format[] = "%s: %s";
 
 const struct subroutine_map* lookup_subroutine(int index)
 {
@@ -508,14 +508,16 @@ static void piclib_load_subroutines(FILE *libfile, struct subroutine_map **subro
 
     }
 }
+#endif
 
 struct piclib_object* piclib_load(FILE *libfile)
 {
   picos_size_t word;
   const size_t bufsiz = 1024;
-  char buffer[bufsiz], *name_pointer;
+  char buffer[bufsiz], argbuffer[bufsiz], *name_pointer;
   int section_size;
   struct piclib_object *retval = NULL;
+  struct subroutine_map *curr_subroutine = NULL, *last_subroutine = NULL;
 
   if(libfile == NULL)
     {
@@ -535,11 +537,14 @@ struct piclib_object* piclib_load(FILE *libfile)
   retval = (struct piclib_object*)malloc(sizeof(struct piclib_object));
   if(retval == NULL)
     reason_exit("piclib_load: Could not allocate memory for piclib object.\n");
+  last_subroutine = retval->subroutine_map;
   
   while(!feof(libfile))
     {
-      if(fscanf(libfile,block_name_format,buffer,&section_size) == 0)
+      if(fscanf(libfile,block_name_format,buffer,arg_buffer) == 0)
 	reason_exit("error: Invalid piclib block\n");
+
+      START LOADING LIBRARY LINES HERE!!!
 
       if(feof(libfile))
 	      break;
@@ -565,6 +570,7 @@ struct piclib_object* piclib_load(FILE *libfile)
     
 }
 
+#if 0// OLD
 static void create_lib_header(FILE *binary_file, const struct compiled_code *curr_code, const struct compiled_code *the_strings)
 {
   const struct compiled_code *head = curr_code;
