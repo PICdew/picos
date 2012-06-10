@@ -7,8 +7,10 @@
 #include <string.h>
 #include <stdarg.h>
 
+#define piclib_open_temp() tmpfile()
+
 static const char piclib_subroutine_format[] = "%s %lu %lu ";
-static   const char block_name_format[] = "%s: %s";
+static   const char block_name_format[] = "%s %s";
 
 const struct subroutine_map* lookup_subroutine(int index)
 {
@@ -372,30 +374,36 @@ void piclib_free(struct piclib_object *library)
 
 }
 
-#if 0//FIX!
-static void piclib_load_strings(FILE *libfile, struct subroutine_map *subroutine, size_t num_strings)
+
+static void piclib_load_strings(struct subroutine_map *subroutine, const char *string)
 {
   char ch;
-  struct compiled_code *string_end = NULL;
+  FILE *ftmp = NULL;
+  struct base64_stream decoder;
 
-  if(libfile == NULL)
-    reason_exit("piclib_load_strings: Null pointer for library file\n");
-
-  if(strings_ptr == NULL)
+  if(subroutine == NULL || string == NULL)
     return;// assume this means to skip
   
-  while(num_strings)
-    {
-      fread(&ch,sizeof(char),1,libfile);
-      if(feof(libfile))
-	reason_exit("error: Broken piclib file in STRINGS section\n");
-      
-      insert_compiled_code(typeStr, strings_ptr, &string_end , ch, 0x42);
-      num_strings--;
-    }
+  ftmp = piclib_open_temp();
+  full_assert(ftmp != NULL,"piclib_load_strings: Could not created temporary file\n");
+
+  base64_init(&decoder,ftmp);
+  base64_decode(&decoder, string, strlen(string)*sizeof(char));
+  base64_flush(&decoder);
+
+  rewind(ftmp);
+  while(!feof(ftmp))
+  {
+		  fread(&ch,sizeof(char),1,ftmp);
+		  insert_compiled_code(typeStr,subroutine,ch,0x42);
+  }
+
+  if(ftmp != stdin)
+		  fclose(ftmp);
   
 }
 
+#if 0//FIX!
 static void piclib_load_relmap(FILE *libfile, struct relocation_map **relmap_ptr, size_t num_relmaps)
 {
 
@@ -431,16 +439,16 @@ static void piclib_load_relmap(FILE *libfile, struct relocation_map **relmap_ptr
     }
 
 }
+#endif
 
-static void piclib_load_code(FILE *libfile, struct compiled_code **code_ptr, size_t num_words)
+static void piclib_load_code(struct compiled_code **code_ptr, const char *encoded_code)
 {
   struct compiled_code *code_end, *code_word;
   int index_counter = 0;
+  struct base64_stream decoder;
+  FILE *ftmp = NULL;
 
-  if(libfile == NULL)
-    reason_exit("piclib_load_code: Null pointer for library file\n");
-
-  if(code_ptr == NULL)
+  if(code_ptr == NULL || encoded_code == NULL)
     return;// assume this means to skip
 
   code_end = *code_ptr;
@@ -450,32 +458,43 @@ static void piclib_load_code(FILE *libfile, struct compiled_code **code_ptr, siz
 	code_end = code_end->next;
     }
 
-  while(!feof(libfile) && num_words != 0)
+  ftmp = piclib_open_temp();
+  full_assert(ftmp != NULL,"piclib_load_code: Could not open temp file.\n");
+
+  base64_init(&decoder,ftmp);
+  base64_decode(&decoder,encoded_code,strlen(encoded_code)*sizeof(char));
+  base64_flush(&decoder);
+  rewind(ftmp);
+
+  while(!feof(ftmp))
   {
     code_word = (struct compiled_code*)malloc(sizeof(struct compiled_code));
     if(code_word == NULL)
       reason_exit("piclib_load_code: could not allocate memory for struct compiled_code.\n");
     
-    if(fread(code_word,sizeof(struct compiled_code),1,libfile) == 0)
+    if(fread(code_word,sizeof(struct compiled_code),1,ftmp) == 0)
       reason_exit("error: Could not load CODE word\n");
     code_word->next = NULL;
     
     if(code_end == NULL)
       {
-	*code_ptr = code_word;
-	code_end = *code_ptr;
+			*code_ptr = code_word;
+			code_end = *code_ptr;
       }
     else
       {
-	code_end->next = code_word;
-	code_end = code_word;
+			code_end->next = code_word;
+			code_end = code_word;
       }
     
-      num_words--;
   }
 
-
+  if(ftmp != stdin)
+		  fclose(ftmp);
+  base64_close(&decoder);
 }
+
+#if 0//OLD
 static void piclib_load_subroutines(FILE *libfile, struct subroutine_map **subroutines_ptr, size_t num_subs)
 {
   char sub_name[FILENAME_MAX];
@@ -514,10 +533,11 @@ struct piclib_object* piclib_load(FILE *libfile)
 {
   picos_size_t word;
   const size_t bufsiz = 1024;
-  char buffer[bufsiz], argbuffer[bufsiz], *name_pointer;
-  int section_size;
+  char buffer[bufsiz], arg_buffer[bufsiz], *name_pointer;
+  int code_size,string_size;
   struct piclib_object *retval = NULL;
   struct subroutine_map *curr_subroutine = NULL, *last_subroutine = NULL;
+  bool parsing_code = false, parsing_strings = false;
 
   if(libfile == NULL)
     {
@@ -537,32 +557,57 @@ struct piclib_object* piclib_load(FILE *libfile)
   retval = (struct piclib_object*)malloc(sizeof(struct piclib_object));
   if(retval == NULL)
     reason_exit("piclib_load: Could not allocate memory for piclib object.\n");
-  last_subroutine = retval->subroutine_map;
+  last_subroutine = retval->subroutines;
+  curr_subroutine = retval->subroutines;
   
   while(!feof(libfile))
     {
+			size_t buffer_len;
       if(fscanf(libfile,block_name_format,buffer,arg_buffer) == 0)
-	reason_exit("error: Invalid piclib block\n");
+			reason_exit("error: Invalid piclib block\n");
 
-      START LOADING LIBRARY LINES HERE!!!
+	  buffer_len = strlen(buffer);
+	  if(buffer_len > 0 && buffer[buffer_len-1] == ':')
+			  buffer[buffer_len-1] = 0;
+
+	  printf("Section: \"%s\"\nVal: \"%s\"\n\n", buffer,arg_buffer);
 
       if(feof(libfile))
 	      break;
 
-      printf("Loading section: \"%s\" Size: %d\n",buffer,section_size);
       if(strncmp(buffer,"STRINGS",strlen("STRINGS")) == 0)
-	piclib_load_strings(libfile,&retval->strings,section_size);
-      else if(strncmp(buffer,"SUBROUTINES",strlen("SUBROUTINES")) == 0)
-	piclib_load_subroutines(libfile,&retval->subroutines, section_size);
+			piclib_load_strings(curr_subroutine,arg_buffer);
+	  else if(strncmp(buffer,"Begin",strlen("Begin")) == 0)
+	  {
+			  if(last_subroutine == NULL)
+			  {
+					 	retval->subroutines = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+						last_subroutine = retval->subroutines;
+						curr_subroutine = last_subroutine;
+			  }
+			  else
+			  {
+					  last_subroutine->next = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+					  curr_subroutine = last_subroutine->next;
+					  last_subroutine = curr_subroutine;
+			  }
+	  }
+	  else if(strncmp(buffer,"NAME",strlen("NAME")) == 0)
+	  {
+			  strncpy(curr_subroutine->name,arg_buffer,bufsiz);
+			  curr_subroutine->name[bufsiz-1] = 0;
+	  }
       else if(strncmp(buffer,"CODE",strlen("CODE")) == 0)
-	 piclib_load_code(libfile,&retval->code, section_size);
+			 piclib_load_code(&retval->code, arg_buffer);
+#if 0
       else if(strncmp(buffer,"RELMAP",strlen("RELMAP")) == 0)
-	 piclib_load_relmap(libfile, &retval->relmap, section_size);
+			 piclib_load_relmap(libfile, &retval->relmap, section_size);
       else 
 	{
 	  fprintf(stderr,"Unknown section\n");
 	  exit(1);
 	}
+#endif
     }
 
 
@@ -630,29 +675,32 @@ void piclib_write_subroutines(FILE *binary_file, const struct compiled_code *cur
 void piclib_write_strings(FILE *binary_file, const struct compiled_code *curr_code)
 {
   int word_counter = 0;
-  const struct compiled_code *code_head = curr_code;  
+  struct base64_stream encoder;
+  char *string_buffer = NULL, *buffer_ptr;
 
   if(binary_file == NULL || curr_code == NULL)
     return;
   
-  while(curr_code != NULL)
-    {
-      if(curr_code->type == typeStr)
-	word_counter++;
-      curr_code = curr_code->next;
-    }
+  word_counter = CountCode(curr_code);
 
-  fprintf(binary_file,"--- Begin Strings ---\n");
+  string_buffer = (char*)malloc(sizeof(char)*word_counter);
   
-  curr_code = code_head;
-  while(curr_code != NULL)
-    {
-      if(curr_code->type == typeStr)
-	fprintf(binary_file,"%c",(char)curr_code->val);
-      curr_code = curr_code->next;
-    }
+  full_assert(string_buffer != NULL,"piclib_write_strings: Could not allocate memory for string buffer\n");
 
-  fprintf(binary_file,"\n--- End Strings ---\n");
+  buffer_ptr = string_buffer;
+
+  while(curr_code != NULL)
+  { 
+		*buffer_ptr = (char)curr_code->val;
+		  buffer_ptr++;
+		 curr_code = curr_code->next;
+  } 
+
+  base64_init(&encoder, binary_file);
+  base64_encode(&encoder, string_buffer, word_counter*sizeof(char));
+  base64_flush(&encoder);
+
+  free(string_buffer);
 
 }
 
@@ -666,12 +714,29 @@ void piclib_write_subroutines(FILE *binary_file,const struct subroutine_map *sub
     fprintf(binary_file,"\nBegin Subroutine\n");
     fprintf(binary_file,"NAME: %s\n",subroutine->name);
     fprintf(binary_file,"VARIABLES: %d\n",count_variables(subroutine->variables));
-    fprintf(binary_file,"STRINGS: %lu\n",CountCode(subroutine->strings));
-    fprintf(binary_file,"CODE: %lu\n",CountCode(subroutine->code));
-    piclib_write_code(binary_file,subroutine->code);
+    fprintf(binary_file,"CODE: ");
+	if(subroutine->code == NULL)
+			fprintf(binary_file,"0");
+	else
+			piclib_write_code(binary_file,subroutine->code);
+	fprintf(binary_file,"\n");
     
-    if(subroutine == global_subroutines_GLOBALS && string_handler != NULL)
-            piclib_write_strings(binary_file,string_handler->strings);
+    fprintf(binary_file,"STRINGS: ");
+	if(subroutine == global_subroutines_GLOBALS && string_handler != NULL)
+	{
+			if(string_handler->strings == NULL)
+					fprintf(binary_file,"0");
+			else
+					piclib_write_strings(binary_file,string_handler->strings);
+	}
+	else
+	{
+			if(subroutine->strings == NULL)
+					fprintf(binary_file,"0");
+			else
+					piclib_write_strings(binary_file,subroutine->strings);
+	}
+	fprintf(binary_file,"\n");
     
     fprintf(binary_file,"End Subroutine\n");
     fflush(binary_file);
@@ -723,8 +788,6 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	  }
 	  curr_code = curr_code->next;
   }
-  fprintf(binary_file,"--- Begin Code ---\n");
-  fflush(binary_file);
   curr_code = libcode;
   word_counter = 0;
   while(curr_code != NULL)
@@ -733,6 +796,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	{
 	  //write_val_for_pic(binary_file,curr_code->val);
 	  //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+	  fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
           base64_encode(encoder,curr_code,sizeof(struct compiled_code));
 	  switch(curr_code->val)
 	    {
@@ -748,6 +812,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
 	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+	      fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
 	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
               insert_relmap_entry(&relmap,word_counter,curr_code->val,REL_VARIABLE);
 	      break;
@@ -760,6 +825,7 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
 	      curr_code = curr_code->next; word_counter++;
 	      //write_val_for_pic(binary_file,curr_code->val);
 	      //fwrite(curr_code,sizeof(struct compiled_code),1,binary_file);
+	      fwrite(curr_code,sizeof(struct compiled_code),1,debug_file);
 	      base64_encode(encoder,curr_code,sizeof(struct compiled_code));
               insert_relmap_entry(&relmap,word_counter,0,REL_LABEL);
 	      break;
@@ -811,7 +877,6 @@ void piclib_write_code(FILE *binary_file, const struct compiled_code *libcode)
   fflush(debug_file);
   if(debug_file != stdout)
      fclose(debug_file);
-  fprintf(binary_file,"\n--- End Code ---\n");
   fflush(binary_file);
 }
 

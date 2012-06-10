@@ -349,10 +349,8 @@ int main(int argc, char **argv)
 	  {
 	    FILE *libfile = fopen(optarg,"rb");
 	    struct piclib_object* libobj = NULL;
-	    fprintf(stderr,"piclib not yet reimplemented\n");
-	    exit(1);
-#if 0//FIX!
-	    if(libfile == NULL)
+	    
+		if(libfile == NULL)
 	      {
 		fprintf(stderr,"Could not open library file \"%s\"\n",optarg);
 		if(errno != 0)
@@ -368,12 +366,12 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error loading library.\n");
 		exit(1);
 	      }
+#if 0//IMPLEMENT!!
 	    if(piclib_link(libobj,global_subroutines) != 0)
 	    	reason_exit("Could not link library file \"%s\"\n",optarg);
-		
+#endif	
 
 	    piclib_free(libobj);
-#endif//FIX
 	    break;
 	  }
 	case OUTPUT_LIST:
