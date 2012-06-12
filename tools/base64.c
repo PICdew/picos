@@ -231,12 +231,15 @@ int base64_flush(struct base64_stream *encoder)
         }
     }
 
-    if(encoder->output != NULL)
-    {
-        fprintf(encoder->output,"\nCRC: %ld", encoder->crc);
-        fflush(encoder->output);
-    }
+}
 
+void base64_write_crc(struct base64_stream *encoder)
+{
+		if(encoder != NULL && encoder->output != NULL)
+		{
+				fprintf(encoder->output,"\nCRC: %ld", encoder->crc);
+				fflush(encoder->output);
+    	}
 }
 
 int base64_close(struct base64_stream *encoder)
@@ -297,7 +300,8 @@ int main(int argc, char **argv)
     }
 
     base64_flush(&encoder);
-    base64_close(&encoder);
+    base64_write_crc(&encoder);
+	base64_close(&encoder);
 
     return 0;    
 
