@@ -152,11 +152,18 @@ void base64_encode(struct base64_stream *encoder, void *data, size_t size)
 
     output = encoder->output;
 
-    for(;size > 0;size-=3)
+    for(;size > 0;)
     {
         full_assert(encoder->bytes_in_buffer < 3,"Internal Error: bytes_in_buffer should never exceed 3. It equals %d\n",encoder->bytes_in_buffer);
-		amount_to_buffer = ((size > 3)? 3 : size) - encoder->bytes_in_buffer;
-       memcpy(&encoder->buffer[encoder->bytes_in_buffer],data,amount_to_buffer);
+       
+		if(size >= 3)
+				amount_to_buffer = 3 - encoder->bytes_in_buffer;
+		else if(size <= 3-encoder->bytes_in_buffer)
+				amount_to_buffer = size;
+		else
+				amount_to_buffer = size - encoder->bytes_in_buffer;
+
+		memcpy(&encoder->buffer[encoder->bytes_in_buffer],data,amount_to_buffer);
 
        encoder->bytes_in_buffer += amount_to_buffer;
        if(encoder->bytes_in_buffer == 3)
@@ -172,6 +179,11 @@ void base64_encode(struct base64_stream *encoder, void *data, size_t size)
        }
        else
            break;
+
+	   if(size <= amount_to_buffer)
+			   break;
+	   size -= amount_to_buffer;
+	   
     }
 
 }
@@ -261,9 +273,13 @@ int main(int argc, char **argv)
     for(;counter < argc;counter++)
     { 
         if(encoder.encode)
-            base64_encode(&encoder,argv[counter],strlen(argv[counter]));
+		{
+				base64_encode(&encoder,argv[counter],strlen(argv[counter]));
+		}
         else
-            base64_decode(&encoder,argv[counter],strlen(argv[counter]));
+		{
+				base64_decode(&encoder,argv[counter],strlen(argv[counter]));
+		}
         fflush(stdout);
     }
 
