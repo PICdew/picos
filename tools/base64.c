@@ -115,14 +115,21 @@ void base64_decode(struct base64_stream *encoder, void *data, size_t size)
 
     output = encoder->output;
     encoder->encode = false;
-    for(;size > 0;size-=4)
+    for(;size > 0;)
     {
         full_assert(encoder->bytes_in_buffer < 4,"Internal Error: bytes_in_buffer should never exceed 4. It equals %d\n",encoder->bytes_in_buffer);
-        amount_to_buffer = ((size > 4)? 4 : size) - encoder->bytes_in_buffer;
-        memcpy(&encoder->outblock[encoder->bytes_in_buffer],data,amount_to_buffer);
+        
+        if(size >= 4)
+				amount_to_buffer = 4 - encoder->bytes_in_buffer;
+		else if(size <= 4-encoder->bytes_in_buffer)
+				amount_to_buffer = size;
+		else
+				amount_to_buffer = size - encoder->bytes_in_buffer;
 
-        encoder->bytes_in_buffer = (size >= 4)? 0 : size;
-        if(encoder->bytes_in_buffer == 0)
+		memcpy(&encoder->outblock[encoder->bytes_in_buffer],data,amount_to_buffer);
+
+        encoder->bytes_in_buffer += amount_to_buffer;
+        if(encoder->bytes_in_buffer == 4)
         {
             base64_decode_buffer(encoder);
             base64_crc_octets(encoder,encoder->buffer,3);
@@ -131,9 +138,15 @@ void base64_decode(struct base64_stream *encoder, void *data, size_t size)
             data += amount_to_buffer;
             memset(encoder->buffer,0,3*sizeof(char));
             memset(encoder->outblock,0,4*sizeof(char));
+		    encoder->bytes_in_buffer = 0;
         }
         else
             break;
+
+	   if(size <= amount_to_buffer)
+			   break;
+	   size -= amount_to_buffer;
+
     }
 } 
 
