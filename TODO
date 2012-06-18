@@ -1,5 +1,4 @@
 * Change libraries import only functions that are called by the main code.
-** Add base64 decode function
 * Add downloader to write programs to RAM to be executed.
 * Before inode pointers, add a byte/word that indicates the number of pointers. This will allow the inode to have static data (everything before inode pointers) and dynamics data (everything after static data, which includes inode pointers). With dynamics data in an inode, inlining of file data will be possible for data much less than one block size.
 * Add data types to compiler (not necessarily runtime)
