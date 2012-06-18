@@ -7,8 +7,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define piclib_open_temp() tmpfile()
-
 //static const char piclib_subroutine_format[] = "%s %lu %lu ";
 static   const char block_name_format[] = "%s %s";
 
@@ -334,6 +332,19 @@ static void free_relmap(struct relocation_map *map)
   free(map);
 }
 
+FILE* piclib_open_temp()
+{
+#ifdef DEBUG 
+    char tmp_filename[] = "lib.tmp.XXXXXX";
+    mktemp(tmp_filename);
+    if(strlen(tmp_filename) == 0)
+        return NULL;
+    return fopen(tmp_filename,"w");
+#else
+    return tmpfile();
+#endif
+}
+
 void piclib_free(struct piclib_object *library)
 {
 	struct compiled_code *code;
@@ -385,7 +396,7 @@ static void piclib_load_strings(struct subroutine_map *subroutine, const char *s
     return;// assume this means to skip
   
   ftmp = piclib_open_temp();
-  full_assert(ftmp != NULL,"piclib_load_strings: Could not created temporary file\n");
+  full_assert(ftmp != NULL,"piclib_load_strings: Could not create temporary file\n");
 
   base64_init(&decoder,ftmp);
   base64_decode(&decoder, string, strlen(string)*sizeof(char));
@@ -478,20 +489,20 @@ static void piclib_load_code(struct compiled_code **code_ptr, const char *encode
     
     if(code_end == NULL)
       {
-			*code_ptr = code_word;
-			code_end = *code_ptr;
+            *code_ptr = code_word;
+            code_end = *code_ptr;
       }
     else
       {
-			code_end->next = code_word;
-			code_end = code_word;
+            code_end->next = code_word;
+            code_end = code_word;
       }
     
   }
 
   if(ftmp != stdin)
-		  fclose(ftmp);
-  base64_close(&decoder);
+          fclose(ftmp);
+    base64_close(&decoder);
 }
 
 #if 0//OLD

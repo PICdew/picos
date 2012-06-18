@@ -133,7 +133,8 @@ void base64_decode(struct base64_stream *encoder, void *data, size_t size)
         {
             base64_decode_buffer(encoder);
             base64_crc_octets(encoder,encoder->buffer,3);
-            fprintf(output,"%c%c%c",encoder->buffer[0],encoder->buffer[1],encoder->buffer[2]);
+            //fprintf(output,"%c%c%c",encoder->buffer[0],encoder->buffer[1],encoder->buffer[2]);
+            fwrite(encoder->buffer,sizeof(char),3,encoder->output);
             fflush(output);
             data += amount_to_buffer;
             memset(encoder->buffer,0,3*sizeof(char));
@@ -183,7 +184,8 @@ void base64_encode(struct base64_stream *encoder, void *data, size_t size)
        {
           base64_encode_buffer(encoder);
           base64_crc_octets(encoder,encoder->buffer,3);
-          fprintf(output,"%c%c%c%c",encoder->outblock[0],encoder->outblock[1],encoder->outblock[2],encoder->outblock[3]);
+          //fprintf(output,"%c%c%c%c",encoder->outblock[0],encoder->outblock[1],encoder->outblock[2],encoder->outblock[3]);
+            fwrite(encoder->outblock,sizeof(char),4,encoder->output);
           fflush(output);
           data += amount_to_buffer;
            memset(encoder->buffer,0,3*sizeof(char));
@@ -225,7 +227,8 @@ int base64_flush(struct base64_stream *encoder)
                     encoder->outblock[3] = '=';
                 if(encoder->bytes_in_buffer == 1)
                     encoder->outblock[2] = encoder->outblock[3] = '=';
-                fprintf(encoder->output,"%c%c%c%c",encoder->outblock[0],encoder->outblock[1],encoder->outblock[2],encoder->outblock[3]);         
+                //fprintf(encoder->output,"%c%c%c%c",encoder->outblock[0],encoder->outblock[1],encoder->outblock[2],encoder->outblock[3]);         
+                fwrite(encoder->outblock,sizeof(char),4,encoder->output);
             }
 
         }
