@@ -366,10 +366,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error loading library.\n");
 		exit(1);
 	      }
-#if 0//IMPLEMENT!!
-	    if(piclib_link(libobj,global_subroutines) != 0)
+	    if(piclib_link(libobj) != 0)
 	    	reason_exit("Could not link library file \"%s\"\n",optarg);
-#endif	
 
 	    piclib_free(libobj);
 	    break;
@@ -418,9 +416,9 @@ int main(int argc, char **argv)
   else
     printf("Welcome to the piclang compiler.\n");
  
-  global_subroutines = insert_subroutine("GLOBALS");// this stores global stuff
+  global_subroutines_GLOBALS = get_subroutine("GLOBALS");// this stores global stuff
+  global_subroutines = global_subroutines_GLOBALS;
   g_curr_subroutine = global_subroutines;
-  global_subroutines_GLOBALS = global_subroutines;
 
   string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
   if(string_handler == NULL)

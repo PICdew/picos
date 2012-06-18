@@ -9,7 +9,7 @@
 
 #define piclib_open_temp() tmpfile()
 
-static const char piclib_subroutine_format[] = "%s %lu %lu ";
+//static const char piclib_subroutine_format[] = "%s %lu %lu ";
 static   const char block_name_format[] = "%s %s";
 
 const struct subroutine_map* lookup_subroutine(int index)
@@ -897,118 +897,27 @@ struct compiled_code* piclib_get_word(struct compiled_code *code, size_t nth_wor
 	return NULL;
 }
 
-#if 0 // FIX ME
-int piclib_link(struct piclib_object *library, struct subroutine_map *subroutines)
+int piclib_link(struct piclib_object *library)
 {
-  idNodeType* resolve_variable(const char *name);
-  size_t library_offset;
-	picos_size_t label, label_offset, string_offset;
-	struct relocation_map *relmap = NULL;
-	struct compiled_code *curr_word = NULL;
-	struct subroutine_map *subs = NULL;
-	extern picos_size_t label_counter;
-	struct compiled_code **the_code_ptr, **the_strings_ptr, **code_end, **strings_end;
+    struct subroutine_map *curr_sub = NULL, *new_sub = NULL;
 
-        if(subroutines == NULL)
-		return -1;
+    if(library == NULL)// odd but allowed as not an error.
+        return 0;
 
-	the_code_ptr = &subroutines->code;
-	the_strings_ptr = &subroutines->strings;
-	code_end = &subroutines->code_end;
-	strings_end = &subroutines->strings_end;
+    curr_sub = library->subroutines;
+    while(curr_sub != NULL)
+    {
+        new_sub = insert_subroutine(curr_sub->name);// Should we handle multiple globals and merge them? Remember, insert_subroutine will error out (exit -1) if the subroutine already exists.
+        
+        curr_sub->code = new_sub->code; curr_sub->code = NULL;
+        curr_sub->code_end = new_sub->code_end; curr_sub->code_end = NULL;
+        curr_sub->strings = new_sub->strings; curr_sub->strings = NULL;
+        curr_sub->strings_end = new_sub->strings_end; curr_sub->strings_end = NULL;
+        curr_sub->variables = new_sub->variables; curr_sub->variables = NULL;
+        
+        curr_sub = curr_sub->next;
+    }
 
-	if(library == NULL || the_code_ptr == NULL || the_strings_ptr == NULL)
-	{
-		fprintf(stderr,"piclib_link: NULL pointer\n");
-		return -1;
-	}
-
-	library_offset = CountCode(*the_code_ptr);
-	string_offset = CountCode(*the_strings_ptr);
-	label_offset = label_counter;
-
-	
-
-	relmap = library->relmap;
-	if(library->code != NULL){
-	while(relmap != NULL)
-	{
-		curr_word = piclib_get_word(library->code,relmap->relocation.addr);
-		if(curr_word == NULL)
-			reason_exit("error: Invalid relocation address %d\n",relmap->relocation.addr);
-
-		switch(relmap->relocation.type)
-		{
-			case REL_VARIABLE:
-				{
-					char name[FILENAME_MAX+4];
-					idNodeType *var;
-					snprintf(name,FILENAME_MAX+3,"%s_%03d",library->filename,relmap->relocation.val);
-					var = resolve_variable(name);
-					if(var == NULL)
-						reason_exit("error: Could not allocate variable for library file \"%s\"\"");
-					curr_word->val = var->i;
-					printf("Setting variable at %d in %d\n",relmap->relocation.addr,var->i);
-					curr_word->type = typeId;
-					break;
-				}
-			case REL_LABEL:
-				{
-					curr_word->val += library_offset;
-					printf("Changing label address from %d to %d\n",curr_word->val-library_offset,curr_word->val);
-					if(curr_word->val == PICLANG_LABEL)
-						label_counter++;
-					break;
-#if 0//needed?
-					curr_word->label += label_offset;
-					printf("Setting label(%d) at %d from %d to %d\n",curr_word->val,relmap->relocation.addr, curr_word->label - label_offset, curr_word->label);
-					curr_word->type = typeLabel;
-					if(curr_word->val == PICLANG_LABEL)
-						label_counter++;
-					curr_word->val = PICLANG_LABEL;
-					break;
-#endif
-				}
-			case REL_STRING:
-				curr_word->val += string_offset;
-				printf("Setting string pointer (%d) to %d\n",curr_word->val - string_offset,curr_word->val);
-				break;
-			default:
-				printf("Skipping relocation type %d\n",relmap->relocation.type);
-				break;
-		}
-		
-		relmap = relmap->next;
-	}
-	
-	curr_word = library->code;
-	label = library_offset;
-	while(curr_word != NULL)
-	{
-		insert_compiled_code(curr_word->type, the_code_ptr, code_end, curr_word->val, curr_word->label);
-		curr_word = curr_word->next;
-	}
-	}
-
-	subs = library->subroutines;
-	while(subs != NULL)
-	{
-		printf("Inserting subroutine %s with index %lu and label %lu\n",subs->name,subs->index, subs->label);
-		insert_subroutine(subs->name,subs->label + label_offset);
-		label_counter++;
-		subs = subs->next;
-	}
-
-	curr_word = library->strings;
-	while(curr_word != NULL)
-	{
-		insert_compiled_code(typeStr,the_strings_ptr,strings_end,curr_word->val,0);
-		printf("Inserted String (%d) %c\n",curr_word->val,curr_word->val);
-		curr_word = curr_word->next;
-	}
-	
-	return 0;
+    return 0;
 }
-
-#endif //FIX
 

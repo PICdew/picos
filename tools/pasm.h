@@ -241,7 +241,7 @@ struct piclib_object* piclib_load(FILE *libfile);
 /**
  * Links a library object to the current code base
  */
-int piclib_link(struct piclib_object *library, struct subroutine_map *subroutines);
+int piclib_link(struct piclib_object *library);
 
 /**
  * writes a piclang library object
