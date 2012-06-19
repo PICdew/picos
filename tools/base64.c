@@ -136,6 +136,7 @@ void base64_decode(struct base64_stream *encoder, void *data, size_t size)
             base64_decode_buffer(encoder);
             base64_crc_octets(encoder,encoder->buffer,3);
             //fprintf(output,"%c%c%c",encoder->buffer[0],encoder->buffer[1],encoder->buffer[2]);
+            full_assert(encoder->truncated_size < 4,"base64_decode: size of output buffer exceed the maximum of 3. Size: %lu", encoder->truncated_size);
             fwrite(encoder->buffer,sizeof(char),((encoder->truncated_size)?encoder->truncated_size : 3),encoder->output);
             fflush(output);
             data += amount_to_buffer;
