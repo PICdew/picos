@@ -88,6 +88,7 @@ int base64_decode_buffer(struct base64_stream *encoder)
     if(tmp == 64)
     {
         buffer[1] = buffer[2] = 0;
+        encoder->truncated_size = 1;
         return 0;
     }
     buffer[1] |= (tmp & 0x3c) >> 2;
@@ -96,6 +97,7 @@ int base64_decode_buffer(struct base64_stream *encoder)
     if(tmp == 64)
     {
         buffer[2] = 0;
+        encoder->truncated_size = 2;
         return 0;
     }
     buffer[2] |= tmp;
@@ -134,7 +136,7 @@ void base64_decode(struct base64_stream *encoder, void *data, size_t size)
             base64_decode_buffer(encoder);
             base64_crc_octets(encoder,encoder->buffer,3);
             //fprintf(output,"%c%c%c",encoder->buffer[0],encoder->buffer[1],encoder->buffer[2]);
-            fwrite(encoder->buffer,sizeof(char),3,encoder->output);
+            fwrite(encoder->buffer,sizeof(char),((encoder->truncated_size)?encoder->truncated_size : 3),encoder->output);
             fflush(output);
             data += amount_to_buffer;
             memset(encoder->buffer,0,3*sizeof(char));
@@ -207,9 +209,9 @@ int base64_flush(struct base64_stream *encoder)
     if(encoder == NULL)
         return 0;
 
-    if(encoder->bytes_in_buffer != 0)
+    if(encoder->encode)
     {
-        if(encoder->encode)
+        if(encoder->bytes_in_buffer != 0)
         {
             if(encoder->bytes_in_buffer == 2)
             {
@@ -232,7 +234,7 @@ int base64_flush(struct base64_stream *encoder)
             }
 
         }
-    }
+    }// end of encoder section
 
 }
 
@@ -261,6 +263,7 @@ int base64_init(struct base64_stream *obj, FILE *output)
     obj->crc = CRC24_INIT;
     obj->output = output;
     obj->bytes_in_buffer = 0;
+    obj->truncated_size = 0;
     obj->encode = true;
     memset(obj->buffer,0,3*sizeof(char));
     memset(obj->outblock,0,4*sizeof(char));
