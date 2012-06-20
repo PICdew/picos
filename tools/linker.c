@@ -371,14 +371,20 @@ void piclib_free(struct piclib_object *library)
 }
 
 
-static void piclib_load_strings(struct subroutine_map *subroutine, const char *string)
+static void piclib_load_strings(const char *string)
 {
   char ch;
   FILE *ftmp = NULL;
   struct base64_stream decoder;
 
-  if(subroutine == NULL || string == NULL)
+  if(string == NULL)
     return;// assume this means to skip
+
+  if(string_handler == NULL)
+      string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
+  if(string_handler == NULL)
+	reason_exit("piclib_load_strings: Could not allocate memory for string_handler\n");
+
   
   ftmp = piclib_open_temp();
   full_assert(ftmp != NULL,"piclib_load_strings: Could not create temporary file\n");
@@ -391,7 +397,7 @@ static void piclib_load_strings(struct subroutine_map *subroutine, const char *s
   while(!feof(ftmp))
   {
 		  fread(&ch,sizeof(char),1,ftmp);
-		  insert_compiled_code(typeStr,subroutine,ch,0x42);
+		  insert_compiled_code(typeStr,string_handler,ch,0x42);
   }
 
   if(ftmp != stdin)
@@ -575,7 +581,7 @@ struct piclib_object* piclib_load(FILE *libfile)
       if(strncmp(buffer,"STRINGS",strlen("STRINGS")) == 0)
       {
           if(*arg_buffer != '0' || strlen(arg_buffer) > 1)
-              piclib_load_strings(curr_subroutine,arg_buffer);
+              piclib_load_strings(arg_buffer);
       }
 	  else if(strncmp(buffer,"Begin",strlen("Begin")) == 0)
 	  {
@@ -915,12 +921,10 @@ int piclib_link(struct piclib_object *library)
     {
         new_sub = insert_subroutine(curr_sub->name);// Should we handle multiple globals and merge them? Remember, insert_subroutine will error out (exit -1) if the subroutine already exists.
         
-        curr_sub->code = new_sub->code; curr_sub->code = NULL;
-        curr_sub->code_end = new_sub->code_end; curr_sub->code_end = NULL;
-        curr_sub->strings = new_sub->strings; curr_sub->strings = NULL;
-        curr_sub->strings_end = new_sub->strings_end; curr_sub->strings_end = NULL;
-        curr_sub->variables = new_sub->variables; curr_sub->variables = NULL;
-        
+        new_sub->code = curr_sub->code; curr_sub->code = NULL;
+        new_sub->code_end = curr_sub->code_end; curr_sub->code_end = NULL;
+        new_sub->variables = curr_sub->variables; curr_sub->variables = NULL;
+       
         curr_sub = curr_sub->next;
     }
 

@@ -420,7 +420,9 @@ int main(int argc, char **argv)
   global_subroutines = global_subroutines_GLOBALS;
   g_curr_subroutine = global_subroutines;
 
-  string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
+  // If string_handler is null, try to malloc it. If it's still null, there's a problem.
+  if(string_handler == NULL)
+      string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
   if(string_handler == NULL)
 	reason_exit("Could not allocate memory for string_handler\n");
  
