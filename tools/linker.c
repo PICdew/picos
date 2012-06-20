@@ -339,7 +339,7 @@ FILE* piclib_open_temp()
     mktemp(tmp_filename);
     if(strlen(tmp_filename) == 0)
         return NULL;
-    return fopen(tmp_filename,"w");
+    return fopen(tmp_filename,"w+");
 #else
     return tmpfile();
 #endif
@@ -484,7 +484,8 @@ static void piclib_load_code(struct compiled_code **code_ptr, const char *encode
       reason_exit("piclib_load_code: could not allocate memory for struct compiled_code.\n");
     
     if(fread(code_word,sizeof(struct compiled_code),1,ftmp) == 0)
-      reason_exit("error: Could not load CODE word\n");
+      if(!feof(ftmp))
+          reason_exit("error: Could not load CODE word\n");
     code_word->next = NULL;
     
     if(code_end == NULL)
