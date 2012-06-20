@@ -347,31 +347,16 @@ FILE* piclib_open_temp()
 
 void piclib_free(struct piclib_object *library)
 {
-	struct compiled_code *code;
 	struct subroutine_map *subroutine;
         struct relocation_map *relmap;
 
 	if(library == NULL)
 		return;
 
-	while(library->code != NULL)
-	{
-		code = library->code->next;
-		free(library->code);
-		library->code = code;
-	}
-
-	while(library->strings != NULL)
-	{
-		code = library->strings->next;
-		free(library->strings);
-		library->strings = code;
-	}
-
-	while(library->subroutines != NULL)
+        while(library->subroutines != NULL)
 	{
 		subroutine = library->subroutines->next;
-		free(library->subroutines);
+		free_subroutine(library->subroutines);
 		library->subroutines = subroutine;
 	}
 
@@ -588,7 +573,10 @@ struct piclib_object* piclib_load(FILE *libfile)
 	      break;
 
       if(strncmp(buffer,"STRINGS",strlen("STRINGS")) == 0)
-			piclib_load_strings(curr_subroutine,arg_buffer);
+      {
+          if(*arg_buffer != '0' || strlen(arg_buffer) > 1)
+              piclib_load_strings(curr_subroutine,arg_buffer);
+      }
 	  else if(strncmp(buffer,"Begin",strlen("Begin")) == 0)
 	  {
 			  if(last_subroutine == NULL)
@@ -610,7 +598,13 @@ struct piclib_object* piclib_load(FILE *libfile)
 			  curr_subroutine->name[bufsiz-1] = 0;
 	  }
       else if(strncmp(buffer,"CODE",strlen("CODE")) == 0)
-			 piclib_load_code(&retval->code, arg_buffer);
+      {
+          if(*arg_buffer != '0' || strlen(arg_buffer) > 1)
+          {
+              full_assert(curr_subroutine != NULL,"CODE section of library outside of Subroutine section.\n");
+              piclib_load_code(&curr_subroutine->code, arg_buffer);
+          }
+      }
 #if 0
       else if(strncmp(buffer,"RELMAP",strlen("RELMAP")) == 0)
 			 piclib_load_relmap(libfile, &retval->relmap, section_size);

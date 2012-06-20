@@ -127,8 +127,6 @@ struct relocation_map
 
 struct piclib_object
 {
-  struct compiled_code *code;
-  struct compiled_code *strings;
   struct subroutine_map *subroutines;
   struct relocation_map *relmap;
   int offset;
