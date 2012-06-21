@@ -375,7 +375,7 @@ static int FS_clean_rawfile()
 
     for(;;file = FS_getblock(sb,(block_id = file[FS_INode_magic_number+1])) )
     {
-        if(file == NULL)
+        if(file == NULL || block_id >= sb[FS_SuperBlock_num_blocks] || block_id == 0 || block_id == sb[FS_SuperBlock_root_block])
             break;
         file[FS_INode_magic_number] = MAGIC_FREE_INODE;
         sb[FS_SuperBlock_raw_file] = file[FS_INode_indirect];
@@ -387,6 +387,8 @@ static int FS_clean_rawfile()
     } 
 
     sb[FS_SuperBlock_raw_file] = 0;
+
+	return 0;
 }
 
 static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
