@@ -1,4 +1,3 @@
-* When mounting an image using fs, use mmap so that the image contents mirror the memory contents of the file system image.
 * Change libraries import only functions that are called by the main code.
 * Add downloader to write programs to RAM to be executed.
 * Before inode pointers, add a byte/word that indicates the number of pointers. This will allow the inode to have static data (everything before inode pointers) and dynamics data (everything after static data, which includes inode pointers). With dynamics data in an inode, inlining of file data will be possible for data much less than one block size.

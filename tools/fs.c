@@ -7,6 +7,7 @@
  * Program used for mounting PICFS disk images using libfuse
  */
 
+#include <sys/mman.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -37,6 +38,7 @@ struct fs_fuse_state {
   FILE *logfile;
   int verbose_log;
   char *rootdir;
+  bool load_all_sb;
   FS_Unit *super_block;
   FS_Unit num_blocks,block_size;
 };
@@ -1484,10 +1486,11 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
   FS_Block *super_block = NULL;
   FILE *dev = NULL;
   size_t len = 0;
+  int fd;
   if(access(filename,R_OK) != 0)
       return NULL;
   
-  dev = fopen(filename,"r");
+  dev = fopen(filename,"r+");
   if(dev == NULL)
     return NULL;
 
@@ -1495,6 +1498,7 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
   len = ftell(dev);
   rewind(dev);
   
+#if 0// Previous method using file read
   super_block = (FS_Unit*)malloc(len);
   if(fread(super_block,1,len,dev) != len)
     {
@@ -1504,6 +1508,21 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
     }
 
   fclose(dev);
+#else
+  // new way using mmap
+  fd = fileno(dev);
+  if(fd == -1)
+	{
+			fprintf(stderr,"Could not get file descriptor\n");
+			return NULL;
+	}
+  super_block = (FS_Block*)mmap(NULL,len,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
+  if(super_block == MAP_FAILED)
+  {
+		  fprintf(stderr,"Could not create memory map\nReason: %s\n",strerror(errno));
+		  return NULL;
+  }
+#endif
   
   the_state->block_size = super_block[FS_SuperBlock_block_size];
   the_state->num_blocks = super_block[FS_SuperBlock_num_blocks];
@@ -1588,13 +1607,14 @@ struct fuse_operations fs_ops = {
 static const struct option long_opts[] = {
   {"block_size",1,NULL,'b'},
   {"log",1,NULL,'l'},
+  {"memory",1,NULL,'a'},
   {"mount",1,NULL,'m'},
   {"num_blocks",1,NULL,'n'},
   {"verbose",0,NULL,'v'},
   {"help",0,NULL,'h'},
   {0,0,0,0}
 };
-static const char short_opts[] = "b:hl:m:n:v";
+static const char short_opts[] = "ab:hl:m:n:v";
 
 static void print_help()
 {
@@ -1622,6 +1642,9 @@ static void print_help()
      
       switch(opts->val)
 	{
+	case 'a':
+	  printf("Load the entire contents of the image into memory, instead of using mapped memory.\n");
+	  break;
 	case 'b':
 	  printf("Sepcify the size of a block, in bytes. Default: 16 bytes");
 	  break;
@@ -1654,6 +1677,10 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
     {
       switch(ch)
 	{
+    case 'a':
+	  printf("Load the entire contents of the image into memory, instead of using mapped memory.\n");
+	  the_state->load_all_sb = true;
+	  break;
 	case 'b':
 	  {
 	    int tempint;
@@ -1730,6 +1757,7 @@ void FS_default_state(struct fs_fuse_state *the_state)
   the_state->verbose_log = false;
   the_state->num_blocks = 16;
   the_state->block_size = 16;
+  the_state->load_all_sb = false;
 }
 
 void FS_load_rc(struct fs_fuse_state *the_state, char *keyword, char *arg)
@@ -1870,6 +1898,14 @@ int main(int argc, char **argv)
   FS_check_load_rc(the_state);
 
   FS_parse_args(the_state,argc,argv);
+  if(the_state->load_all_sb && the_state->super_block != NULL)
+  {
+		  size_t sb_byte_size = the_state->num_blocks*the_state->block_size*sizeof(FS_Unit);
+		  super_block = (FS_Block*)malloc(sb_byte_size);
+		  memcpy(super_block,the_state->super_block,sb_byte_size);
+		  munmap(the_state->super_block,sb_byte_size);
+		  the_state->super_block = super_block;
+  }
   setvbuf(the_state->logfile, NULL, _IOLBF, 0);
   super_block = the_state->super_block;
 
