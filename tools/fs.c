@@ -62,9 +62,11 @@ static void log_msg(const char *format, ...)
     va_list ap;
     if(FS_PRIVATE_DATA->verbose_log == true)
       {
-	va_start(ap, format);
-	vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
+        va_start(ap, format);
+        vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
       }
+
+    fflush(FS_PRIVATE_DATA->logfile);
 }
 
 static void error_log(const char *format, ...)
@@ -75,11 +77,23 @@ static void error_log(const char *format, ...)
 
     va_start(ap, format);
     vfprintf(FS_PRIVATE_DATA->logfile, format, ap);
+
+    fflush(FS_PRIVATE_DATA->logfile);
 }
 
 static FS_Block* FS_getblock(FS_Block *super_block, FS_Unit block_id)
 {
   log_msg("FS_getblock (block = %d, addr = 0x%x)\n",block_id,block_id*FS_BLOCK_SIZE);
+  if(super_block == NULL)
+  {
+      error_log("FS_getblock: NULL pointer for super_block\n");
+      return NULL;
+  }
+  if(block_id >= super_block[FS_SuperBlock_num_blocks])
+  { 
+      error_log("FS_getblock: Requested block exceeds number of blocks.\nRequested: %ld\nNumber of Blocks: %ld\n",(long)block_id,(long)super_block[FS_SuperBlock_num_blocks]);
+      return NULL;
+  }
   return &(super_block[block_id*FS_BLOCK_SIZE]);
 }
 
@@ -124,6 +138,8 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
   struct subroutine_map *code_block;
   int len = 0;
   size_t num_bytes,curr_byte = 0;
+  
+  log_msg("FS_compile: Compiling...\n");
   if(sb == NULL)
     return 0;
   if(eeprom_file == NULL)
@@ -138,14 +154,19 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
 	return 0;
   }
   code_block->next = NULL;
+  code_block->code = code_block->code_end = NULL;
+  code_block->strings = code_block->strings_end = NULL;
+  code_block->variables = NULL;
 
   for(;curr_byte < num_bytes;curr_byte++)
     insert_compiled_code(typeCode,code_block,sb[curr_byte],0);
   
   memset(hex_buffer,0,(9 + COMPILE_MAX_WIDTH + 2)*sizeof(char));
   FPrintCode(eeprom_file,code_block->code,0,hex_buffer,0x4200,0,type);
+  log_msg("Freeing subroutine\n");
   free_subroutine(code_block);code_block = NULL;
 
+  log_msg("jumping to end of file\n");
   if(eeprom_file != FS_PRIVATE_DATA->logfile)
     {
       fseek(eeprom_file,0,SEEK_END);
@@ -155,12 +176,14 @@ static int FS_compile(FS_Block *sb,FILE *eeprom_file, int type)
   else
     len = 0;
 
+  log_msg("Compiled %d bytes\n",len);
   return len;
 }
 
 static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
 {
   int len;
+  log_msg("FS_read_eeprom: read ");
   fprintf(eeprom_file,":020000040000FA\n");
   fflush(eeprom_file);
   FS_compile(sb,eeprom_file, PRINT_HEX);
@@ -176,13 +199,29 @@ static int FS_read_eeprom(FS_Block *sb,FILE *eeprom_file)
     }
   else
     len = 0;
-  
+
+  log_msg("%d\n",len);  
   return len;
 }
 
 static int FS_read_picc(FS_Block *sb,FILE *c_file)
 {
   int len;
+  log_msg("FS_read_picc: read ");
+  if(sb == NULL)
+  {
+      log_msg("\nFS_read_picc: NULL super block\n");
+      return 0;
+  }
+
+  if(c_file == NULL)
+  {
+      log_msg("\nFS_read_picc: NULL temporary file\n");
+      if(errno != 0)
+          log_msg("Reason: %s\n",strerror(errno));
+      return 0;
+  }
+
   FS_compile(sb,c_file, PRINT_EEPROM_DATA);
   if(c_file != FS_PRIVATE_DATA->logfile)
     {
@@ -192,7 +231,8 @@ static int FS_read_picc(FS_Block *sb,FILE *c_file)
     }
   else
     len = 0;
-  
+ 
+  log_msg("%d\n",len); 
   return len;
 }
 
@@ -319,6 +359,36 @@ static int FS_size_rawfile()
   return size;
 }
 
+static int FS_clean_rawfile()
+{ 
+    FS_Block *sb = FS_PRIVATE_DATA->super_block, *file;
+    FS_Unit block_id;
+    if(sb == NULL || sb[FS_SuperBlock_raw_file] == 0)
+        return 0;
+  
+    file = FS_getblock(sb,(block_id = sb[FS_SuperBlock_raw_file]));
+    if(file == NULL)
+        return 0;
+  
+    if(file[FS_INode_magic_number] != MAGIC_RAW)
+        return 0;
+
+    for(;;file = FS_getblock(sb,(block_id = file[FS_INode_magic_number+1])) )
+    {
+        if(file == NULL)
+            break;
+        file[FS_INode_magic_number] = MAGIC_FREE_INODE;
+        sb[FS_SuperBlock_raw_file] = file[FS_INode_indirect];
+        file[FS_INode_indirect] = sb[FS_SuperBlock_free_queue];
+        file[FS_SuperBlock_free_queue] = block_id;
+        sb[FS_SuperBlock_num_free_blocks]++;
+        if(sb[FS_SuperBlock_raw_file] >= sb[FS_SuperBlock_num_blocks])
+           break;
+    } 
+
+    sb[FS_SuperBlock_raw_file] = 0;
+}
+
 static void FS_inode2stat(struct stat *stbuf, const FS_Block *the_dir)
 {
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
@@ -423,53 +493,55 @@ static int fs_getattr(const char *path, struct stat *stbuf)
       FS_inode2stat(stbuf,dir);
     else if(strcmp(path,FS_proc_filename) == 0)
       {
-	stbuf->st_mode = 0555 | S_IFDIR;
-	stbuf->st_uid = 0;
-	stbuf->st_size = 0;
-	return 0;
+        stbuf->st_mode = 0555 | S_IFDIR;
+        stbuf->st_uid = 0;
+        stbuf->st_size = 0;
+        return 0;
       }
     else if(strstr(path,FS_inodedump_filename) != NULL)
       {
-	if(strcmp(path,FS_inodedump_filename) == 0)
-	  {
-	    stbuf->st_mode = 0555 | S_IFDIR;
-	    stbuf->st_uid = 0;
-	    stbuf->st_size = 0;
-	    return 0;
-	  }
-	is_inode_directory = true;
-	path += (size_t)strlen(FS_inodedump_filename);
+        if(strcmp(path,FS_inodedump_filename) == 0)
+          {
+            stbuf->st_mode = 0555 | S_IFDIR;
+            stbuf->st_uid = 0;
+            stbuf->st_size = 0;
+            return 0;
+          }
+        is_inode_directory = true;
+        path += (size_t)strlen(FS_inodedump_filename);
       }
     else if(strcmp(path,FS_dump_filename) == 0)
       {
-	stbuf->st_mode = 0444 | S_IFREG;
-	stbuf->st_size = sb[FS_SuperBlock_num_blocks] * sb[FS_SuperBlock_block_size];
-	return 0;
+        stbuf->st_mode = 0444 | S_IFREG;
+        stbuf->st_size = sb[FS_SuperBlock_num_blocks] * sb[FS_SuperBlock_block_size];
+        return 0;
       }
     else if(strcmp(path,FS_eeprom_filename) == 0)
       {
-	FILE *eeprom = tmpfile();
-	int len = FS_read_eeprom(sb,eeprom);
-	stbuf->st_mode = 0444 | S_IFREG;
-	stbuf->st_size = len;
-	fclose(eeprom);
-	return 0;
+        FILE *eeprom = tmpfile();
+        int len = FS_read_eeprom(sb,eeprom);
+        stbuf->st_mode = 0444 | S_IFREG;
+        stbuf->st_size = len;
+        fclose(eeprom);
+        return 0;
       }
     else if(strcmp(path,FS_picc_filename) == 0)
       {
-	FILE *picc = tmpfile();
-	int len = FS_read_picc(sb,picc);
-	stbuf->st_mode = 0444 | S_IFREG;
-	stbuf->st_size = len;
-	fclose(picc);
-	return 0;
+        FILE *picc = NULL;
+        int len;
+        picc = tmpfile();
+        len = FS_read_picc(sb,picc);
+        stbuf->st_mode = 0444 | S_IFREG;
+        stbuf->st_size = len;
+        fclose(picc);
+        return 0;
       }
     else if(strcmp(path,FS_rawfile_name) == 0)
       {
-	int len = FS_size_rawfile();
-	stbuf->st_mode = 0444 | S_IFREG;
-	stbuf->st_size = len;
-	return 0;
+        int len = FS_size_rawfile();
+        stbuf->st_mode = 0444 | S_IFREG;
+        stbuf->st_size = len;
+        return 0;
       }
 
     dir = FS_resolve(dir,path,sb);
@@ -961,6 +1033,10 @@ static int FS_unlink(const char *path)
   FS_Block *sb = FS_PRIVATE_DATA->super_block;
   FS_Block *file_head = FS_getblock(sb,sb[FS_SuperBlock_root_block]);
   log_msg("FS_unlink (%s)\n",path);
+  if(path == NULL)
+      return 0;
+  if(strncmp(path,FS_rawfile_name,strlen(FS_rawfile_name)) == 0)
+      return FS_clean_rawfile();
   if(FS_is_virtual(path))
     return -EACCES;
   file_head = FS_resolve(file_head,path,sb);

@@ -64,6 +64,7 @@ void free_subroutine(struct subroutine_map *subroutine)
         free_code(subroutine->strings); subroutine->strings = (struct compiled_code *)0xdead;
 	free_all_variables(subroutine->variables);subroutine->variables = (idNodeType *)0xdead;
 	subroutine->next = (struct subroutine_map *)0xdead;
+    free(subroutine);
 }
 
 void all_free_subroutines(struct subroutine_map *subroutine)
