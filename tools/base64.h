@@ -1,3 +1,11 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 20 June 2012
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Prototyping for a custom base64 encoding stream
+ */
 #ifndef BASE64_H
 #define BASE64_H 1
 

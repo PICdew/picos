@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 20 June 2012
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Functions used to link PICLANG code after compilation
+ */
+
 #include "pasm.h"
 #include "globals.h"
 #include "base64.h"
