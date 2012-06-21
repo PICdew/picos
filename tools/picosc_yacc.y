@@ -1,4 +1,13 @@
 %{
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 20 June 2012
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * picosc grammar and main function
+ */
+
 #include "pasm.h"
 #include "../piclang.h"
 #include "utils.h"
@@ -349,10 +358,8 @@ int main(int argc, char **argv)
 	  {
 	    FILE *libfile = fopen(optarg,"rb");
 	    struct piclib_object* libobj = NULL;
-	    fprintf(stderr,"piclib not yet reimplemented\n");
-	    exit(1);
-#if 0//FIX!
-	    if(libfile == NULL)
+	    
+		if(libfile == NULL)
 	      {
 		fprintf(stderr,"Could not open library file \"%s\"\n",optarg);
 		if(errno != 0)
@@ -368,12 +375,10 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error loading library.\n");
 		exit(1);
 	      }
-	    if(piclib_link(libobj,global_subroutines) != 0)
+	    if(piclib_link(libobj) != 0)
 	    	reason_exit("Could not link library file \"%s\"\n",optarg);
-		
 
 	    piclib_free(libobj);
-#endif//FIX
 	    break;
 	  }
 	case OUTPUT_LIST:
@@ -413,17 +418,20 @@ int main(int argc, char **argv)
     {
       FILE *input = fopen(argv[optind++],"r");
       extern FILE *yyin;
-      if(input != NULL)
-	yyin = input;
+      if(input == NULL)
+        reason_exit("Could not open file \"%s\" for reading.\n",argv[optind-1]);        
+      yyin = input;
     }
   else
     printf("Welcome to the piclang compiler.\n");
  
-  global_subroutines = insert_subroutine("GLOBALS");// this stores global stuff
+  global_subroutines_GLOBALS = get_subroutine("GLOBALS");// this stores global stuff
+  global_subroutines = global_subroutines_GLOBALS;
   g_curr_subroutine = global_subroutines;
-  global_subroutines_GLOBALS = global_subroutines;
 
-  string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
+  // If string_handler is null, try to malloc it. If it's still null, there's a problem.
+  if(string_handler == NULL)
+      string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
   if(string_handler == NULL)
 	reason_exit("Could not allocate memory for string_handler\n");
  
@@ -435,30 +443,12 @@ int main(int argc, char **argv)
   if(compile_only)
     {
       pasm_compile(eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
+      write_piclib_obj(binary_file,global_subroutines);
     }
   else
     {
       finished_code = pasm_build(binary_file,eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
     }
-
-  if(compile_only)
-  {
-  	fprintf(stderr,"piclib not yet reimplemented\n");//write_piclib_obj(binary_file,global_subroutines);
-  }
- 
-	  
-
-#if 0 // deprecated 
-	  curr_code = the_strings;
-	  while(curr_code != NULL)
-	    {
-	      fprintf(binary_file,"%c",(char)curr_code->val);
-	      curr_code = curr_code->next;
-	    }
-#endif
-	
- 
-    
 
   create_lst_file(lst_file, finished_code);
   

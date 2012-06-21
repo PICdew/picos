@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Prototyping for the compiler suite
+ */
+
 #ifndef PASM_H
 #define PASM_H 1
 
@@ -127,8 +136,6 @@ struct relocation_map
 
 struct piclib_object
 {
-  struct compiled_code *code;
-  struct compiled_code *strings;
   struct subroutine_map *subroutines;
   struct relocation_map *relmap;
   int offset;
@@ -157,6 +164,14 @@ nodeType *full_con(int value, int relocation_type);
  * Exits the program with status 1 and prints the supplied message to stderr
  */
 void reason_exit(const char *format, ...);
+
+/**
+  * Check for condition. If condition is true, nothing happens. If condition is false, the provided
+  * error message is displayed, using vargs, and the program exits. If errno is set, that exit value
+  * is returned and the result of strerror is displayed. Otherwise, the exit value is 1.
+  */
+void full_assert(int condition,const char *format,...);
+
 
 struct assembly_map* keyword2assembly(const char *keyword);
 struct assembly_map* opcode2assembly(int opcode);
@@ -209,10 +224,9 @@ int lookup_label(const struct compiled_code* code, picos_size_t label);
 
 enum PRINT_TYPE{PRINT_HEX, PRINT_EEPROM_DATA};
 size_t CountCode(const struct compiled_code *the_code);
-void FreeCode(struct compiled_code* code);
 struct compiled_code* MakePCB(struct subroutine_map *subroutines, int total_memory, picos_size_t piclang_bitmap);
 void FirstPass(struct compiled_code* code,int skip_assignment_check, unsigned char *piclang_bitmap,  int num_variables);
-void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type);
+void FPrintCode(FILE *hex_file, const struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type);
 #define COMPILE_MAX_WIDTH 8//max width
 
 /**
@@ -234,7 +248,7 @@ struct piclib_object* piclib_load(FILE *libfile);
 /**
  * Links a library object to the current code base
  */
-int piclib_link(struct piclib_object *library, struct subroutine_map *subroutines);
+int piclib_link(struct piclib_object *library);
 
 /**
  * writes a piclang library object

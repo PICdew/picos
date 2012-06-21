@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 20 June 2012
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Program used for mounting PICFS disk images using libfuse
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>

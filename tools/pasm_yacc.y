@@ -1,4 +1,13 @@
 %{
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 20 June 2012
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * pasm grammar and main function
+ */
+
 #include "pasm.h"
 #include "../piclang.h"
 #include "utils.h"

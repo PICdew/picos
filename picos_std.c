@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Utility functions used within the operating system
+ */
+
 #include "picfs_error.h"
 #include "utils.h"
 #include "picfs.h"

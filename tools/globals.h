@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 1 Sept 2011
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Definition of global variables
+ */
+
 #ifndef GLOBAL_H
 #define GLOBAL_H 1
 

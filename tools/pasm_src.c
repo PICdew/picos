@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 20 June 2012
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Functions shared between multiple programs in the compiler suite.
+ */
+
 #include "pasm.h"
 #include "picosc_yacc.h"
 #include "../piclang.h"
@@ -8,6 +17,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdarg.h>
+#include <errno.h>
 
 extern FILE *assembly_file;
 const char PICLANG_LIB_MAGIC_NUMBERS[] = "PICLIB";
@@ -40,11 +50,10 @@ void free_all_code(struct compiled_code *code_list)
 
 void free_code(struct compiled_code *code)
 {
-	if(code == NULL)
-		return;
-
-  	 code->next = (struct compiled_code*)0xdead;
-	free(code);
+  if(code == NULL)
+    return;
+  free_code(code->next);
+  free(code);
 }
 
 void free_subroutine(struct subroutine_map *subroutine)
@@ -174,9 +183,9 @@ void create_stack(struct compiled_code **pstack, struct compiled_code **pstack_e
   *pstack_end = end_of_stack;
 }
 
-void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type)
+void FPrintCode(FILE *hex_file, const struct compiled_code* code, int col, char *buffer,int start_address, int checksum, int print_type)
 {
-  if(code == NULL)
+  if(code == NULL || buffer == NULL || hex_file == NULL)
     return;
 
   switch(print_type)
@@ -223,14 +232,6 @@ void FPrintCode(FILE *hex_file,struct compiled_code* code, int col, char *buffer
     
   
   FPrintCode(hex_file,code->next,col,buffer,start_address,checksum,print_type);
-}
-
-void FreeCode(struct compiled_code* code)
-{
-  if(code == NULL)
-    return;
-  FreeCode(code->next);
-  free(code);
 }
 
 size_t CountCode(const struct compiled_code *the_code)
@@ -338,15 +339,35 @@ struct assembly_map* opcode2assembly(int opcode)
 }
 
 
+void reason_exit_vargs(va_list args, const char *format)
+{
+  vfprintf(stderr,format,args);
+  va_end(args);
+  if(errno != 0)
+  {
+      fprintf(stderr,"Reason (%d): %s\n",errno,strerror(errno));
+      exit(errno);
+  }
+  exit(1);
+}
+
 void reason_exit(const char *format, ...)
 {
   va_list args;
   va_start(args,format);
-  vfprintf(stderr,format,args);
-  va_end(args);
-  
-  exit(1);
+  reason_exit_vargs(args,format);
 }
+
+void full_assert(int condition,const char *format,...)
+{
+    va_list args;
+    if(condition)
+        return;
+    va_start(args,format);
+    reason_exit_vargs(args,format);
+}
+
+
 
 
 

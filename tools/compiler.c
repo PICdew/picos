@@ -1,3 +1,12 @@
+/**
+ * PICOS, PIC operating system.
+ * Author: David Coss, PhD
+ * Date: 20 June 2012
+ * License: GNU Public License version 3.0 (see http://www.gnu.org)
+ *
+ * Code used to compile PICLANG code
+ */
+
 #include "pasm.h"
 #include "globals.h"
 #include "picosc_yacc.h"
@@ -595,7 +604,6 @@ int handle_string(const char *pStr)
   if(pStr != NULL)
     {
       int is_new = true;
-printf("Handled string \"%s\" ",pStr);
       retval = resolve_string(pStr,&is_new) + PICLANG_STRING_OFFSET;// when referencing strings, arguments will go first.
       if(is_new)
 	{
@@ -614,7 +622,6 @@ printf("Handled string \"%s\" ",pStr);
     {
       yyerror("Invalid string");
     }
-  printf("at %d\n",retval);
   return retval;
 }
 
