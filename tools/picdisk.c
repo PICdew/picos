@@ -78,6 +78,7 @@ int scan_disk(FILE *image_file)
       printf("Number of Free Blocks: %d\n",(int)super_block[FS_SuperBlock_num_free_blocks]);
       printf("Root block: %ld\n",(long)super_block[FS_SuperBlock_root_block]*super_block[FS_SuperBlock_block_size] + fpos);
       printf("Starting address: %ld\n",fpos);
+      printf("Contains raw file: %s\n",((super_block[FS_SuperBlock_raw_file])?"yes":"no"));
       printf("Total Size: %ld\n",(long)super_block[FS_SuperBlock_block_size]*super_block[FS_SuperBlock_num_blocks]);
 
       image_counter++;
