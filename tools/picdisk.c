@@ -18,6 +18,7 @@
 #include <stdbool.h>
 
 int FS_BUFFER_SIZE = 128;
+int unit_scale = 1;
 
 int scan_disk(FILE *image_file)
 {
@@ -64,7 +65,7 @@ int scan_disk(FILE *image_file)
 	      long the_eof;
 	      fseek(image_file,0,SEEK_END);
 	      the_eof = ftell(image_file);
-	      printf("Free space beginning at %ld: %ld\n",fpos, the_eof-fpos);
+	      printf("Free space beginning at %ld: %ld\n",fpos, (the_eof-fpos)/unit_scale);
 	      free(super_block);
 	      return 0;
 	    }
@@ -73,12 +74,12 @@ int scan_disk(FILE *image_file)
       // print info
       printf("Image #%d\n",image_counter);
       printf("PICFS version %d\n",(int)super_block[FS_SuperBlock_revision_num]);
-      printf("Block size: %d\n",(int)super_block[FS_SuperBlock_block_size]);
+      printf("Block size: %d\n",(int)super_block[FS_SuperBlock_block_size]/unit_scale);
       printf("Number of Blocks: %d\n",(int)super_block[FS_SuperBlock_num_blocks]);
       printf("Number of Free Blocks: %d\n",(int)super_block[FS_SuperBlock_num_free_blocks]);
       printf("Root block: %ld\n",(long)super_block[FS_SuperBlock_root_block]*super_block[FS_SuperBlock_block_size] + fpos);
       printf("Starting address: %ld\n",fpos);
-      printf("Total Size: %ld\n",(long)super_block[FS_SuperBlock_block_size]*super_block[FS_SuperBlock_num_blocks]);
+      printf("Total Size: %ld\n",(long)super_block[FS_SuperBlock_block_size]*super_block[FS_SuperBlock_num_blocks]/unit_scale);
 
       image_counter++;
 
@@ -201,11 +202,12 @@ void check_load_rc()
 }
 
 
-static const char short_options[] = "h";
+static const char short_options[] = "hm";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
+		   {"mb",0,NULL,'m'},
                {0, 0, 0, 0}
              };
 
@@ -239,6 +241,9 @@ int main(int argc, char **argv)
       
       switch(opt)
 	{
+			case 'm':
+					unit_scale = 1024*1024;
+					break;
 	case 'h':
 	  print_help();
 	  return 0;
