@@ -90,36 +90,6 @@ void TIME_set(TIME_t *t)
     
 }
 
-
-void strtime(char *str, const TIME_t *t)
-{
-  char pos = 0;
-  if(str == NULL)
-    return;
-  if(t == NULL)
-    t = TIME_get();
-  
-  hex_to_word(str,t->month);pos += 2;
-  str[pos++] = '/';
-  hex_to_word(&str[pos],t->day);pos += 2;
-  str[pos++] = '\n';
-  hex_to_word(&str[pos],t->hours);pos += 2;
-  str[pos++] = ':';
-  hex_to_word(&str[pos],t->minutes);pos += 2;
-  str[pos] = 0;
-}
-
-void TIME_stdout()
-{
-  IO_putd(TIME_curr.month);
-  putch('/');
-  IO_putd(TIME_curr.day);
-  putch('\n');
-  IO_putd(TIME_curr.hours);
-  putch(':');
-  IO_putd(TIME_curr.minutes);
-}
-
 void TIME_sleep(char x)
 {
 	x += TIME_tickCounter;

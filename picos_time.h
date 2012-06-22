@@ -46,24 +46,5 @@ extern void TIME_set(TIME_t *t);
  */
 extern const TIME_t* TIME_get();
 
-/**
- * Prints the date and time to standard output
- * using the format (decimal):
- * 
- * MM/DD
- * hh:mm
- */
-extern void TIME_stdout();
-
-/**
- * Writes the date and time to a string using
- * the format (hex):
- *
- * MM/DD
- * hh:mm
- */
-extern void strtime(char *str, const TIME_t *t);
-
-
 #endif
 
