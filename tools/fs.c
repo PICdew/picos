@@ -1607,7 +1607,7 @@ struct fuse_operations fs_ops = {
 static const struct option long_opts[] = {
   {"block_size",1,NULL,'b'},
   {"log",1,NULL,'l'},
-  {"memory",1,NULL,'a'},
+  {"memory",0,NULL,'a'},
   {"mount",1,NULL,'m'},
   {"num_blocks",1,NULL,'n'},
   {"verbose",0,NULL,'v'},
