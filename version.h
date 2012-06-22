@@ -13,14 +13,18 @@
 #ifndef PICOS_VERSION_H
 #define PICOS_VERSION_H
 
-#define KERNEL_MAJOR_VERSION 0
-#define KERNEL_MINOR_VERSION 6
+#define KERNEL_MAJOR_VERSION 1
+#define KERNEL_MINOR_VERSION 0
 #define KERNEL_REVISION 0
 #define KERNEL_ID_TAG 0
 
 #endif
 
 /**
+ * 1.0.0 - Started on 22 June 2012. Will try to keep track of revisions
+ *         and kernel id tags. This point marks stable OS, compiler and
+ *         useful linux tools.
+ *
  * 0.6.0 - Switched from assembly to C. The OS grew to such a size as
  *         to make assembly (i.e. paging) unbearable. As of this version,
  *         IO using buttons, USART, LCD and sound word. Commands are 

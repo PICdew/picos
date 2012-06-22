@@ -143,6 +143,7 @@ enum PICLANG_COMMANDS
     PICLANG_GETX/* Retrieve the column of the cursor */,
     PICLANG_GETY/* Retrieve the row of the cursor */,
     PICLANG_RAWLOAD/* Loads contents of the Raw file buffer (sram) into picfs buffer, which can then be accessed using the "fin" variable */,
+    PICLANG_KVERSION/* Takes an argument (0-3) and returns major, minor versions, revision and kernel id, respectively*/,
     PICLANG_NUM_COMMANDS
   };
 

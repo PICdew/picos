@@ -271,6 +271,10 @@ int ex(nodeType *p) {
       write_assembly(assembly_file,"\terrno\n");
       insert_code(PICLANG_ERRNO);
       break;
+    case PICLANG_KVERSION:
+      deal_with_arguments(&p->opr);
+      write_assembly(assembly_file,"\tkversion\n");insert_code(PICLANG_KVERSION);
+      break;
     case PICLANG_PRINTL:
       deal_with_arguments(&p->opr);
       write_assembly(assembly_file,"\tputch\n");insert_code(PICLANG_PRINT);

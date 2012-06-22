@@ -15,6 +15,7 @@
 #include "io.h"
 #include "utils.h"
 #include "sram.h"
+#include "version.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -657,6 +658,23 @@ void PICLANG_next()
       break;
     case PICLANG_ERRNO:
       PICLANG_pushl(PICLANG_get_errno());
+      break;
+    case PICLANG_KVERSION:
+      a = PICLANG_pop();
+      if(a > 3)
+      {
+          PICLANG_exception(PICFS_EINVAL);
+          break;
+      }
+      if(a == 0)
+          b = KERNEL_MAJOR_VERSION;
+      else if(a == 1)
+          b = KERNEL_MINOR_VERSION;
+      else if(a == 2)
+          b = KERNEL_REVISION;
+      else
+          b = KERNEL_ID_TAG;
+      PICLANG_pushl(b);
       break;
     case PICLANG_SIGNAL:
       a = PICLANG_get_next_word();// signal id

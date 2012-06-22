@@ -302,6 +302,7 @@ struct assembly_map opcodes[] = {
   {"getx", PICLANG_GETX, 0},
   {"gety", PICLANG_GETY, 0},
   {"rawload", PICLANG_RAWLOAD,0},
+  {"kversion", PICLANG_KVERSION,0},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 
