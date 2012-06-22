@@ -1678,7 +1678,6 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
       switch(ch)
 	{
     case 'a':
-	  printf("Load the entire contents of the image into memory, instead of using mapped memory.\n");
 	  the_state->load_all_sb = true;
 	  break;
 	case 'b':
