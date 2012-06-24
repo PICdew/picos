@@ -10,7 +10,7 @@
 #ifndef PICOS_STD
 #define PICOS_STD
 
-#include "utils.h"
+#include "picos/utils.h"
 
 /**
  * Handler for mounting a file system from the command line.

@@ -9,7 +9,7 @@
 #ifndef PICOS_PAGE
 #define PICOS_PAGE
 
-#include "utils.h"
+#include "picos/utils.h"
 
 #ifndef NUM_PAGES
 #define NUM_PAGES 4

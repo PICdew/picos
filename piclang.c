@@ -6,19 +6,20 @@
  *
  * This file provides the code for running PICLANG programs.
  */
-#include "page.h"
-#include "picfs_error.h"
-#include "picfs.h"
-#include "picos_time.h"
-#include "piclang.h"
-#include "arg.h"
-#include "io.h"
-#include "utils.h"
-#include "sram.h"
-
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+
+#include "picos/page.h"
+#include "picos/picfs_error.h"
+#include "picos/picfs.h"
+#include "picos/picos_time.h"
+#include "picos/piclang.h"
+#include "picos/arg.h"
+#include "picos/io.h"
+#include "picos/utils.h"
+#include "picos/sram.h"
+#include "picos/version.h"
 
 // PICLANG_exception sets the status of the program. This will cause the
 // program to end.
@@ -657,6 +658,23 @@ void PICLANG_next()
       break;
     case PICLANG_ERRNO:
       PICLANG_pushl(PICLANG_get_errno());
+      break;
+    case PICLANG_KVERSION:
+      a = PICLANG_pop();
+      if(a > 3)
+      {
+          PICLANG_exception(PICFS_EINVAL);
+          break;
+      }
+      if(a == 0)
+          b = KERNEL_MAJOR_VERSION;
+      else if(a == 1)
+          b = KERNEL_MINOR_VERSION;
+      else if(a == 2)
+          b = KERNEL_REVISION;
+      else
+          b = KERNEL_ID_TAG;
+      PICLANG_pushl(b);
       break;
     case PICLANG_SIGNAL:
       a = PICLANG_get_next_word();// signal id

@@ -7,17 +7,17 @@
  * Code used to compile PICLANG code
  */
 
-#include "pasm.h"
-#include "globals.h"
-#include "picosc_yacc.h"
-
-#include "page.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <math.h>
+
+#include "picos/tools/pasm.h"
+#include "picos/tools/globals.h"
+#include "picos/tools/picosc_yacc.h"
+
+#include "picos/page.h"
 
 extern void yyerror(char*);
 extern char *yytext;
@@ -270,6 +270,10 @@ int ex(nodeType *p) {
     case PICLANG_ERRNO:
       write_assembly(assembly_file,"\terrno\n");
       insert_code(PICLANG_ERRNO);
+      break;
+    case PICLANG_KVERSION:
+      deal_with_arguments(&p->opr);
+      write_assembly(assembly_file,"\tkversion\n");insert_code(PICLANG_KVERSION);
       break;
     case PICLANG_PRINTL:
       deal_with_arguments(&p->opr);

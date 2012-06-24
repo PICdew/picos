@@ -8,11 +8,6 @@
  * picosc grammar and main function
  */
 
-#include "pasm.h"
-#include "../piclang.h"
-#include "utils.h"
-#include "../page.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +17,11 @@
 #include <getopt.h>
 #include <errno.h>
 #include <unistd.h>
+
+#include "picos/tools/pasm.h"
+#include "picos/piclang.h"
+#include "picos/utils.h"
+#include "picos/page.h"
 
 extern picos_size_t label_counter;
 int break_to_label, continue_to_label, switch_end_label;
@@ -263,7 +263,7 @@ void check_load_rc()
   fclose(rc_file);
 }
 
-static const char short_options[] = "a:b:ce:hl:n:o:";
+static const char short_options[] = "a:b:ce:hl:n:o:v";
 enum OPTION_INDICES{OUTPUT_HEX,OUTPUT_LIST,OUTPUT_LINKAGE};
 static struct option long_options[] =
              {
@@ -277,6 +277,7 @@ static struct option long_options[] =
 	       {"linkage",1,NULL,OUTPUT_LINKAGE},
 	       {"list",1,NULL,OUTPUT_LIST},
 	       {"buffer_size",1,NULL,'b'},
+	       {"version",0,NULL,'v'},
                {0, 0, 0, 0}
              };
 
@@ -406,6 +407,9 @@ int main(int argc, char **argv)
 	  break;
 	case 'h':
 	  print_help();
+	  return 0;
+	case 'v':
+	  printf("%s\n",PACKAGE_STRING);
 	  return 0;
 	default:
 	  fprintf(stderr,"ERROR - Unknown flag %c\n",opt);

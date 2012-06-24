@@ -6,12 +6,14 @@
  *
  * This file has the code for command argument functions.
  */
-#include "arg.h"
-#include "string.h"
-#include "picfs_error.h"
+
+#include <string.h>
+
+#include "picos/arg.h"
+#include "picos/picfs_error.h"
 
 #ifndef NO_PICLANG
-#include "piclang.h"
+#include "picos/piclang.h"
 #endif
 
 char ARG_buffer[ARG_SIZE];

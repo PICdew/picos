@@ -15,8 +15,8 @@
 #include "config.h"
 #endif
 
-#include "picos_time.h"
-#include "utils.h"
+#include "picos/picos_time.h"
+#include "picos/utils.h"
 
 #ifndef PICOS_MAX_PROCESSES 
 #define PICOS_MAX_PROCESSES 4

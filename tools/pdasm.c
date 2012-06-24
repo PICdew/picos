@@ -7,9 +7,9 @@
  * Prototyping for the PICLANG assembler.
  */
 
-#include "pasm.h"
+#include "picos/tools/pasm.h"
 
-#include "../piclang.h"
+#include "picos/piclang.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -283,7 +283,7 @@ void check_load_rc()
 }
 
 
-static const char short_options[] = "a:b:hp";
+static const char short_options[] = "a:b:hpv";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
@@ -291,6 +291,7 @@ static struct option long_options[] =
 	       {"asm", 1,NULL, 'a'},
 	       {"block_size",1,NULL,'b'},
 	       {"pcb",0,NULL,'p'},
+	       {"version",0,NULL,'v'},
                {0, 0, 0, 0}
              };
 
@@ -364,6 +365,9 @@ int main(int argc, char **argv)
 	  break;
 	case 'h':
 	  print_help();
+	  return 0;
+	case 'v':
+	  printf("%s\n",PACKAGE_STRING);
 	  return 0;
 	case 'p':
 	  dump_pcb = true;

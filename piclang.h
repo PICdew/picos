@@ -10,12 +10,12 @@
 #ifndef PICLANG_H
 #define PICLANG_H 1
 
-#include "utils.h"
-#include "scheduler.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "picos/utils.h"
+#include "picos/scheduler.h"
 
 #ifndef DEFAULT_PICLANG_QUANTUM
 #define DEFAULT_PICLANG_QUANTUM 25
@@ -143,6 +143,7 @@ enum PICLANG_COMMANDS
     PICLANG_GETX/* Retrieve the column of the cursor */,
     PICLANG_GETY/* Retrieve the row of the cursor */,
     PICLANG_RAWLOAD/* Loads contents of the Raw file buffer (sram) into picfs buffer, which can then be accessed using the "fin" variable */,
+    PICLANG_KVERSION/* Takes an argument (0-3) and returns major, minor versions, revision and kernel id, respectively*/,
     PICLANG_NUM_COMMANDS
   };
 

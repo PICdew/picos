@@ -7,12 +7,12 @@
  * Utility functions used within the operating system
  */
 
-#include "picfs_error.h"
-#include "utils.h"
-#include "picfs.h"
-#include "io.h"
-
 #include <string.h>
+
+#include "picos/picfs_error.h"
+#include "picos/utils.h"
+#include "picos/picfs.h"
+#include "picos/io.h"
 
 unsigned int millisleep(unsigned int ms)
 {

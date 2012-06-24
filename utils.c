@@ -6,7 +6,7 @@
  *
  * This file provides various utility functions.
  */
-#include "utils.h"
+#include "picos/utils.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

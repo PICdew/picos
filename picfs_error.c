@@ -6,7 +6,7 @@
  *
  * This file provides code for handling errors within the PICOS.
  */
-#include "picfs_error.h"
+#include "picos/picfs_error.h"
 
 signed char error_return(char the_error)
 {

@@ -10,7 +10,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H 1
 
-#include "pasm.h"
+#include "picos/tools/pasm.h"
 
 // Globals :-/
 extern struct subroutine_map *global_subroutines, *g_curr_subroutine, *string_handler;

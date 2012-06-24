@@ -7,9 +7,9 @@
  * Functions used to link PICLANG code after compilation
  */
 
-#include "pasm.h"
-#include "globals.h"
-#include "base64.h"
+#include "picos/tools/pasm.h"
+#include "picos/tools/globals.h"
+#include "picos/tools/base64.h"
 
 #include <stdlib.h>
 #include <errno.h>

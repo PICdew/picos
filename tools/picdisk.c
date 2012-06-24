@@ -7,8 +7,9 @@
  * Utility program for examining PICFS images
  */
 
-#include "fs.h"
-#include "utils.h"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -16,6 +17,9 @@
 #include <getopt.h>
 #include <unistd.h>
 #include <stdbool.h>
+
+#include "picos/tools/fs.h"
+#include "picos/utils.h"
 
 int FS_BUFFER_SIZE = 128;
 int unit_scale = 1;
@@ -79,7 +83,8 @@ int scan_disk(FILE *image_file)
       printf("Number of Free Blocks: %d\n",(int)super_block[FS_SuperBlock_num_free_blocks]);
       printf("Root block: %ld\n",(long)super_block[FS_SuperBlock_root_block]*super_block[FS_SuperBlock_block_size] + fpos);
       printf("Starting address: %ld\n",fpos);
-      printf("Total Size: %ld\n",(long)super_block[FS_SuperBlock_block_size]*super_block[FS_SuperBlock_num_blocks]/unit_scale);
+      printf("Contains raw file: %s\n",((super_block[FS_SuperBlock_raw_file])?"yes":"no"));
+      printf("Total Size: %ld\n",(long)super_block[FS_SuperBlock_block_size]*super_block[FS_SuperBlock_num_blocks]);
 
       image_counter++;
 
@@ -202,12 +207,13 @@ void check_load_rc()
 }
 
 
-static const char short_options[] = "hm";
+static const char short_options[] = "hmv";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
-		   {"mb",0,NULL,'m'},
+	       {"mb",0,NULL,'m'},
+	       {"version",0,NULL,'v'},
                {0, 0, 0, 0}
              };
 
@@ -241,11 +247,14 @@ int main(int argc, char **argv)
       
       switch(opt)
 	{
-			case 'm':
-					unit_scale = 1024*1024;
-					break;
+	case 'm':
+	  unit_scale = 1024*1024;
+	  break;
 	case 'h':
 	  print_help();
+	  return 0;
+	case 'v':
+	  printf("%s\n",PACKAGE_STRING);
 	  return 0;
 	default:
 	  fprintf(stderr,"ERROR - Unknown flag %c\n",opt);

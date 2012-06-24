@@ -38,31 +38,31 @@
 /* #undef NO_MINUS_C_MINUS_O */
 
 /* Name of package */
-#define PACKAGE "piclang-assembler"
+#define PACKAGE "picos-tools"
 
 /* Define to the address where bug reports for this package should be sent. */
 #define PACKAGE_BUGREPORT "david@davecoss.com"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "Piclang Assembler"
+#define PACKAGE_NAME "PICOS Tools"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "Piclang Assembler 0.3"
+#define PACKAGE_STRING "PICOS Tools 0.4"
 
 /* Define to the one symbol short name of this package. */
-#define PACKAGE_TARNAME "piclang-assembler"
+#define PACKAGE_TARNAME "picos-tools"
 
 /* Define to the home page for this package. */
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.3"
+#define PACKAGE_VERSION "0.4"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "0.3"
+#define VERSION "0.4"
 
 /* Define to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */

@@ -8,9 +8,9 @@
  * picosc lexicon
  */
 
-#include "pasm.h"
-#include "picosc_yacc.h"
-#include "piclang.h"
+#include "picos/tools/pasm.h"
+#include "picos/tools/picosc_yacc.h"
+#include "picos/piclang.h"
 void yyerror(char *);
 
 #include <stdlib.h>

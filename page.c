@@ -6,8 +6,9 @@
  *
  * This file has the code for the paged memory system of the PICOS.
  */
-#include "page.h"
-#include "picfs_error.h"
+
+#include "picos/page.h"
+#include "picos/picfs_error.h"
 
 void PAGE_init()
 {

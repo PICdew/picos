@@ -10,10 +10,10 @@
 #ifndef PASM_H
 #define PASM_H 1
 
-#include "piclang.h"
-#include "arg.h"
-#include "utils.h"
-#include "fs.h"
+#include "picos/piclang.h"
+#include "picos/arg.h"
+#include "picos/utils.h"
+#include "picos/tools/fs.h"
 
 #include <stdio.h>
 #include <limits.h>

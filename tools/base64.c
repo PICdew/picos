@@ -7,12 +7,12 @@
  * Base64 encoding stream
  */
 
-#include "base64.h"
-
 #include <stdlib.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdarg.h>
+
+#include "picos/tools/base64.h"
 
 #define CRC24_INIT 0xB704CEL
 #define CRC24_POLY 0x1864CFBL

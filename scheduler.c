@@ -7,9 +7,9 @@
  * Process scheduler and thread handler
  */
 
-#include "scheduler.h"
-#include "picfs.h"
-#include "picfs_error.h"
+#include "picos/scheduler.h"
+#include "picos/picfs.h"
+#include "picos/picfs_error.h"
 
 #include <stdbool.h>
 

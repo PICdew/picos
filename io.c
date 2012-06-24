@@ -11,13 +11,13 @@
 #include "config.h"
 #endif
 
-#include "arg.h"
-#include "io.h"
-#include "picos_time.h"
-#include "utils.h"
-
 #include <string.h>
 #include <stdbool.h>
+
+#include "picos/arg.h"
+#include "picos/io.h"
+#include "picos/picos_time.h"
+#include "picos/utils.h"
 
 extern char getch(void);
 

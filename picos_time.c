@@ -10,13 +10,13 @@
 #include "config.h"
 #endif
 
-#include "io.h"
-#include "utils.h"
-#include "picfs_error.h"
-#include "picos_time.h"
-
 #include <stddef.h>
 #include <stdio.h>
+
+#include "picos/io.h"
+#include "picos/utils.h"
+#include "picos/picfs_error.h"
+#include "picos/picos_time.h"
 
 static TIME_t TIME_curr;
 
@@ -88,36 +88,6 @@ void TIME_set(TIME_t *t)
       TIME_curr = *t;
     }
     
-}
-
-
-void strtime(char *str, const TIME_t *t)
-{
-  char pos = 0;
-  if(str == NULL)
-    return;
-  if(t == NULL)
-    t = TIME_get();
-  
-  hex_to_word(str,t->month);pos += 2;
-  str[pos++] = '/';
-  hex_to_word(&str[pos],t->day);pos += 2;
-  str[pos++] = '\n';
-  hex_to_word(&str[pos],t->hours);pos += 2;
-  str[pos++] = ':';
-  hex_to_word(&str[pos],t->minutes);pos += 2;
-  str[pos] = 0;
-}
-
-void TIME_stdout()
-{
-  IO_putd(TIME_curr.month);
-  putch('/');
-  IO_putd(TIME_curr.day);
-  putch('\n');
-  IO_putd(TIME_curr.hours);
-  putch(':');
-  IO_putd(TIME_curr.minutes);
 }
 
 void TIME_sleep(char x)

@@ -8,10 +8,10 @@
  * pasm grammar and main function
  */
 
-#include "pasm.h"
-#include "../piclang.h"
-#include "utils.h"
-#include "../page.h"
+#include "picos/tools/pasm.h"
+#include "picos/piclang.h"
+#include "picos/utils.h"
+#include "picos/page.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -230,7 +230,7 @@ void check_load_rc()
   fclose(rc_file);
 }
 
-static const char short_options[] = "a:b:e:hl:o:";
+static const char short_options[] = "a:b:e:hl:o:v";
 enum OPTION_INDICES{OUTPUT_HEX};
 static struct option long_options[] =
              {
@@ -241,6 +241,7 @@ static struct option long_options[] =
 	       {"binary",1,NULL,'o'},
 	       {"list",1,NULL,'l'},
 	       {"buffer_size",1,NULL,'b'},
+	       {"version",0,NULL,'v'},
                {0, 0, 0, 0}
              };
 
@@ -332,6 +333,9 @@ int main(int argc, char **argv)
 	  break;
 	case 'h':
 	  print_help();
+	  return 0;
+	case 'v':
+	  printf("%s\n",PACKAGE_STRING);
 	  return 0;
 	default:
 	  fprintf(stderr,"ERROR - Unknown flag %c\n",opt);

@@ -6,7 +6,7 @@
  *
  * Prototyping of SD card functions
  */
-#include "utils.h"
+#include "picos/utils.h"
 
 /**
  * Blocking SPI write/read.

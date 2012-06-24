@@ -9,15 +9,15 @@
 #ifndef PICFS_H
 #define PICFS_H
 
-#include "fs.h"
-#include "utils.h"
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "arg.h"
-#include "scheduler.h"
+#include "picos/tools/fs.h"
+#include "picos/utils.h"
+
+#include "picos/arg.h"
+#include "picos/scheduler.h"
 
 // Maximum number of open files.
 // This determines the size of the file table in memory (FTAB)

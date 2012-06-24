@@ -7,10 +7,11 @@
  * Functions shared between multiple programs in the compiler suite.
  */
 
-#include "pasm.h"
-#include "picosc_yacc.h"
-#include "../piclang.h"
-#include "page.h"
+#include "picos/tools/pasm.h"
+#include "picos/tools/picosc_yacc.h"
+#include "picos/piclang.h"
+#include "picos/page.h"
+#include "picos/version.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -302,6 +303,7 @@ struct assembly_map opcodes[] = {
   {"getx", PICLANG_GETX, 0},
   {"gety", PICLANG_GETY, 0},
   {"rawload", PICLANG_RAWLOAD,0},
+  {"kversion", PICLANG_KVERSION,0},
   {"ENDofCMDS",PICLANG_NUM_COMMANDS, 0}  
 };
 
@@ -367,8 +369,6 @@ void full_assert(int condition,const char *format,...)
     va_start(args,format);
     reason_exit_vargs(args,format);
 }
-
-
 
 
 

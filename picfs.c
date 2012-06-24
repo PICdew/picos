@@ -6,15 +6,16 @@
  *
  * This file has the code behind the file system.
  */
-#include "picfs.h"
-#include "picfs_error.h"
-#include "sd.h"
-#include "io.h"
-#include "sram.h"
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+
+#include "picos/picfs.h"
+#include "picos/picfs_error.h"
+#include "picos/sd.h"
+#include "picos/io.h"
+#include "picos/sram.h"
 
 #include <string.h>
 #include <stdbool.h>

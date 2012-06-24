@@ -13,7 +13,7 @@
 #include "config.h"
 #endif
 
-#include "utils.h"
+#include "picos/utils.h"
 
 #ifndef ARG_SIZE
 #define ARG_SIZE 17
