@@ -1,0 +1,8 @@
+Package: picos
+Architecture: all
+Version: 1.0-0
+Section: embedded
+Depends: libfuse2 (>=2.8.4), libc6
+Maintainer: David Coss, PhD <david@davecoss.com>
+Description: Utility programs and emulators for the custom operating system designed to be used on Microchip PIC microcontrollers.
+Homepage: http://wiki.davecoss.com/Picos
