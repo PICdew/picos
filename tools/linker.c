@@ -9,7 +9,7 @@
 
 #include "picos/tools/pasm.h"
 #include "picos/tools/globals.h"
-#include "picos/tools/base64.h"
+#include "picos/tools/picos_base64.h"
 
 #include <stdlib.h>
 #include <errno.h>

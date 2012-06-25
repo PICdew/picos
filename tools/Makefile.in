@@ -33,7 +33,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = picosc$(EXEEXT) pdasm$(EXEEXT) picdisk$(EXEEXT) \
-	fs$(EXEEXT) base64$(EXEEXT)
+	fs$(EXEEXT) picos_base64$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
@@ -52,11 +52,6 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
-am_base64_OBJECTS = base64-base64.$(OBJEXT) base64-pasm_src.$(OBJEXT)
-base64_OBJECTS = $(am_base64_OBJECTS)
-base64_LDADD = $(LDADD)
-base64_LINK = $(CCLD) $(base64_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
 am_fs_OBJECTS = fs-fs.$(OBJEXT) fs-pasm_src.$(OBJEXT) \
 	fs-utils.$(OBJEXT)
 fs_OBJECTS = $(am_fs_OBJECTS)
@@ -73,11 +68,17 @@ picdisk_OBJECTS = $(am_picdisk_OBJECTS)
 picdisk_LDADD = $(LDADD)
 picdisk_LINK = $(CCLD) $(picdisk_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_picos_base64_OBJECTS = picos_base64-picos_base64.$(OBJEXT) \
+	picos_base64-pasm_src.$(OBJEXT)
+picos_base64_OBJECTS = $(am_picos_base64_OBJECTS)
+picos_base64_LDADD = $(LDADD)
+picos_base64_LINK = $(CCLD) $(picos_base64_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am_picosc_OBJECTS = picosc-compiler.$(OBJEXT) \
 	picosc-picosc_lex.$(OBJEXT) picosc-picosc_yacc.$(OBJEXT) \
 	picosc-pasm_src.$(OBJEXT) picosc-linker.$(OBJEXT) \
 	picosc-utils.$(OBJEXT) picosc-arg.$(OBJEXT) \
-	picosc-picfs_error.$(OBJEXT) picosc-base64.$(OBJEXT)
+	picosc-picfs_error.$(OBJEXT) picosc-picos_base64.$(OBJEXT)
 picosc_OBJECTS = $(am_picosc_OBJECTS)
 picosc_DEPENDENCIES =
 picosc_LINK = $(CCLD) $(picosc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -93,10 +94,10 @@ LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 LEXCOMPILE = $(LEX) $(LFLAGS) $(AM_LFLAGS)
 YLWRAP = $(top_srcdir)/ylwrap
 YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS)
-SOURCES = $(base64_SOURCES) $(fs_SOURCES) $(pdasm_SOURCES) \
-	$(picdisk_SOURCES) $(picosc_SOURCES)
-DIST_SOURCES = $(base64_SOURCES) $(fs_SOURCES) $(pdasm_SOURCES) \
-	$(picdisk_SOURCES) $(picosc_SOURCES)
+SOURCES = $(fs_SOURCES) $(pdasm_SOURCES) $(picdisk_SOURCES) \
+	$(picos_base64_SOURCES) $(picosc_SOURCES)
+DIST_SOURCES = $(fs_SOURCES) $(pdasm_SOURCES) $(picdisk_SOURCES) \
+	$(picos_base64_SOURCES) $(picosc_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -208,7 +209,7 @@ top_srcdir = @top_srcdir@
 AM_YFLAGS = -d 
 BUILT_SOURCES = picosc_yacc.h
 picosc_CFLAGS = -DNOT_FOR_PIC -I../../
-picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c base64.c
+picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c
 picosc_LDADD = -lm
 
 #pasm_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../
@@ -222,8 +223,8 @@ fs_SOURCES = fs.c pasm_src.c ../utils.c
 fs_CFLAGS = -I../../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse 
 fs_LDADD = -lm  -lfuse -lrt -ldl 
 fs_LDFLAGS = -pthread
-base64_SOURCES = base64.c pasm_src.c
-base64_CFLAGS = -DBASE64_MAIN -I../../
+picos_base64_SOURCES = picos_base64.c pasm_src.c
+picos_base64_CFLAGS = -DBASE64_MAIN -I../../
 all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -317,9 +318,6 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-base64$(EXEEXT): $(base64_OBJECTS) $(base64_DEPENDENCIES) 
-	@rm -f base64$(EXEEXT)
-	$(base64_LINK) $(base64_OBJECTS) $(base64_LDADD) $(LIBS)
 fs$(EXEEXT): $(fs_OBJECTS) $(fs_DEPENDENCIES) 
 	@rm -f fs$(EXEEXT)
 	$(fs_LINK) $(fs_OBJECTS) $(fs_LDADD) $(LIBS)
@@ -329,6 +327,9 @@ pdasm$(EXEEXT): $(pdasm_OBJECTS) $(pdasm_DEPENDENCIES)
 picdisk$(EXEEXT): $(picdisk_OBJECTS) $(picdisk_DEPENDENCIES) 
 	@rm -f picdisk$(EXEEXT)
 	$(picdisk_LINK) $(picdisk_OBJECTS) $(picdisk_LDADD) $(LIBS)
+picos_base64$(EXEEXT): $(picos_base64_OBJECTS) $(picos_base64_DEPENDENCIES) 
+	@rm -f picos_base64$(EXEEXT)
+	$(picos_base64_LINK) $(picos_base64_OBJECTS) $(picos_base64_LDADD) $(LIBS)
 picosc_yacc.h: picosc_yacc.c
 	@if test ! -f $@; then \
 	  rm -f picosc_yacc.c; \
@@ -344,20 +345,20 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64-base64.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-fs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fs-utils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-pdasm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picdisk-picdisk.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picos_base64-pasm_src.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picos_base64-picos_base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-arg.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-compiler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-linker.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picfs_error.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picos_base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picosc_lex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picosc_yacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-utils.Po@am__quote@
@@ -375,34 +376,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
-
-base64-base64.o: base64.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -MT base64-base64.o -MD -MP -MF $(DEPDIR)/base64-base64.Tpo -c -o base64-base64.o `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/base64-base64.Tpo $(DEPDIR)/base64-base64.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='base64.c' object='base64-base64.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -c -o base64-base64.o `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
-
-base64-base64.obj: base64.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -MT base64-base64.obj -MD -MP -MF $(DEPDIR)/base64-base64.Tpo -c -o base64-base64.obj `if test -f 'base64.c'; then $(CYGPATH_W) 'base64.c'; else $(CYGPATH_W) '$(srcdir)/base64.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/base64-base64.Tpo $(DEPDIR)/base64-base64.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='base64.c' object='base64-base64.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -c -o base64-base64.obj `if test -f 'base64.c'; then $(CYGPATH_W) 'base64.c'; else $(CYGPATH_W) '$(srcdir)/base64.c'; fi`
-
-base64-pasm_src.o: pasm_src.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -MT base64-pasm_src.o -MD -MP -MF $(DEPDIR)/base64-pasm_src.Tpo -c -o base64-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/base64-pasm_src.Tpo $(DEPDIR)/base64-pasm_src.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='base64-pasm_src.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -c -o base64-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c
-
-base64-pasm_src.obj: pasm_src.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -MT base64-pasm_src.obj -MD -MP -MF $(DEPDIR)/base64-pasm_src.Tpo -c -o base64-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/base64-pasm_src.Tpo $(DEPDIR)/base64-pasm_src.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='base64-pasm_src.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(base64_CFLAGS) $(CFLAGS) -c -o base64-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
 
 fs-fs.o: fs.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(fs_CFLAGS) $(CFLAGS) -MT fs-fs.o -MD -MP -MF $(DEPDIR)/fs-fs.Tpo -c -o fs-fs.o `test -f 'fs.c' || echo '$(srcdir)/'`fs.c
@@ -487,6 +460,34 @@ picdisk-picdisk.obj: picdisk.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picdisk.c' object='picdisk-picdisk.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picdisk_CFLAGS) $(CFLAGS) -c -o picdisk-picdisk.obj `if test -f 'picdisk.c'; then $(CYGPATH_W) 'picdisk.c'; else $(CYGPATH_W) '$(srcdir)/picdisk.c'; fi`
+
+picos_base64-picos_base64.o: picos_base64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -MT picos_base64-picos_base64.o -MD -MP -MF $(DEPDIR)/picos_base64-picos_base64.Tpo -c -o picos_base64-picos_base64.o `test -f 'picos_base64.c' || echo '$(srcdir)/'`picos_base64.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picos_base64-picos_base64.Tpo $(DEPDIR)/picos_base64-picos_base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picos_base64.c' object='picos_base64-picos_base64.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -c -o picos_base64-picos_base64.o `test -f 'picos_base64.c' || echo '$(srcdir)/'`picos_base64.c
+
+picos_base64-picos_base64.obj: picos_base64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -MT picos_base64-picos_base64.obj -MD -MP -MF $(DEPDIR)/picos_base64-picos_base64.Tpo -c -o picos_base64-picos_base64.obj `if test -f 'picos_base64.c'; then $(CYGPATH_W) 'picos_base64.c'; else $(CYGPATH_W) '$(srcdir)/picos_base64.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picos_base64-picos_base64.Tpo $(DEPDIR)/picos_base64-picos_base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picos_base64.c' object='picos_base64-picos_base64.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -c -o picos_base64-picos_base64.obj `if test -f 'picos_base64.c'; then $(CYGPATH_W) 'picos_base64.c'; else $(CYGPATH_W) '$(srcdir)/picos_base64.c'; fi`
+
+picos_base64-pasm_src.o: pasm_src.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -MT picos_base64-pasm_src.o -MD -MP -MF $(DEPDIR)/picos_base64-pasm_src.Tpo -c -o picos_base64-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picos_base64-pasm_src.Tpo $(DEPDIR)/picos_base64-pasm_src.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='picos_base64-pasm_src.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -c -o picos_base64-pasm_src.o `test -f 'pasm_src.c' || echo '$(srcdir)/'`pasm_src.c
+
+picos_base64-pasm_src.obj: pasm_src.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -MT picos_base64-pasm_src.obj -MD -MP -MF $(DEPDIR)/picos_base64-pasm_src.Tpo -c -o picos_base64-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picos_base64-pasm_src.Tpo $(DEPDIR)/picos_base64-pasm_src.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pasm_src.c' object='picos_base64-pasm_src.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -c -o picos_base64-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
 
 picosc-compiler.o: compiler.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-compiler.o -MD -MP -MF $(DEPDIR)/picosc-compiler.Tpo -c -o picosc-compiler.o `test -f 'compiler.c' || echo '$(srcdir)/'`compiler.c
@@ -600,19 +601,19 @@ picosc-picfs_error.obj: ../picfs_error.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-picfs_error.obj `if test -f '../picfs_error.c'; then $(CYGPATH_W) '../picfs_error.c'; else $(CYGPATH_W) '$(srcdir)/../picfs_error.c'; fi`
 
-picosc-base64.o: base64.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-base64.o -MD -MP -MF $(DEPDIR)/picosc-base64.Tpo -c -o picosc-base64.o `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-base64.Tpo $(DEPDIR)/picosc-base64.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='base64.c' object='picosc-base64.o' libtool=no @AMDEPBACKSLASH@
+picosc-picos_base64.o: picos_base64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-picos_base64.o -MD -MP -MF $(DEPDIR)/picosc-picos_base64.Tpo -c -o picosc-picos_base64.o `test -f 'picos_base64.c' || echo '$(srcdir)/'`picos_base64.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-picos_base64.Tpo $(DEPDIR)/picosc-picos_base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picos_base64.c' object='picosc-picos_base64.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-base64.o `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-picos_base64.o `test -f 'picos_base64.c' || echo '$(srcdir)/'`picos_base64.c
 
-picosc-base64.obj: base64.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-base64.obj -MD -MP -MF $(DEPDIR)/picosc-base64.Tpo -c -o picosc-base64.obj `if test -f 'base64.c'; then $(CYGPATH_W) 'base64.c'; else $(CYGPATH_W) '$(srcdir)/base64.c'; fi`
-@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-base64.Tpo $(DEPDIR)/picosc-base64.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='base64.c' object='picosc-base64.obj' libtool=no @AMDEPBACKSLASH@
+picosc-picos_base64.obj: picos_base64.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-picos_base64.obj -MD -MP -MF $(DEPDIR)/picosc-picos_base64.Tpo -c -o picosc-picos_base64.obj `if test -f 'picos_base64.c'; then $(CYGPATH_W) 'picos_base64.c'; else $(CYGPATH_W) '$(srcdir)/picos_base64.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-picos_base64.Tpo $(DEPDIR)/picosc-picos_base64.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picos_base64.c' object='picosc-picos_base64.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-base64.obj `if test -f 'base64.c'; then $(CYGPATH_W) 'base64.c'; else $(CYGPATH_W) '$(srcdir)/base64.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-picos_base64.obj `if test -f 'picos_base64.c'; then $(CYGPATH_W) 'picos_base64.c'; else $(CYGPATH_W) '$(srcdir)/picos_base64.c'; fi`
 
 .l.c:
 	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)

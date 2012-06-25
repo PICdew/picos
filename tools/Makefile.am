@@ -1,9 +1,9 @@
-bin_PROGRAMS = picosc pdasm picdisk fs base64
+bin_PROGRAMS = picosc pdasm picdisk fs picos_base64
 
 AM_YFLAGS = -d 
 BUILT_SOURCES = picosc_yacc.h
 picosc_CFLAGS =  -DNOT_FOR_PIC -I../../
-picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c base64.c
+picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c
 picosc_LDADD = -lm
 	
 
@@ -23,5 +23,5 @@ fs_CFLAGS = -I../../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 
 fs_LDADD = -lm  -lfuse -lrt -ldl 
 fs_LDFLAGS = -pthread
 
-base64_SOURCES = base64.c pasm_src.c
-base64_CFLAGS = -DBASE64_MAIN -I../../
+picos_base64_SOURCES = picos_base64.c pasm_src.c
+picos_base64_CFLAGS = -DBASE64_MAIN -I../../
