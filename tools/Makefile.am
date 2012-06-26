@@ -1,4 +1,4 @@
-bin_PROGRAMS = picosc pdasm picdisk fs picos_base64
+bin_PROGRAMS = picosc pdasm picdisk mount.picfs picos_base64
 
 AM_YFLAGS = -d 
 BUILT_SOURCES = picosc_yacc.h
@@ -18,10 +18,10 @@ picdisk_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../../
 picdisk_SOURCES = picdisk.c
 
 
-fs_SOURCES = fs.c pasm_src.c ../utils.c
-fs_CFLAGS = -I../../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse 
-fs_LDADD = -lm  -lfuse -lrt -ldl 
-fs_LDFLAGS = -pthread
+mount_picfs_SOURCES = mount_picfs.c pasm_src.c ../utils.c
+mount_picfs_CFLAGS = -I../../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse 
+mount_picfs_LDADD = -lm  -lfuse -lrt -ldl 
+mount_picfs_LDFLAGS = -pthread
 
 picos_base64_SOURCES = picos_base64.c pasm_src.c
 picos_base64_CFLAGS = -DBASE64_MAIN -I../../

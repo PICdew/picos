@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-#include "picos/tools/fs.h"
+#include "picos/tools/mount_picfs.h"
 #include "picos/utils.h"
 
 int FS_BUFFER_SIZE = 128;

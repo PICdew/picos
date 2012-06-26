@@ -32,7 +32,7 @@
 #include <sys/xattr.h>
 #include <stdbool.h>
 
-#include "picos/tools/fs.h"
+#include "picos/tools/mount_picfs.h"
 #include "picos/tools/pasm.h"
 
 struct fs_fuse_state {

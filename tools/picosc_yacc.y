@@ -295,7 +295,7 @@ void print_help()
   printf("--help, -h :\t\t Displays this dialog.\n");
   printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");
   printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
-  printf("--buffer_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)");
+  printf("--buffer_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)\n");
   printf("--compile, -c :\t Compile or assemble the source, but do not produce executable code.\n"); 
   printf("--eeprom, -e <file> :\t Outputs \"__EEPROM_DATA(...)\" code for use\n");
   printf("                     \t with the Hi Tech C Compiler.\n");

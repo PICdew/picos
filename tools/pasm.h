@@ -13,7 +13,7 @@
 #include "picos/piclang.h"
 #include "picos/arg.h"
 #include "picos/utils.h"
-#include "picos/tools/fs.h"
+#include "picos/tools/mount_picfs.h"
 
 #include <stdio.h>
 #include <limits.h>
