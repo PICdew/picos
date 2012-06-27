@@ -40,6 +40,7 @@ struct fs_fuse_state {
   int verbose_log;
   char *rootdir;
   bool load_all_sb;
+  char format_name[FILENAME_MAX];
   FS_Unit *super_block;
   FS_Unit num_blocks,block_size;
 };
@@ -1488,42 +1489,57 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
   FILE *dev = NULL;
   size_t len = 0;
   int fd;
+  int prot;
   if(access(filename,R_OK) != 0)
       return NULL;
-  
-  dev = fopen(filename,"r+");
+  prot = PROT_READ; 
+
+  if(access(filename,W_OK) == 0)
+  {    
+      prot |= PROT_WRITE;
+      dev = fopen(filename,"r+");
+  }
+  else
+      dev = fopen(filename,"r");
+
   if(dev == NULL)
+  {
+    fprintf(stderr,"Could not open file \"%s\"\n",filename);  
     return NULL;
+  }
 
   fseek(dev,0,SEEK_END);
   len = ftell(dev);
   rewind(dev);
   
-#if 0// Previous method using file read
-  super_block = (FS_Unit*)malloc(len);
-  if(fread(super_block,1,len,dev) != len)
-    {
-      error_log("Could not read all of %s\n",filename);
-      free(super_block);
-      return NULL;
-    }
-
-  fclose(dev);
-#else
-  // new way using mmap
   fd = fileno(dev);
   if(fd == -1)
 	{
 			fprintf(stderr,"Could not get file descriptor\n");
 			return NULL;
 	}
-  super_block = (FS_Block*)mmap(NULL,len,PROT_READ|PROT_WRITE,MAP_SHARED,fd,0);
-  if(super_block == MAP_FAILED)
+
+  if(prot = PROT_READ)
   {
-		  fprintf(stderr,"Could not create memory map\nReason: %s\n",strerror(errno));
-		  return NULL;
+      // read only image
+      super_block = (FS_Unit*)malloc(len);
+      if(read(fd,super_block,len) != len)
+      {
+           error_log("Could not read all of %s\n",filename);
+           free(super_block);
+           return NULL;
+      }
+      close(fd);
   }
-#endif
+  else
+  {
+      super_block = (FS_Block*)mmap(NULL,len,prot,MAP_SHARED,fd,0);
+      if(super_block == MAP_FAILED)
+      {
+                  fprintf(stderr,"Could not create memory map\nReason: %s\n",strerror(errno));
+		  return NULL;
+      }
+  }
   
   the_state->block_size = super_block[FS_SuperBlock_block_size];
   the_state->num_blocks = super_block[FS_SuperBlock_num_blocks];
@@ -1533,8 +1549,6 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
       error_log("File system %s has an incomplete block.\n\tSize: %d\n\tBlock size: %d\n\tNumber of Blocks: %d\n",filename,len,the_state->block_size,the_state->num_blocks);
       return NULL;
     }
-
-
 
   return super_block;
 }
@@ -1606,27 +1620,28 @@ struct fuse_operations fs_ops = {
 };
 
 static const struct option long_opts[] = {
-  {"block_size",1,NULL,'b'},
-  {"log",1,NULL,'l'},
   {"memory",0,NULL,'a'},
+  {"block_size",1,NULL,'b'},
+  {"format",1,NULL,'f'},
+  {"log",1,NULL,'l'},
   {"mount",1,NULL,'m'},
   {"num_blocks",1,NULL,'n'},
   {"verbose",0,NULL,'v'},
   {"help",0,NULL,'h'},
   {0,0,0,0}
 };
-static const char short_opts[] = "ab:hl:m:n:v";
+static const char short_opts[] = "ab:f:hl:m:n:v";
 
 static void print_help()
 {
   const struct option *opts = long_opts;
-  printf("fs -- PIC file system mount tool, using libfuse.\n");
+  printf("mount.picfs -- PIC file system mount tool, using libfuse.\n");
   printf("Copyright 2011 David Coss, PhD\n");
   printf("-------------------------------\n");
   printf("Mounts a file system on a given mount point.\n");
   printf("If no image file is specified, a fresh filesystem is used.\n");
   printf("\n");
-  printf("Usage: ./fs [options] <mount point>\n");
+  printf("Usage: mount.picfs [options] <mount point>\n");
   printf("Options:\n");
   
   while(opts->name != NULL)
@@ -1647,8 +1662,11 @@ static void print_help()
 	  printf("Load the entire contents of the image into memory, instead of using mapped memory.\n");
 	  break;
 	case 'b':
-	  printf("Sepcify the size of a block, in bytes. Default: 16 bytes");
+	  printf("Specify the size of a block, in bytes. Default: 16 bytes");
 	  break;
+        case 'f':
+          printf("Formats or creates a disk image. All contents will be lost.\n");
+          break;
 	case 'l':
 	  printf("Specify a log file.");
 	  break;
@@ -1706,10 +1724,13 @@ static void FS_parse_args(struct fs_fuse_state *the_state, int argc, char **argv
 	      exit(errno);
 	    }
 	  break;
+        case 'f':
+          strncpy(the_state->format_name,optarg,FILENAME_MAX-1);
+          break;
 	case 'h':
 	  print_help();
 	  exit(0);
-	case 'm':
+        case 'm':
 	  the_state->super_block = FS_mount(optarg,the_state);
 	  if(the_state->super_block == NULL)
 	    {
@@ -1758,6 +1779,7 @@ void FS_default_state(struct fs_fuse_state *the_state)
   the_state->num_blocks = 16;
   the_state->block_size = 16;
   the_state->load_all_sb = false;
+  memset(the_state->format_name,0,sizeof(char)*FILENAME_MAX);
 }
 
 void FS_load_rc(struct fs_fuse_state *the_state, char *keyword, char *arg)
@@ -1898,6 +1920,25 @@ int main(int argc, char **argv)
   FS_check_load_rc(the_state);
 
   FS_parse_args(the_state,argc,argv);
+
+  // Are we simply formatting?
+  if(the_state->format_name[0])
+  {
+      FS_Block *super_block = NULL;
+      FILE *file = NULL;
+      file = fopen(the_state->format_name,"w");
+      if(file == NULL)
+          reason_exit("Could not open image file \"%s\"\n",the_state->format_name);
+      super_block = FS_format(the_state);
+      if(super_block == NULL)
+          reason_exit("Could not format image\n");
+
+      fwrite(super_block,the_state->num_blocks*the_state->block_size*sizeof(FS_Block),1,file);
+      fclose(file);
+      exit(0);
+  }
+
+  // Should the mapped memory file be used?
   if(the_state->load_all_sb && the_state->super_block != NULL)
   {
 		  size_t sb_byte_size = the_state->num_blocks*the_state->block_size*sizeof(FS_Unit);

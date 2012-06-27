@@ -1,1 +1,6 @@
+0.6: Changed mount.picfs to mount read only image files by reading the file rather than using it
+        as a memory mapped file.
+
+     Added a format option to mount.picfs
+
 0.5: Changed name of fs to mount.picfs

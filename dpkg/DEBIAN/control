@@ -1,6 +1,6 @@
 Package: picos
 Architecture: all
-Version: 1.0-1
+Version: 1.0-2
 Section: embedded
 Depends: libfuse2 (>=2.8.4), libc6
 Maintainer: David Coss, PhD <david@davecoss.com>
