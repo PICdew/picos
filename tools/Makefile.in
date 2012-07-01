@@ -217,7 +217,7 @@ picosc_LDADD = -lm
 #pasm_LDADD = -lm
 pdasm_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../../
 pdasm_SOURCES = pdasm.c pasm_src.c
-picdisk_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../../
+picdisk_CFLAGS = -Wunused-result -DNOT_FOR_PIC -DPICDISK_MAIN -I../../
 picdisk_SOURCES = picdisk.c
 mount_picfs_SOURCES = mount_picfs.c pasm_src.c ../utils.c
 mount_picfs_CFLAGS = -I../../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse 

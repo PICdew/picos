@@ -18,6 +18,10 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#ifdef USE_PYTHON
+#include <Python.h>
+#endif
+
 #include "picos/tools/mount_picfs.h"
 #include "picos/utils.h"
 
@@ -230,6 +234,7 @@ void print_help()
   printf("--help, -h :\t\t Displays this dialog.\n");
 }
 
+#ifdef PICDISK_MAIN
 int main(int argc, char **argv)
 {
   char opt;
@@ -276,3 +281,33 @@ int main(int argc, char **argv)
     return scan_disk(image_file);
 
 }
+#endif // PICDISK_MAIN
+
+#if USE_PYTHON
+static PyObject *
+picdisk_test(PyObject *self, PyObject *args)
+{
+    printf("Hello, World!");
+    return Py_None;
+}
+
+static PyMethodDef picdisk_methods[] = {
+    {"test",  picdisk_test, METH_VARARGS,"Boring."},
+    {NULL, NULL, 0, NULL}        /* Sentinel */
+};
+
+static struct PyModuleDef picdiskmodule = {
+   PyModuleDef_HEAD_INIT,
+   "picdisk",   /* name of module */
+   "welcome to picdisk", /* module documentation, may be NULL */
+   -1,       /* size of per-interpreter state of the module,
+                or -1 if the module keeps state in global variables. */
+   picdisk_methods
+};
+
+PyMODINIT_FUNC
+PyInit_picdisk(void)
+{
+    return PyModule_Create(&picdiskmodule);
+}
+#endif
