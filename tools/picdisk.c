@@ -285,29 +285,42 @@ int main(int argc, char **argv)
 
 #if USE_PYTHON
 static PyObject *
-picdisk_test(PyObject *self, PyObject *args)
+picos_picdisk(PyObject *self, PyObject *args)
 {
-    printf("Hello, World!");
+    char *filename;
+    FILE *image_file;
+    if(!PyArg_Parse(args,"(s)",&filename))
+        return PyErr_Format(PyExc_TypeError,"Invalid Argument. Need 1 filename.");
+    if(filename == NULL)
+        return PyErr_SetFromErrno(PyExc_IOError);
+
+    image_file = fopen(filename,"r");
+    if(image_file == NULL)
+        return NULL;
+
+    scan_disk(image_file);
+    fclose(image_file);
+
     return Py_None;
 }
 
-static PyMethodDef picdisk_methods[] = {
-    {"test",  picdisk_test, METH_VARARGS,"Boring."},
+static PyMethodDef picos_methods[] = {
+    {"picdisk",  picos_picdisk, METH_VARARGS,"Writes information about a disk image to stdout."},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
-static struct PyModuleDef picdiskmodule = {
+static struct PyModuleDef picosmodule = {
    PyModuleDef_HEAD_INIT,
-   "picdisk",   /* name of module */
-   "welcome to picdisk", /* module documentation, may be NULL */
+   "picos",   /* name of module */
+   "Utility functions for PICOS", /* module documentation, may be NULL */
    -1,       /* size of per-interpreter state of the module,
                 or -1 if the module keeps state in global variables. */
-   picdisk_methods
+   picos_methods
 };
 
 PyMODINIT_FUNC
-PyInit_picdisk(void)
+PyInit_picos(void)
 {
-    return PyModule_Create(&picdiskmodule);
+    return PyModule_Create(&picosmodule);
 }
 #endif
