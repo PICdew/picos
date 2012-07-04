@@ -2,13 +2,15 @@
 
 from distutils.core import setup, Extension
  
-module1 = Extension('picos', sources = ['picdisk.c','picos.py.c'], include_dirs=['../..'], define_macros=[("USE_PYTHON","1")])
+module1 = Extension('core', sources = ['picdisk.c','picos.py.c'], include_dirs=['../..'], define_macros=[("USE_PYTHON","1")])
  
-setup (name = 'picos',
+setup (name ='picos',
        version = '0.6',
        url = 'http://wiki.davecoss.com/Picos',
        license = 'GPL v3',
        description = 'Utility functions for working with PICOS',
        author = 'David Coss, Ph.D.',
        author_email='david@davecoss.com',
+       py_modules = ['picos.utils'],
+       ext_package = 'picos',
        ext_modules = [module1])
