@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "picos/utils.h"
+
 static PyObject * picos_piclang(PyObject *self, PyObject *args)
 {
   char *program_name, *data;
@@ -55,9 +57,16 @@ picos_picdisk(PyObject *self, PyObject *args)
     return Py_None;
 }
 
+static PyObject *
+picos_sizeof_size_t(PyObject *self)
+{
+  return PyLong_FromLong((long)sizeof(picos_size_t));
+}
+
 static PyMethodDef picos_methods[] = {
     {"picdisk",  picos_picdisk, METH_VARARGS,"Writes information about a disk image to stdout."},
     {"piclang", picos_piclang, METH_VARARGS,"Load piclang program"},
+    {"size_t", picos_sizeof_size_t, METH_NOARGS, "Word size in piclang"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
