@@ -1,9 +1,14 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <Python.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "picos/utils.h"
+#include "picos/piclang.h"
 
 static PyObject * picos_piclang(PyObject *self, PyObject *args)
 {
@@ -57,16 +62,9 @@ picos_picdisk(PyObject *self, PyObject *args)
     return Py_None;
 }
 
-static PyObject *
-picos_sizeof_size_t(PyObject *self)
-{
-  return PyLong_FromLong((long)sizeof(picos_size_t));
-}
-
 static PyMethodDef picos_methods[] = {
     {"picdisk",  picos_picdisk, METH_VARARGS,"Writes information about a disk image to stdout."},
     {"piclang", picos_piclang, METH_VARARGS,"Load piclang program"},
-    {"size_t", picos_sizeof_size_t, METH_NOARGS, "Word size in piclang"},
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
@@ -82,7 +80,14 @@ static struct PyModuleDef picosmodule = {
 PyMODINIT_FUNC
 PyInit_core(void)
 {
-    return PyModule_Create(&picosmodule);
+  PyObject* module = PyModule_Create(&picosmodule);
+  if(module == NULL)
+    return module;
+  PyModule_AddIntConstant(module,"stack_size", PICLANG_STACK_SIZE);
+  PyModule_AddIntConstant(module,"call_stack_size",PICLANG_CALL_STACK_SIZE);
+  PyModule_AddIntConstant(module,"pcb_size",(long)PCB_SIZE);
+  PyModule_AddIntConstant(module,"word_size",(long)sizeof(picos_size_t));
+  return module;
 }
 
 
