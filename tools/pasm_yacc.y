@@ -23,12 +23,10 @@
 #include <errno.h>
 #include <unistd.h>
 
-struct compiled_code *the_code;
-struct compiled_code *the_code_end;
-struct compiled_code *the_strings;
-struct compiled_code *the_strings_end;
-struct subroutine_map *subroutines;
-
+extern picos_size_t label_counter;
+int break_to_label, continue_to_label, switch_end_label;
+struct subroutine_map *global_subroutines = NULL, *g_curr_subroutine = NULL, *string_handler = NULL;
+struct subroutine_map *global_subroutines_GLOBALS;
 extern struct assembly_map opcodes[];
 
 char **string_list;
@@ -162,7 +160,7 @@ void load_rc(char *keyword, char *arg)
 	  if(sscanf(arg,"%d",&iarg) != 1)
 	    fprintf(stderr,"Invalid block size \"%s\"\n",arg);
 	  else
-	    FS_BUFFER_SIZE = (char)iarg;
+	    FS_BUFFER_SIZE = (picos_size_t)iarg;
 	}
       else
 	fprintf(stderr,"No argument for BLOCK_SIZE\n");
@@ -230,20 +228,24 @@ void check_load_rc()
   fclose(rc_file);
 }
 
-static const char short_options[] = "a:b:e:hl:o:v";
-enum OPTION_INDICES{OUTPUT_HEX};
+static const char short_options[] = "a:b:ce:hl:n:o:v";
+enum OPTION_INDICES{OUTPUT_HEX,OUTPUT_LIST,OUTPUT_LINKAGE};
 static struct option long_options[] =
              {
 	       {"help",0,NULL,'h'},
                {"hex", 1,NULL, OUTPUT_HEX},
 	       {"asm", 1,NULL, 'a'},
-	       {"eeprom",1,NULL, 'e'},
 	       {"binary",1,NULL,'o'},
-	       {"list",1,NULL,'l'},
+	       {"compile",0,NULL,'c'},
+	       {"eeprom",1,NULL, 'e'},
+	       {"lib",1,NULL,'l'},
+	       {"linkage",1,NULL,OUTPUT_LINKAGE},
+	       {"list",1,NULL,OUTPUT_LIST},
 	       {"buffer_size",1,NULL,'b'},
 	       {"version",0,NULL,'v'},
                {0, 0, 0, 0}
              };
+
 
 void print_help()
 {
@@ -258,29 +260,30 @@ void print_help()
   printf("Options:\n");
   printf("--help, -h :\t\t Displays this dialog.\n");
   printf("--asm,-a <file> :\t Outputs the assembly to the specified file.\n");
-  printf("--hex <file>    :\t Outputs Intel Hex to the specified file.\n");
+  printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
+  printf("--buffer_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)\n");
+  printf("--compile, -c :\t Compile or assemble the source, but do not produce executable code.\n"); 
   printf("--eeprom, -e <file> :\t Outputs \"__EEPROM_DATA(...)\" code for use\n");
   printf("                     \t with the Hi Tech C Compiler.\n");
-  printf("--binary, -o <file> :\t Outputs a binary file containing the compiled program.\n");
-  printf("--list, -l <file> :\t Outputs a list of program addresses (PC values) for each assembly entry.\n");
-  printf("--block_size, -b <INT> :\t Sets the size of block of the target PICFS (Default: 128)");
+  printf("--hex <file>    :\t Outputs Intel Hex to the specified file.\n");
+  printf("--lib, -l <file> :\t Link agains pre-compiled library (NOT YET IMPLEMENTED)\n");
+  printf("--linkage <file> :\t Outputs a list of linkage for jumps and calls.\n");
+  printf("--list <file> :\t Outputs a list of program addresses (PC values) for each assembly entry.\n");
+
 }
 
 int main(int argc, char **argv) 
 {
   char hex_buffer[45];
   FILE *hex_file = NULL, *eeprom_file = NULL, *binary_file = NULL;
+  FILE *lnk_file = NULL;
   char opt;
   int opt_index;
+  int compile_only = false;
   picos_size_t piclang_bitmap = 0;
-  struct compiled_code *curr_code = NULL;
+  struct compiled_code *curr_code = NULL, *finished_code = NULL;
 
   assembly_file = NULL;
-  the_code_end = the_code = NULL;
-  the_strings = the_strings = NULL;
-  string_list = NULL;num_strings = 0;
-  variable_list = NULL;
-  subroutines = NULL;
   break_to_label = -1;
   continue_to_label = -1;
   switch_end_label = -1;
@@ -308,15 +311,50 @@ int main(int argc, char **argv)
 	      exit(-1);
 	    }
 	  break;
+	case 'c':
+	  compile_only = true;
+	  break;
 	case 'a':
 	  assembly_file = fopen(optarg,"w");
 	  if(assembly_file == NULL)
 	    assembly_file = stdout;
 	  break;
 	case 'l':
+	  {
+	    FILE *libfile = fopen(optarg,"rb");
+	    struct piclib_object* libobj = NULL;
+	    
+	    if(libfile == NULL)
+	      {
+		fprintf(stderr,"Could not open library file \"%s\"\n",optarg);
+		if(errno != 0)
+		  {
+		    fprintf(stderr,"Reason: %s\n",strerror(errno));
+		    exit(errno);
+		  }
+		exit(1);
+	      }
+	    libobj = piclib_load(libfile);
+	    if(libobj == NULL)
+	      {
+		fprintf(stderr, "Error loading library.\n");
+		exit(1);
+	      }
+	    if(piclib_link(libobj) != 0)
+	    	reason_exit("Could not link library file \"%s\"\n",optarg);
+
+	    piclib_free(libobj);
+	    break;
+	  }
+	case OUTPUT_LIST:
 	  lst_file = fopen(optarg,"w");
 	  if(lst_file == NULL)
 	    lst_file = stdout;
+	  break;
+	case OUTPUT_LINKAGE:
+	  lnk_file = fopen(optarg,"w");
+	  if(lnk_file == NULL)
+	    lnk_file = stdout;
 	  break;
 	case 'o':
 	  binary_file = fopen(optarg,"w");
@@ -348,111 +386,44 @@ int main(int argc, char **argv)
     {
       FILE *input = fopen(argv[optind++],"r");
       extern FILE *yyin;
-      if(input != NULL)
-	yyin = input;
+      if(input == NULL)
+        reason_exit("Could not open file \"%s\" for reading.\n",argv[optind-1]);        
+      yyin = input;
     }
   else
     printf("Welcome to the piclang assembler.\n");
+
+  global_subroutines_GLOBALS = get_subroutine("GLOBALS");// this stores global stuff
+  global_subroutines = global_subroutines_GLOBALS;
+  g_curr_subroutine = global_subroutines;
+
+  // If string_handler is null, try to malloc it. If it's still null, there's a problem.
+  if(string_handler == NULL)
+      string_handler = (struct subroutine_map *)malloc(sizeof(struct subroutine_map));
+  if(string_handler == NULL)
+	reason_exit("Could not allocate memory for string_handler\n");
   
   yyparse();
 
-#if 0//FIX!
   if(hex_file == stdout)
     printf("Here comes your code.\nThank you come again.\nCODE:\n");
-  pasm_build(eeprom_file,hex_file,global_subroutines,&piclang_bitmap,count_variables());
-
-  if(binary_file != NULL)
+  
+  if(compile_only)
     {
-      curr_code = the_code;
-      while(curr_code != NULL)
-	{
-	  if(curr_code->type != typeStr && curr_code->type != typePad)
-	    write_val_for_pic(binary_file,curr_code->val);
-	  else
-	    fprintf(binary_file,"%c",(picos_size_t)curr_code->val);
-	  curr_code = curr_code->next;
-	}
+      pasm_compile(eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
+      write_piclib_obj(binary_file,global_subroutines);
+    }
+  else
+    {
+      finished_code = pasm_build(binary_file,eeprom_file,hex_file,global_subroutines,&piclang_bitmap);
     }
 
-  if(lst_file != NULL)
-    {
-      struct assembly_map* curr;
-      struct compiled_code *first_string = NULL;
-      int code_counter = 0;
-      curr_code = the_code;
-      for(;curr_code != NULL;curr_code = curr_code->next)
-	{
-	  if(curr_code->type == typePCB)
-	    continue;
-	  if(curr_code->type == typeStr)
-	    {
-	      continue;
-	    }
-	  curr = opcode2assembly(curr_code->val);
-	  fprintf(lst_file,"(%d)\t",code_counter++);
-	  switch(curr->opcode)
-	    {
-	    case PICLANG_NUM_COMMANDS:
-	      if(curr_code->type == typeLabel)
-		{
-		  fprintf(lst_file,"L%03hu",curr_code->label);
-		  break;
-		}
-	      else if(curr_code->val == PICLANG_RETURN)
-		{
-		  fprintf(lst_file,"return");
-		  break;
-		}
-	      else if(curr_code->val == PICLANG_CALL)
-		{
-		  curr_code = curr_code->next;
-		  while(curr_code->next != NULL && curr_code->type == typeStr)
-		    curr_code = curr_code->next;
-		  fprintf(lst_file,"call %hu",curr_code->val);
-		  code_counter++;
-		  break;
-		}
-	    default:
-	      fprintf(lst_file,"%s (0x%x) ",curr->keyword,curr_code->val);
-	      break;
-	    }
-	  if(curr->has_arg)
-	    {
-	      curr_code = curr_code->next;
-	      code_counter++;
-	      fprintf(lst_file," %d",curr_code->val);
-	      if(curr->has_arg > 1)
-		{
-		  int arg_counter = 1;
-		  for(;arg_counter < curr->has_arg;arg_counter++)
-		    {
-		      code_counter++;
-		      curr_code = curr_code->next;
-		      fprintf(lst_file,", %d",curr_code->val);
-		    }
-		}
-	    }
-	  fprintf(lst_file,"\n");
-	}
-      // print strings
-      first_string = the_strings;
-      if(first_string != NULL)
-	fprintf(lst_file,"Strings:\n\"");
-      for(;first_string != NULL;first_string = first_string->next)
-	{
-	  if(first_string->val == 0)
-	    {
-	      fprintf(lst_file,"\"\n");
-	      if(first_string->next != NULL)
-		fprintf(lst_file,"\"");
-	    }
-	  else if(first_string->val == '"')
-	    fprintf(lst_file,"\"%c",first_string->val);
-	  else
-	    fprintf(lst_file,"%c",first_string->val);
-	}
-    }
-#endif// FIX
-  FreeCode(the_code);
+  create_lst_file(lst_file, finished_code);
+  
+  create_lnk_file(lnk_file, finished_code); 
+
+  all_free_subroutines(global_subroutines);
+  free_all_code(finished_code);
+
   return 0;
 }

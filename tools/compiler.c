@@ -238,12 +238,15 @@ int ex(nodeType *p) {
       }
     case PICLANG_JZ: case PICLANG_JMP:
       {
-	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
+	struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
 	if(p->opr.oper == PICLANG_JZ)
 	  write_assembly(assembly_file,"\tjz ");
 	else
 	  write_assembly(assembly_file,"\tjmp ");
 	write_assembly(assembly_file,"%s;%d\n",subroutine->name,subroutine->address);
+	insert_code(p->opr.oper);
+	inserted_word = insert_label(PASM_SUBROUTINE,subroutine->address);
+	inserted_word->target = subroutine;
 	break;
       }
     case PICLANG_PRINT:     
