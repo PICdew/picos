@@ -25,7 +25,7 @@
 
 extern picos_size_t label_counter;
 int break_to_label, continue_to_label, switch_end_label;
-struct subroutine_map *global_subroutines = NULL, *g_curr_subroutine = NULL, *string_handler;
+struct subroutine_map *global_subroutines = NULL, *g_curr_subroutine = NULL, *string_handler = NULL;
 struct subroutine_map *global_subroutines_GLOBALS;
 extern struct assembly_map opcodes[];
 
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
 	    FILE *libfile = fopen(optarg,"rb");
 	    struct piclib_object* libobj = NULL;
 	    
-		if(libfile == NULL)
+	    if(libfile == NULL)
 	      {
 		fprintf(stderr,"Could not open library file \"%s\"\n",optarg);
 		if(errno != 0)

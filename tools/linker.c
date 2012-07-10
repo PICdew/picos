@@ -129,9 +129,9 @@ void resolve_labels(struct compiled_code* code, int address_offset, int variable
 		  return;
 		}
 	      if(code->next->val == PASM_SUBROUTINE)
-		      code->next->val = (picos_size_t)label_addr;
+		code->next->val = (picos_size_t)label_addr;
 	      else
-		      code->next->val = (picos_size_t)label_addr + address_offset;
+		code->next->val = (picos_size_t)label_addr + address_offset;
 	      code = code->next;
 	      continue;
 	    }
@@ -141,10 +141,14 @@ void resolve_labels(struct compiled_code* code, int address_offset, int variable
 	    {
 	      int label_addr;
 	      if(code->next->next->val == PASM_SUBROUTINE)
-		label_addr = get_subroutine_addr(code_head, code->next->next);
+		{
+		  code->next->next->val = (picos_size_t)get_subroutine_addr(code_head, code->next->next);
+		}
 	      else
-		label_addr = lookup_label(code_head, code->next->next->label);
-	      code->next->next->val = (picos_size_t)label_addr + address_offset;
+		{
+		  label_addr = lookup_label(code_head, code->next->next->label);
+		  code->next->next->val = (picos_size_t)label_addr + address_offset;
+		}
 	      code = code->next->next;
 	      continue;
 	    }

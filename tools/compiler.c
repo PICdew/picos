@@ -238,12 +238,15 @@ int ex(nodeType *p) {
       }
     case PICLANG_JZ: case PICLANG_JMP:
       {
-	const struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
+	struct subroutine_map *subroutine = get_subroutine(p->opr.op[0]->str.string);
 	if(p->opr.oper == PICLANG_JZ)
 	  write_assembly(assembly_file,"\tjz ");
 	else
 	  write_assembly(assembly_file,"\tjmp ");
 	write_assembly(assembly_file,"%s;%d\n",subroutine->name,subroutine->address);
+	insert_code(p->opr.oper);
+	inserted_word = insert_label(PASM_SUBROUTINE,subroutine->address);
+	inserted_word->target = subroutine;
 	break;
       }
     case PICLANG_PRINT:     
@@ -543,13 +546,12 @@ int ex(nodeType *p) {
 
 struct subroutine_map *insert_subroutine(const char *name)
 {
-  
+  struct subroutine_map* tmp;
+
   if(global_subroutines == NULL)
-    global_subroutines = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
+    tmp = global_subroutines = (struct subroutine_map*)calloc(1,sizeof(struct subroutine_map));
   else
     {
-      struct subroutine_map* tmp;
-
       // Search to see if this subroutine exists
       tmp = global_subroutines;
       while(tmp != NULL)
@@ -566,17 +568,19 @@ struct subroutine_map *insert_subroutine(const char *name)
 	}
       
       // Not found. Create it.
-      tmp = (struct subroutine_map*)malloc(sizeof(struct subroutine_map));
-      tmp->next = global_subroutines;
-      global_subroutines = tmp;
+      tmp = global_subroutines;
+      while(tmp->next != NULL)
+	tmp = tmp->next;
+      tmp->next = (struct subroutine_map*)calloc(1,sizeof(struct subroutine_map));
+      tmp = tmp->next;
     }
-  strcpy(global_subroutines->name,name);
-  global_subroutines->address = global_subroutines->size = -1;
-  global_subroutines->code = global_subroutines->strings = NULL;
-  global_subroutines->code_end = global_subroutines->strings_end = NULL;
-  global_subroutines->variables = NULL; 
-  global_subroutines->variable_address = -1;
-  return global_subroutines;
+  strcpy(tmp->name,name);
+  tmp->address = tmp->size = -1;
+  tmp->code = tmp->strings = NULL;
+  tmp->code_end = tmp->strings_end = NULL;
+  tmp->variables = NULL; 
+  tmp->variable_address = -1;
+  return tmp;
 }
 
 
