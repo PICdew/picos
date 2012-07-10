@@ -1514,12 +1514,12 @@ static FS_Block* FS_mount(const char *filename, struct fs_fuse_state *the_state)
   
   fd = fileno(dev);
   if(fd == -1)
-	{
-			fprintf(stderr,"Could not get file descriptor\n");
-			return NULL;
-	}
+    {
+      fprintf(stderr,"Could not get file descriptor\n");
+      return NULL;
+    }
 
-  if(prot = PROT_READ)
+  if(prot == PROT_READ)
   {
       // read only image
       super_block = (FS_Unit*)malloc(len);
