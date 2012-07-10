@@ -13,7 +13,7 @@
 #include "config.h"
 #endif
 
-#include "picos/tools/fs.h"
+#include "picos/tools/mount_picfs.h"
 #include "picos/utils.h"
 
 #include "picos/arg.h"
