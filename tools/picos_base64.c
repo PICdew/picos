@@ -17,7 +17,6 @@
 #define CRC24_INIT 0xB704CEL
 #define CRC24_POLY 0x1864CFBL
 
-typedef long crc24;
 crc24 base64_crc_octets(struct base64_stream *encoder,unsigned char *octets, size_t len)
 {
     int i;
