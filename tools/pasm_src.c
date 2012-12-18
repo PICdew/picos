@@ -14,6 +14,7 @@
 #include "picos/version.h"
 
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
@@ -369,8 +370,6 @@ void full_assert(int condition,const char *format,...)
     va_start(args,format);
     reason_exit_vargs(args,format);
 }
-
-
 
 
 

@@ -61,17 +61,20 @@ mount_picfs_LINK = $(CCLD) $(mount_picfs_CFLAGS) $(CFLAGS) \
 am_pasm_OBJECTS = pasm-compiler.$(OBJEXT) pasm-pasm_lex.$(OBJEXT) \
 	pasm-pasm_yacc.$(OBJEXT) pasm-pasm_src.$(OBJEXT) \
 	pasm-linker.$(OBJEXT) pasm-utils.$(OBJEXT) pasm-arg.$(OBJEXT) \
-	pasm-picfs_error.$(OBJEXT) pasm-picos_base64.$(OBJEXT)
+	pasm-picfs_error.$(OBJEXT) pasm-picos_base64.$(OBJEXT) \
+	pasm-load_config.$(OBJEXT)
 pasm_OBJECTS = $(am_pasm_OBJECTS)
 pasm_DEPENDENCIES =
 pasm_LINK = $(CCLD) $(pasm_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-am_pdasm_OBJECTS = pdasm-pdasm.$(OBJEXT) pdasm-pasm_src.$(OBJEXT)
+am_pdasm_OBJECTS = pdasm-pdasm.$(OBJEXT) pdasm-pasm_src.$(OBJEXT) \
+	pdasm-load_config.$(OBJEXT)
 pdasm_OBJECTS = $(am_pdasm_OBJECTS)
 pdasm_LDADD = $(LDADD)
 pdasm_LINK = $(CCLD) $(pdasm_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_picdisk_OBJECTS = picdisk-picdisk.$(OBJEXT)
+am_picdisk_OBJECTS = picdisk-picdisk.$(OBJEXT) \
+	picdisk-load_config.$(OBJEXT)
 picdisk_OBJECTS = $(am_picdisk_OBJECTS)
 picdisk_LDADD = $(LDADD)
 picdisk_LINK = $(CCLD) $(picdisk_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -86,7 +89,8 @@ am_picosc_OBJECTS = picosc-compiler.$(OBJEXT) \
 	picosc-picosc_lex.$(OBJEXT) picosc-picosc_yacc.$(OBJEXT) \
 	picosc-pasm_src.$(OBJEXT) picosc-linker.$(OBJEXT) \
 	picosc-utils.$(OBJEXT) picosc-arg.$(OBJEXT) \
-	picosc-picfs_error.$(OBJEXT) picosc-picos_base64.$(OBJEXT)
+	picosc-picfs_error.$(OBJEXT) picosc-picos_base64.$(OBJEXT) \
+	picosc-load_config.$(OBJEXT)
 picosc_OBJECTS = $(am_picosc_OBJECTS)
 picosc_DEPENDENCIES =
 picosc_LINK = $(CCLD) $(picosc_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -216,15 +220,15 @@ top_srcdir = @top_srcdir@
 AM_YFLAGS = -d 
 BUILT_SOURCES = picosc_yacc.h
 picosc_CFLAGS = -DNOT_FOR_PIC -I../../
-picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c
+picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c
 picosc_LDADD = -lm
 pasm_CFLAGS = -DNOT_FOR_PIC -I../../
-pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c
+pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c
 pasm_LDADD = -lm
 pdasm_CFLAGS = -DNOT_FOR_PIC -I../../
-pdasm_SOURCES = pdasm.c pasm_src.c
+pdasm_SOURCES = pdasm.c pasm_src.c load_config.c
 picdisk_CFLAGS = -DNOT_FOR_PIC -DPICDISK_MAIN -I../../
-picdisk_SOURCES = picdisk.c
+picdisk_SOURCES = picdisk.c load_config.c
 mount_picfs_SOURCES = mount_picfs.c pasm_src.c ../utils.c
 mount_picfs_CFLAGS = -I../../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse 
 mount_picfs_LDADD = -lm  -lfuse -lrt -ldl 
@@ -365,20 +369,24 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-arg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-compiler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-linker.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-load_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_lex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-pasm_yacc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-picfs_error.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-picos_base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasm-utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-load_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdasm-pdasm.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picdisk-load_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picdisk-picdisk.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picos_base64-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picos_base64-picos_base64.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-arg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-compiler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-linker.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-load_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-pasm_src.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picfs_error.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/picosc-picos_base64.Po@am__quote@
@@ -568,6 +576,20 @@ pasm-picos_base64.obj: picos_base64.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-picos_base64.obj `if test -f 'picos_base64.c'; then $(CYGPATH_W) 'picos_base64.c'; else $(CYGPATH_W) '$(srcdir)/picos_base64.c'; fi`
 
+pasm-load_config.o: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-load_config.o -MD -MP -MF $(DEPDIR)/pasm-load_config.Tpo -c -o pasm-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-load_config.Tpo $(DEPDIR)/pasm-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='pasm-load_config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+
+pasm-load_config.obj: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -MT pasm-load_config.obj -MD -MP -MF $(DEPDIR)/pasm-load_config.Tpo -c -o pasm-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pasm-load_config.Tpo $(DEPDIR)/pasm-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='pasm-load_config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pasm_CFLAGS) $(CFLAGS) -c -o pasm-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
+
 pdasm-pdasm.o: pdasm.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdasm_CFLAGS) $(CFLAGS) -MT pdasm-pdasm.o -MD -MP -MF $(DEPDIR)/pdasm-pdasm.Tpo -c -o pdasm-pdasm.o `test -f 'pdasm.c' || echo '$(srcdir)/'`pdasm.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pdasm-pdasm.Tpo $(DEPDIR)/pdasm-pdasm.Po
@@ -596,6 +618,20 @@ pdasm-pasm_src.obj: pasm_src.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdasm_CFLAGS) $(CFLAGS) -c -o pdasm-pasm_src.obj `if test -f 'pasm_src.c'; then $(CYGPATH_W) 'pasm_src.c'; else $(CYGPATH_W) '$(srcdir)/pasm_src.c'; fi`
 
+pdasm-load_config.o: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdasm_CFLAGS) $(CFLAGS) -MT pdasm-load_config.o -MD -MP -MF $(DEPDIR)/pdasm-load_config.Tpo -c -o pdasm-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pdasm-load_config.Tpo $(DEPDIR)/pdasm-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='pdasm-load_config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdasm_CFLAGS) $(CFLAGS) -c -o pdasm-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+
+pdasm-load_config.obj: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdasm_CFLAGS) $(CFLAGS) -MT pdasm-load_config.obj -MD -MP -MF $(DEPDIR)/pdasm-load_config.Tpo -c -o pdasm-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/pdasm-load_config.Tpo $(DEPDIR)/pdasm-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='pdasm-load_config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pdasm_CFLAGS) $(CFLAGS) -c -o pdasm-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
+
 picdisk-picdisk.o: picdisk.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picdisk_CFLAGS) $(CFLAGS) -MT picdisk-picdisk.o -MD -MP -MF $(DEPDIR)/picdisk-picdisk.Tpo -c -o picdisk-picdisk.o `test -f 'picdisk.c' || echo '$(srcdir)/'`picdisk.c
 @am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picdisk-picdisk.Tpo $(DEPDIR)/picdisk-picdisk.Po
@@ -609,6 +645,20 @@ picdisk-picdisk.obj: picdisk.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picdisk.c' object='picdisk-picdisk.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picdisk_CFLAGS) $(CFLAGS) -c -o picdisk-picdisk.obj `if test -f 'picdisk.c'; then $(CYGPATH_W) 'picdisk.c'; else $(CYGPATH_W) '$(srcdir)/picdisk.c'; fi`
+
+picdisk-load_config.o: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picdisk_CFLAGS) $(CFLAGS) -MT picdisk-load_config.o -MD -MP -MF $(DEPDIR)/picdisk-load_config.Tpo -c -o picdisk-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picdisk-load_config.Tpo $(DEPDIR)/picdisk-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='picdisk-load_config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picdisk_CFLAGS) $(CFLAGS) -c -o picdisk-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+
+picdisk-load_config.obj: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picdisk_CFLAGS) $(CFLAGS) -MT picdisk-load_config.obj -MD -MP -MF $(DEPDIR)/picdisk-load_config.Tpo -c -o picdisk-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picdisk-load_config.Tpo $(DEPDIR)/picdisk-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='picdisk-load_config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picdisk_CFLAGS) $(CFLAGS) -c -o picdisk-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
 
 picos_base64-picos_base64.o: picos_base64.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picos_base64_CFLAGS) $(CFLAGS) -MT picos_base64-picos_base64.o -MD -MP -MF $(DEPDIR)/picos_base64-picos_base64.Tpo -c -o picos_base64-picos_base64.o `test -f 'picos_base64.c' || echo '$(srcdir)/'`picos_base64.c
@@ -763,6 +813,20 @@ picosc-picos_base64.obj: picos_base64.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='picos_base64.c' object='picosc-picos_base64.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-picos_base64.obj `if test -f 'picos_base64.c'; then $(CYGPATH_W) 'picos_base64.c'; else $(CYGPATH_W) '$(srcdir)/picos_base64.c'; fi`
+
+picosc-load_config.o: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-load_config.o -MD -MP -MF $(DEPDIR)/picosc-load_config.Tpo -c -o picosc-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-load_config.Tpo $(DEPDIR)/picosc-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='picosc-load_config.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-load_config.o `test -f 'load_config.c' || echo '$(srcdir)/'`load_config.c
+
+picosc-load_config.obj: load_config.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -MT picosc-load_config.obj -MD -MP -MF $(DEPDIR)/picosc-load_config.Tpo -c -o picosc-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/picosc-load_config.Tpo $(DEPDIR)/picosc-load_config.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='load_config.c' object='picosc-load_config.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(picosc_CFLAGS) $(CFLAGS) -c -o picosc-load_config.obj `if test -f 'load_config.c'; then $(CYGPATH_W) 'load_config.c'; else $(CYGPATH_W) '$(srcdir)/load_config.c'; fi`
 
 .l.c:
 	$(am__skiplex) $(SHELL) $(YLWRAP) $< $(LEX_OUTPUT_ROOT).c $@ -- $(LEXCOMPILE)

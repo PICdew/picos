@@ -3,18 +3,18 @@ bin_PROGRAMS = picosc pasm pdasm picdisk mount.picfs picos_base64
 AM_YFLAGS = -d 
 BUILT_SOURCES = picosc_yacc.h
 picosc_CFLAGS =  -DNOT_FOR_PIC -I../../
-picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c
+picosc_SOURCES = compiler.c picosc_lex.l  picosc_yacc.y picos_yacc.h pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c
 picosc_LDADD = -lm
 
 pasm_CFLAGS = -DNOT_FOR_PIC -I../../
-pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c
+pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c
 pasm_LDADD = -lm
 
 pdasm_CFLAGS = -DNOT_FOR_PIC -I../../
-pdasm_SOURCES = pdasm.c pasm_src.c
+pdasm_SOURCES = pdasm.c pasm_src.c load_config.c
 
 picdisk_CFLAGS = -DNOT_FOR_PIC -DPICDISK_MAIN -I../../
-picdisk_SOURCES = picdisk.c
+picdisk_SOURCES = picdisk.c load_config.c
 
 
 mount_picfs_SOURCES = mount_picfs.c pasm_src.c ../utils.c
