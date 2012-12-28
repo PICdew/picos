@@ -8,7 +8,6 @@
  */
 
 #include "picos/tools/pasm.h"
-#include "picos/tools/picosc_yacc.h"
 #include "picos/piclang.h"
 #include "picos/page.h"
 #include "picos/version.h"

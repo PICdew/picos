@@ -9,7 +9,7 @@
  */
 
 #include "picos/tools/pasm.h"
-#include "picos/tools/picosc_yacc.h"
+#include "picos/tools/pasm_yacc.h"
 #include "picos/piclang.h"
 void yyerror(char *);
 

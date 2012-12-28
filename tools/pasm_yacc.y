@@ -366,3 +366,24 @@ int main(int argc, char **argv)
 
   return 0;
 }
+
+void fline_message(FILE *file, char *s)
+{
+  if(file == NULL)
+    file = stdout;
+  fprintf(file, "(Line");
+  if(yylloc.first_line != yylloc.last_line)
+    fprintf(file,"s");
+  fprintf(file," %d",yylloc.first_line);
+  if(yylloc.first_line != yylloc.last_line)
+    fprintf(file," - %d",yylloc.last_line);
+  
+  fprintf(file,") %s ",s);
+}
+
+void yyerror(char *s) {
+  extern char *yytext;
+  fline_message(stdout, s);
+  fprintf(stdout," %s\n",yytext);
+  exit(-1);
+}

@@ -15,13 +15,11 @@
 
 #include "picos/tools/pasm.h"
 #include "picos/tools/globals.h"
-#include "picos/tools/picosc_yacc.h"
 
 #include "picos/page.h"
 
 extern void yyerror(char*);
 extern char *yytext;
-extern YYLTYPE yylloc;
 picos_size_t label_counter = 0;
 
 idNodeType* resolve_variable(const char *name);
@@ -689,28 +687,6 @@ void freeNode(nodeType *p) {
     }
     free (p);
 }
-
-void fline_message(FILE *file, char *s)
-{
-  if(file == NULL)
-    file = stdout;
-  fprintf(file, "(Line");
-  if(yylloc.first_line != yylloc.last_line)
-    fprintf(file,"s");
-  fprintf(file," %d",yylloc.first_line);
-  if(yylloc.first_line != yylloc.last_line)
-    fprintf(file," - %d",yylloc.last_line);
-  
-  fprintf(file,") %s ",s);
-}
-
-void yyerror(char *s) {
-  extern char *yytext;
-  fline_message(stdout, s);
-  fprintf(stdout," %s\n",yytext);
-  exit(-1);
-}
-
 
 void write_val_for_pic(FILE *binary_file,picos_size_t val)
 {

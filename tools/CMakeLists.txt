@@ -23,25 +23,28 @@ ADD_FLEX_BISON_DEPENDENCY(picosc_scanner picosc_parser)
 add_executable(picosc compiler.c ${BISON_picosc_parser_OUTPUTS} ${FLEX_picosc_scanner_OUTPUTS} pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c)
 target_link_libraries(picosc m)
 
+# pasm
 BISON_TARGET(pasm_parser pasm_yacc.y ${CMAKE_SOURCE_DIR}/pasm_yacc.c)
 FLEX_TARGET(pasm_scanner pasm_lex.l ${CMAKE_SOURCE_DIR}/pasm_lex.c)
 ADD_FLEX_BISON_DEPENDENCY(pasm_scanner pasm_parser)
-add_executable(pasm compiler.c pasm_lex.c  pasm_yacc.c pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c)
+add_executable(pasm compiler.c pasm_lex.c pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c ${BISON_pasm_parser_OUTPUTS} ${FLEX_pasm_scanner_OUTPUTS})
 target_link_libraries(pasm m)
 
+# pdasm
 add_executable(pdasm pdasm.c pasm_src.c load_config.c)
 
-#picdisk_CFLAGS = -Wunused-result -DNOT_FOR_PIC -DPICDISK_MAIN -I../../
-#picdisk_SOURCES = picdisk.c
+# picdisk
+add_executable(picdisk picdisk.c load_config.c)
+set_target_properties(picdisk PROPERTIES COMPILE_FLAGS -DPICDISK_MAIN)
 
+# mount.picfs
+add_executable(mount.picfs mount_picfs.c pasm_src.c ${PROJECT_SOURCE_DIR}/../utils.c)
+set_target_properties(mount.picfs PROPERTIES COMPILE_FLAGS "-DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse ")
+target_link_libraries(mount.picfs pthread m fuse rt dl)
 
-#mount_picfs_SOURCES = mount_picfs.c pasm_src.c ../utils.c
-#mount_picfs_CFLAGS = -I../../ -DNOT_FOR_PIC -DFUSE_USE_VERSION=26 -D_FILE_OFFSET_BITS=64 -I/usr/include/fuse 
-#mount_picfs_LDADD = -lm  -lfuse -lrt -ldl 
-#mount_picfs_LDFLAGS = -pthread
+# picos_base64
+add_executable(picos_base64 picos_base64.c pasm_src.c)
+set_target_properties(picos_base64 PROPERTIES COMPILE_FLAGS -DBASE64_MAIN)
 
-#picos_base64_SOURCES = picos_base64.c pasm_src.c
-#picos_base64_CFLAGS = -DBASE64_MAIN -I../../
-
-
-install(TARGETS picosc pasm DESTINATION bin)
+# install
+install(TARGETS picosc pasm pdasm picdisk mount.picfs DESTINATION bin)
