@@ -8,4 +8,6 @@
 #define PICOS_MINOR_VERSION @PICOS_MINOR_VERSION@
 #define VERSION @PICOS_MAJOR_VERSION@.@PICOS_MINOR_VERSION@
 
+// Things for compilation for linux rather than uC
 #define bit @PICOS_BIT_DEFINE@
+#define NOT_FOR_PIC 1
