@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(PICOS C)
+project("PICOS Tools" C)
 set(PICOS_MAJOR_VERSION 0)
 set(PICOS_MINOR_VERSION 6)
 set(AUTHOR_EMAIL david@davecoss.com)
