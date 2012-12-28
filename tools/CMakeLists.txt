@@ -48,3 +48,15 @@ set_target_properties(picos_base64 PROPERTIES COMPILE_FLAGS -DBASE64_MAIN)
 
 # install
 install(TARGETS picosc pasm pdasm picdisk mount.picfs DESTINATION bin)
+
+# Unit tests
+enable_testing()
+add_test(picosc picosc -a ${PROJECT_SOURCE_DIR}/test/test.asm -o ${PROJECT_SOURCE_DIR}/test/test1.o ${PROJECT_SOURCE_DIR}/test/test.plc)
+add_test(pasm pasm -o ${PROJECT_SOURCE_DIR}/test/test2.o ${PROJECT_SOURCE_DIR}/test/test.asm )
+add_test(pdasm pdasm ${PROJECT_SOURCE_DIR}/test/test1.o)
+add_test(picdisk picdisk ${PROJECT_SOURCE_DIR}/test/test.img)
+add_test(mount.picfs mount.picfs -b 16 -n 16 -f ${PROJECT_SOURCE_DIR}/test/test2.img)
+add_test(compare_binaries ${CMAKE_COMMAND} -DFILE1=${PROJECT_SOURCE_DIR}/test/test1.o -DFILE2=${PROJECT_SOURCE_DIR}/test/test2.o -P ${CMAKE_SOURCE_DIR}/test/test_output.cmake)
+add_test(compare_disk_images ${CMAKE_COMMAND} -DFILE1=${PROJECT_SOURCE_DIR}/test/test.img -DFILE2=${PROJECT_SOURCE_DIR}/test/test2.img -P ${CMAKE_SOURCE_DIR}/test/test_output.cmake)
+
+
