@@ -23,18 +23,13 @@ ADD_FLEX_BISON_DEPENDENCY(picosc_scanner picosc_parser)
 add_executable(picosc compiler.c ${BISON_picosc_parser_OUTPUTS} ${FLEX_picosc_scanner_OUTPUTS} pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c)
 target_link_libraries(picosc m)
 
-
-#pasm_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../../
-#pasm_SOURCES = compiler.c pasm_lex.l  pasm_yacc.y pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c
-#pasm_LDADD = -lm
 BISON_TARGET(pasm_parser pasm_yacc.y ${CMAKE_SOURCE_DIR}/pasm_yacc.c)
 FLEX_TARGET(pasm_scanner pasm_lex.l ${CMAKE_SOURCE_DIR}/pasm_lex.c)
 ADD_FLEX_BISON_DEPENDENCY(pasm_scanner pasm_parser)
 add_executable(pasm compiler.c pasm_lex.c  pasm_yacc.c pasm_src.c linker.c ../utils.c ../arg.c ../picfs_error.c picos_base64.c load_config.c)
 target_link_libraries(pasm m)
 
-#pdasm_CFLAGS = -Wunused-result -DNOT_FOR_PIC -I../../
-#pdasm_SOURCES = pdasm.c pasm_src.c
+add_executable(pdasm pdasm.c pasm_src.c load_config.c)
 
 #picdisk_CFLAGS = -Wunused-result -DNOT_FOR_PIC -DPICDISK_MAIN -I../../
 #picdisk_SOURCES = picdisk.c
