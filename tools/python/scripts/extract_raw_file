@@ -1,13 +1,66 @@
 #!/usr/bin/env python
 
 from sys import argv,stdout
+from getopt import getopt,GetoptError
 
-args = argv[1:]
-raw_filename = args[0]
+HELP_WARNING = "For help, run extract_raw_file --help"
+
+def print_usage():
+    print("extract_raw_file -- Extract a file or all content from the PicFS raw file.")
+    print("Usage: extract_raw_file [-f FILE NAME] [-o FILE] <raw file>")
+    print("Options:")
+    print("-f, --file\tName of file in raw file to extract. All others are ignored.")
+    print("-o, --output\tOutput file name. Default: Standard Output")
+    
+
+def error_out(msg):
+    from sys import stderr
+    stderr.write(msg)
+    stderr.write("\n")
+    stderr.write(HELP_WARNING)
+    stderr.write("\n")
+    exit(1)
+
+short_opts = "f:ho:"
+long_opts = ["file=","help","output="]
+try:
+    (opts,args) = getopt(argv[1:],short_opts,long_opts)
+except GetoptError as ge:
+    error_out(ge.msg)
+
 output = stdout
+desired_file = None
+for (opt,optarg) in opts:
+    while opt[0] == '-':
+        opt = opt[1:]
+    if opt in ["f","file"]:
+        desired_file = optarg
+    elif opt in ["h","help"]:
+        print_usage()
+        exit(0)
+    elif opt in ["o","output"]:
+        output = open(optarg,"w")
 
+if len(args) != 1:
+    error_out("Invalid number of arguments.")
+
+raw_filename = args[0]
+
+have_desired_file = False
 with open(raw_filename,"rb") as rawfile:
     for line in rawfile:
         line = line.replace('\000','')
-        output.write(line)
+        if "---" in line and desired_file:
+            import re
+            m = re.match("^---(\w*)---$",line)
+            infilename = ""
+            if m and m.groups():
+                infilename = m.groups()[0]
+            if infilename == desired_file:
+                have_desired_file = not have_desired_file
+            continue
+        if desired_file and have_desired_file:
+            output.write(line)
+        if not desired_file:
+            output.write(line)
         
