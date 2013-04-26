@@ -1,0 +1,6 @@
+To build the picos rpm:
+
+* Create a source tarball. Suggested method: from the top directory of the git working directory, run git archive --format tar --prefix=picos-VERSION/picos/ |gzip -c picos-VERSION.tar.gz. 
+* Place source tarball in the SOURCES directory of your rpmbuild directory.
+* Place the .spec file in the SPECS directory of your rpmbuild directory.
+* In the SPECS directory, run rpmbuild -ba picos-VERSION.spec
