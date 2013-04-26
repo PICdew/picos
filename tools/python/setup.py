@@ -2,7 +2,7 @@
 
 from distutils.core import setup, Extension
  
-module1 = Extension('core', sources = ['picdisk.c','picos.py.c'], include_dirs=['../..',"."], define_macros=[("USE_PYTHON","1"),("HAVE_CONFIG_H","1")])
+module1 = Extension('core', sources = ['../picdisk.c','picos.py.c'], include_dirs=['../../..',"../..","..","."], define_macros=[("USE_PYTHON","1"),("HAVE_CONFIG_H","1")])
  
 setup (name ='picos',
        version = '0.6',
@@ -13,4 +13,5 @@ setup (name ='picos',
        author_email='david@davecoss.com',
        packages = ['picos'],
        ext_package = 'picos',
-       ext_modules = [module1])
+       ext_modules = [module1],
+       scripts = ['scripts/extract_raw_file'])
