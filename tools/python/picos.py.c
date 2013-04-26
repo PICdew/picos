@@ -68,6 +68,7 @@ static PyMethodDef picos_methods[] = {
     {NULL, NULL, 0, NULL}        /* Sentinel */
 };
 
+#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef picosmodule = {
    PyModuleDef_HEAD_INIT,
    "picos",   /* name of module */
@@ -76,11 +77,16 @@ static struct PyModuleDef picosmodule = {
                 or -1 if the module keeps state in global variables. */
    picos_methods
 };
+#endif
 
 PyMODINIT_FUNC
 PyInit_core(void)
 {
+#if PY_MAJOR_VERSION >= 3
   PyObject* module = PyModule_Create(&picosmodule);
+#else
+  PyObject* module = Py_InitModule("core",picos_methods);
+#endif
   if(module == NULL)
     return module;
   PyModule_AddIntConstant(module,"stack_size", PICLANG_STACK_SIZE);
