@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+from sys import argv,stdout
+
+args = argv[1:]
+raw_filename = args[0]
+output = stdout
+
+with open(raw_filename,"rb") as rawfile:
+    for line in rawfile:
+        line = line.replace('\000','')
+        output.write(line)
+        
